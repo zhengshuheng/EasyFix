@@ -155,7 +155,7 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="viewDetail(row)">查看</el-button>
             <el-button type="primary" size="default" @click="editQuestion(row)">编辑</el-button>
