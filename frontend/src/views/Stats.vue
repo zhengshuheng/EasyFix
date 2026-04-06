@@ -298,12 +298,6 @@ onMounted(fetchStats)
   border: none;
 }
 
-.table-card .card-title {
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-}
-
 .subject-table :deep(.el-table__header-wrapper th) {
   background: #f5f7fa !important;
   color: #303133;
