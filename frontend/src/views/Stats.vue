@@ -30,38 +30,27 @@
 
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="12">
-        <el-card>
+        <el-card class="chart-card">
           <template #header>
-            <span>难度分布</span>
-          </template>
-          <div v-if="Object.keys(stats.difficulty_distribution || {}).length" class="chart-container">
-            <div v-for="(count, level) in stats.difficulty_distribution" :key="level" class="bar-item">
-              <span class="bar-label">难度 {{ level }}</span>
-              <div class="bar-wrapper">
-                <div class="bar" :style="{ width: getPercentage(count) + '%', backgroundColor: getDifficultyColor(level) }"></div>
-              </div>
-              <span class="bar-value">{{ count }} ({{ getPercentage(count) }}%)</span>
+            <div class="card-header">
+              <span class="card-title">难度分布</span>
             </div>
+          </template>
+          <div class="gauge-container">
+            <v-chart :option="difficultyGaugeOption" autoresize style="height: 200px" />
           </div>
-          <el-empty v-else description="暂无数据" />
         </el-card>
       </el-col>
-
       <el-col :span="12">
-        <el-card>
+        <el-card class="chart-card">
           <template #header>
-            <span>错误类型分布</span>
-          </template>
-          <div v-if="Object.keys(stats.error_type_distribution || {}).length" class="chart-container">
-            <div v-for="(count, type) in stats.error_type_distribution" :key="type" class="bar-item">
-              <span class="bar-label">{{ type }}</span>
-              <div class="bar-wrapper">
-                <div class="bar" :style="{ width: getPercentage(count) + '%', backgroundColor: '#409eff' }"></div>
-              </div>
-              <span class="bar-value">{{ count }} ({{ getPercentage(count) }}%)</span>
+            <div class="card-header">
+              <span class="card-title">错误类型分布</span>
             </div>
+          </template>
+          <div class="gauge-container">
+            <v-chart :option="errorTypeGaugeOption" autoresize style="height: 200px" />
           </div>
-          <el-empty v-else description="暂无数据" />
         </el-card>
       </el-col>
     </el-row>
@@ -99,6 +88,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { statsApi } from '@/api/question'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { PieChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+
+use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent])
 
 const stats = ref({
   total_questions: 0,
@@ -135,6 +131,67 @@ const getDifficultyColor = (level) => {
   const colors = ['', '#67c23a', '#85ce61', '#e6a23c', '#f56c6c', '#f78989']
   return colors[parseInt(level)] || '#409eff'
 }
+
+// 难度仪表盘配置
+const difficultyGaugeOption = computed(() => {
+  const dist = stats.value.difficulty_distribution || {}
+  const entries = Object.entries(dist)
+  const total = entries.reduce((sum, [, v]) => sum + v, 0)
+
+  const colors = ['#67c23a', '#85ce61', '#e6a23c', '#f56c6c', '#f78989']
+  const data = entries.map(([level, count]) => ({
+    name: `难度${level}`,
+    value: count,
+    itemStyle: { color: colors[parseInt(level) - 1] || '#409eff' }
+  }))
+
+  return {
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '70%'],
+      center: ['50%', '60%'],
+      startAngle: 180,
+      endAngle: 0,
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+      label: { show: false },
+      emphasis: { scaleSize: 8 },
+      labelLine: { show: false },
+      data: data.length ? data : [{ name: '无数据', value: 0 }]
+    }]
+  }
+})
+
+// 错误类型仪表盘配置
+const errorTypeGaugeOption = computed(() => {
+  const dist = stats.value.error_type_distribution || {}
+  const entries = Object.entries(dist)
+
+  const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4']
+  const data = entries.map(([type, count], i) => ({
+    name: type,
+    value: count,
+    itemStyle: { color: colors[i % colors.length] }
+  }))
+
+  return {
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '70%'],
+      center: ['50%', '60%'],
+      startAngle: 180,
+      endAngle: 0,
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+      label: { show: false },
+      emphasis: { scaleSize: 8 },
+      labelLine: { show: false },
+      data: data.length ? data : [{ name: '无数据', value: 0 }]
+    }]
+  }
+})
 
 const fetchStats = async () => {
   try {
@@ -219,5 +276,32 @@ onMounted(fetchStats)
   text-align: right;
   font-size: 14px;
   color: #666;
+}
+
+.chart-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.chart-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 14px 20px;
+  border: none;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.gauge-container {
+  padding: 10px 0;
 }
 </style>
