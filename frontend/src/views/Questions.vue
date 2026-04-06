@@ -154,6 +154,7 @@
             <el-button type="primary" size="default" @click="viewDetail(row)">查看</el-button>
             <el-button type="primary" size="default" @click="editQuestion(row)">编辑</el-button>
             <el-button type="primary" size="default" @click="generateSimilar(row)">相似题</el-button>
+            <el-button type="success" size="default" @click="showGenerateDialog">生成练习</el-button>
             <el-button type="danger" size="default" @click="deleteQuestion(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -431,6 +432,37 @@
       </template>
     </el-dialog>
 
+    <!-- 生成练习弹窗 -->
+    <el-dialog v-model="generateDialogVisible" title="生成练习" width="400px">
+      <el-form :model="generateForm" label-width="80px">
+        <el-form-item label="学科" required>
+          <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%">
+            <el-option
+              v-for="subject in subjectOptions"
+              :key="subject.id"
+              :label="subject.name"
+              :value="subject.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%">
+            <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="数量">
+          <el-input-number v-model="generateForm.count" :min="1" :max="99" />
+        </el-form-item>
+        <el-form-item>
+          <span style="color: #909399; font-size: 12px">优先选择未复习、低正确率的题目</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="generateDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="generatePractice" :loading="generating">生成</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 图片预览弹层 -->
     <el-image-viewer
       v-if="imagePreviewVisible"
@@ -541,6 +573,47 @@ const printForm = reactive({
   questionType: 'original',
 })
 
+// 生成练习相关
+const generateDialogVisible = ref(false)
+const generating = ref(false)
+const generateForm = reactive({
+  subject_id: null,
+  grade: null,
+  count: 5,
+})
+
+const subjectOptions = ref([])
+
+const showGenerateDialog = () => {
+  generateForm.subject_id = null
+  generateForm.grade = null
+  generateForm.count = 5
+  generateDialogVisible.value = true
+}
+
+const generatePractice = async () => {
+  if (!generateForm.subject_id) {
+    ElMessage.warning('请选择学科')
+    return
+  }
+  generating.value = true
+  try {
+    const { data } = await questionApi.generateFromQuestions({
+      subject_id: generateForm.subject_id,
+      grade: generateForm.grade,
+      count: generateForm.count,
+    })
+    ElMessage.success('练习集已生成')
+    generateDialogVisible.value = false
+    // 跳转到练习集详情
+    window.location.href = `/practice-sets?id=${data.id}`
+  } catch (error) {
+    ElMessage.error('生成失败')
+  } finally {
+    generating.value = false
+  }
+}
+
 const editForm = reactive({
   subject_id: null,
   original_image: '',
@@ -584,6 +657,7 @@ const fetchSubjects = async () => {
   try {
     const { data } = await questionApi.listSubjects()
     subjects.value = data
+    subjectOptions.value = data
   } catch (error) {
     console.error('获取学科失败:', error)
   }

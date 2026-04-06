@@ -178,6 +178,10 @@ export const questionApi = {
   getFilterOptions(subjectId) {
     return api.get(`/questions/filter-options/${subjectId}`)
   },
+  // 根据条件生成练习集
+  generateFromQuestions(params) {
+    return api.post('/practice-sets/generate-from-questions', params)
+  },
 }
 
 // 学习概览API
