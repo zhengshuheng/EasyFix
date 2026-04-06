@@ -37,7 +37,7 @@
             </div>
           </template>
           <div class="gauge-container">
-            <v-chart :option="difficultyGaugeOption" autoresize style="height: 200px" />
+            <v-chart :option="difficultyPieOption" autoresize style="height: 200px" />
           </div>
         </el-card>
       </el-col>
@@ -49,7 +49,7 @@
             </div>
           </template>
           <div class="gauge-container">
-            <v-chart :option="errorTypeGaugeOption" autoresize style="height: 200px" />
+            <v-chart :option="errorTypePieOption" autoresize style="height: 200px" />
           </div>
         </el-card>
       </el-col>
@@ -96,6 +96,9 @@ import { TitleComponent, TooltipComponent, LegendComponent } from 'echarts/compo
 
 use([CanvasRenderer, PieChart, TitleComponent, TooltipComponent, LegendComponent])
 
+const DIFFICULTY_COLORS = ['#67c23a', '#85ce61', '#e6a23c', '#f56c6c', '#f78989']
+const ERROR_TYPE_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4']
+
 const stats = ref({
   total_questions: 0,
   total_subjects: 0,
@@ -127,70 +130,47 @@ const getPercentage = (count) => {
   return totalCount.value ? Math.round((count / totalCount.value) * 100) : 0
 }
 
-const getDifficultyColor = (level) => {
-  const colors = ['', '#67c23a', '#85ce61', '#e6a23c', '#f56c6c', '#f78989']
-  return colors[parseInt(level)] || '#409eff'
-}
-
-// 难度仪表盘配置
-const difficultyGaugeOption = computed(() => {
+// 难度分布饼图配置
+const difficultyPieOption = computed(() => {
   const dist = stats.value.difficulty_distribution || {}
   const entries = Object.entries(dist)
-  const total = entries.reduce((sum, [, v]) => sum + v, 0)
-
-  const colors = ['#67c23a', '#85ce61', '#e6a23c', '#f56c6c', '#f78989']
   const data = entries.map(([level, count]) => ({
     name: `难度${level}`,
     value: count,
-    itemStyle: { color: colors[parseInt(level) - 1] || '#409eff' }
+    itemStyle: { color: DIFFICULTY_COLORS[parseInt(level) - 1] || '#409eff' }
   }))
 
-  return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['50%', '70%'],
-      center: ['50%', '60%'],
-      startAngle: 180,
-      endAngle: 0,
-      avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { scaleSize: 8 },
-      labelLine: { show: false },
-      data: data.length ? data : [{ name: '无数据', value: 0 }]
-    }]
-  }
+  return createPieOption(data, DIFFICULTY_COLORS)
 })
 
-// 错误类型仪表盘配置
-const errorTypeGaugeOption = computed(() => {
+// 错误类型分布饼图配置
+const errorTypePieOption = computed(() => {
   const dist = stats.value.error_type_distribution || {}
   const entries = Object.entries(dist)
-
-  const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4']
   const data = entries.map(([type, count], i) => ({
     name: type,
     value: count,
-    itemStyle: { color: colors[i % colors.length] }
+    itemStyle: { color: ERROR_TYPE_COLORS[i % ERROR_TYPE_COLORS.length] }
   }))
 
-  return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['50%', '70%'],
-      center: ['50%', '60%'],
-      startAngle: 180,
-      endAngle: 0,
-      avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { scaleSize: 8 },
-      labelLine: { show: false },
-      data: data.length ? data : [{ name: '无数据', value: 0 }]
-    }]
-  }
+  return createPieOption(data, ERROR_TYPE_COLORS)
+})
+
+const createPieOption = (data, colors) => ({
+  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+  series: [{
+    type: 'pie',
+    radius: ['50%', '70%'],
+    center: ['50%', '60%'],
+    startAngle: 180,
+    endAngle: 0,
+    avoidLabelOverlap: true,
+    itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+    label: { show: false },
+    emphasis: { scaleSize: 8 },
+    labelLine: { show: false },
+    data: data.length ? data : [{ name: '无数据', value: 0 }]
+  }]
 })
 
 const fetchStats = async () => {
