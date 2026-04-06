@@ -26,6 +26,22 @@ class PracticeSetCreate(BaseModel):
     question_type: str = "original"  # original=原题, similar=相似题
 
 
+class GenerateFromQuestionsRequest(BaseModel):
+    """根据条件生成练习集请求"""
+    subject_id: int
+    grade: Optional[int] = None
+    count: int = 5
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "subject_id": 1,
+                "grade": 1,
+                "count": 5
+            }
+        }
+
+
 class PracticeSetQuestionResponse(BaseModel):
     id: int
     question_id: int
@@ -86,6 +102,98 @@ class BatchSimilarResponse(BaseModel):
 
 
 # ============ 路由实现 ============
+
+@router.post("/generate-from-questions", response_model=PracticeSetResponse, status_code=201)
+def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Session = Depends(get_db)):
+    """
+    根据条件生成练习集
+
+    选择逻辑（优先级）：
+    1. review_count = 0 的题目（未复习）
+    2. 不足时按正确率低排序补充
+    3. 仍不足时随机补充
+    """
+    # 构建基础查询
+    query = db.query(Question).filter(
+        Question.subject_id == data.subject_id,
+        Question.deleted == False
+    )
+    if data.grade:
+        query = query.filter(Question.grade == data.grade)
+
+    # 1. 优先取未复习题目
+    unvisited = query.filter(Question.review_count == 0).all()
+    selected_ids = [q.id for q in unvisited]
+
+    # 2. 不足时取低正确率题目
+    remaining = data.count - len(selected_ids)
+    if remaining > 0:
+        reviewed = query.filter(Question.review_count > 0).all()
+        # 按正确率升序排序
+        reviewed_sorted = sorted(reviewed, key=lambda q: q.correct_count / q.review_count if q.review_count > 0 else 0)
+        for q in reviewed_sorted[:remaining]:
+            selected_ids.append(q.id)
+            remaining -= 1
+
+    # 3. 仍不足时随机补充
+    if remaining > 0:
+        import random
+        all_ids = [q.id for q in query.all() if q.id not in selected_ids]
+        random.shuffle(all_ids)
+        selected_ids.extend(all_ids[:remaining])
+
+    # 实际取出的数量
+    actual_count = len(selected_ids)
+    if actual_count == 0:
+        raise HTTPException(status_code=400, detail="没有符合条件的题目")
+
+    # 获取题目详情
+    selected_questions = db.query(Question).filter(Question.id.in_(selected_ids)).all()
+    # 保持优先级顺序
+    question_map = {q.id: q for q in selected_questions}
+    ordered_questions = [question_map[qid] for qid in selected_ids if qid in question_map]
+
+    # 创建练习集
+    practice_set = PracticeSet(
+        name=f"练习集_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        subject_id=data.subject_id,
+        source_type="question",
+        question_type="original",
+        total_questions=actual_count,
+    )
+    db.add(practice_set)
+    db.commit()
+    db.refresh(practice_set)
+
+    # 创建关联记录
+    for idx, question in enumerate(ordered_questions):
+        psq = PracticeSetQuestion(
+            practice_set_id=practice_set.id,
+            question_id=question.id,
+            display_order=idx,
+        )
+        db.add(psq)
+
+    db.commit()
+    db.refresh(practice_set)
+
+    # 获取学科名称
+    subject_name = db.query(Subject).filter(Subject.id == data.subject_id).first().name if data.subject_id else ""
+
+    return {
+        "id": practice_set.id,
+        "name": practice_set.name,
+        "subject_id": practice_set.subject_id,
+        "subject_name": subject_name,
+        "source_type": "question",
+        "question_type": "original",
+        "total_questions": actual_count,
+        "reviewed": False,
+        "review_count": 0,
+        "created_at": practice_set.created_at,
+        "questions": [],
+    }
+
 
 @router.post("", response_model=PracticeSetResponse, status_code=201)
 def create_practice_set(data: PracticeSetCreate, db: Session = Depends(get_db)):
