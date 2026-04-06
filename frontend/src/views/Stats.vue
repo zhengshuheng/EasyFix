@@ -1,43 +1,30 @@
 <template>
   <div class="stats">
-    <el-row :gutter="20">
-      <el-col :span="24">
-        <el-card>
-          <template #header>
-            <span>统计分析</span>
-            <el-button size="small" @click="fetchStats" style="float: right">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
-          </template>
-
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <div class="stat-item">
-                <div class="stat-value">{{ stats.total_questions }}</div>
-                <div class="stat-label">错题总数</div>
-              </div>
-            </el-col>
-            <el-col :span="6">
-              <div class="stat-item">
-                <div class="stat-value">{{ stats.total_subjects }}</div>
-                <div class="stat-label">学科数</div>
-              </div>
-            </el-col>
-            <el-col :span="6">
-              <div class="stat-item">
-                <div class="stat-value">{{ stats.total_error_books }}</div>
-                <div class="stat-label">错题本数</div>
-              </div>
-            </el-col>
-            <el-col :span="6">
-              <div class="stat-item">
-                <div class="stat-value">{{ averageDifficulty }}</div>
-                <div class="stat-label">平均难度</div>
-              </div>
-            </el-col>
-          </el-row>
-        </el-card>
+    <!-- 顶部统计卡片 -->
+    <el-row :gutter="20" class="stat-cards-row">
+      <el-col :span="6">
+        <div class="stat-card gradient-red">
+          <div class="stat-number">{{ stats.total_questions }}</div>
+          <div class="stat-text">错题总数</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card gradient-orange">
+          <div class="stat-number">{{ stats.total_subjects }}</div>
+          <div class="stat-text">学科数</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card gradient-purple">
+          <div class="stat-number">{{ stats.total_error_books }}</div>
+          <div class="stat-text">错题本数</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card gradient-blue">
+          <div class="stat-number">{{ averageDifficulty }}</div>
+          <div class="stat-text">平均难度</div>
+        </div>
       </el-col>
     </el-row>
 
@@ -167,21 +154,34 @@ onMounted(fetchStats)
   margin: 0 auto;
 }
 
-.stat-item {
+.stat-cards-row {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  border-radius: 16px;
+  padding: 28px 20px;
   text-align: center;
-  padding: 20px;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
-.stat-value {
-  font-size: 36px;
+.gradient-red { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%); }
+.gradient-orange { background: linear-gradient(135deg, #ffa502 0%, #ff9500 100%); }
+.gradient-purple { background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%); }
+.gradient-blue { background: linear-gradient(135deg, #409eff 0%, #3c8af0 100%); }
+
+.stat-number {
+  font-size: 48px;
   font-weight: bold;
-  color: #409eff;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-.stat-label {
+.stat-text {
   font-size: 14px;
-  color: #666;
   margin-top: 10px;
+  opacity: 0.9;
 }
 
 .chart-container {
