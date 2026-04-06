@@ -57,11 +57,13 @@
 
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="24">
-        <el-card>
+        <el-card class="table-card">
           <template #header>
-            <span>按学科统计</span>
+            <div class="card-header">
+              <span class="card-title">按学科统计</span>
+            </div>
           </template>
-          <el-table :data="stats.by_subject || []" stripe style="width: 100%">
+          <el-table :data="stats.by_subject || []" stripe class="subject-table">
             <el-table-column prop="subject_name" label="学科" />
             <el-table-column prop="question_count" label="错题数量" />
             <el-table-column label="错误类型分布">
@@ -283,5 +285,32 @@ onMounted(fetchStats)
 
 .gauge-container {
   padding: 10px 0;
+}
+
+.table-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 14px 20px;
+  border: none;
+}
+
+.table-card .card-title {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.subject-table :deep(.el-table__header-wrapper th) {
+  background: #f5f7fa !important;
+  color: #303133;
+  font-weight: 600;
+}
+
+.subject-table :deep(.el-table__row:hover td) {
+  background: #f0f4ff !important;
 }
 </style>
