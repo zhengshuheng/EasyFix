@@ -81,6 +81,7 @@ class PracticeSetResponse(BaseModel):
     created_at: datetime
     questions: List[PracticeSetQuestionResponse] = []
     word_review_stats: Optional[dict] = None  # 单词复习统计
+    pdf_url: Optional[str] = None  # PDF下载URL
 
     class Config:
         from_attributes = True
@@ -180,6 +181,28 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     # 获取学科名称
     subject_name = db.query(Subject).filter(Subject.id == data.subject_id).first().name if data.subject_id else ""
 
+    # 构建题目数据用于生成PDF
+    questions_data = []
+    for question in ordered_questions:
+        questions_data.append({
+            "question_text": question.parsed_question or question.original_text or "",
+            "difficulty": question.difficulty or 3,
+            "id": question.id,
+            "knowledge_point": question.knowledge_point or "",
+            "error_type": question.error_type or "",
+        })
+
+    # 生成PDF
+    pdf_url = None
+    if questions_data:
+        try:
+            pdf_path = generate_practice_set_pdf(practice_set.name, questions_data)
+            practice_set.pdf_path = pdf_path
+            db.commit()
+            pdf_url = f"/uploads/{pdf_path}"
+        except Exception as e:
+            print(f"PDF生成失败: {e}")
+
     return {
         "id": practice_set.id,
         "name": practice_set.name,
@@ -190,8 +213,10 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
         "total_questions": actual_count,
         "reviewed": False,
         "review_count": 0,
+        "pdf_path": practice_set.pdf_path,
         "created_at": practice_set.created_at,
         "questions": [],
+        "pdf_url": pdf_url,
     }
 
 
