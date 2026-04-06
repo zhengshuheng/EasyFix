@@ -4,10 +4,16 @@
       <template #header>
         <div class="card-header">
           <span>错题列表</span>
-          <el-button type="primary" @click="$router.push('/upload')">
-            <el-icon><Plus /></el-icon>
-            新增错题
-          </el-button>
+          <div class="header-actions">
+            <el-button type="success" size="large" @click="showGenerateDialog">
+              <el-icon><Plus /></el-icon>
+              生成练习
+            </el-button>
+            <el-button type="primary" size="large" @click="$router.push('/upload')">
+              <el-icon><Plus /></el-icon>
+              新增错题
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -149,12 +155,11 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="viewDetail(row)">查看</el-button>
             <el-button type="primary" size="default" @click="editQuestion(row)">编辑</el-button>
             <el-button type="primary" size="default" @click="generateSimilar(row)">相似题</el-button>
-            <el-button type="success" size="default" @click="showGenerateDialog">生成练习</el-button>
             <el-button type="danger" size="default" @click="deleteQuestion(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -1129,6 +1134,16 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.header-actions :deep(.el-button) {
+  padding: 12px 20px;
+  font-size: 15px;
 }
 
 .filters {
