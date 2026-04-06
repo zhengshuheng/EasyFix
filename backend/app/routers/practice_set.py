@@ -122,9 +122,9 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     if data.grade:
         query = query.filter(Question.grade == data.grade)
 
-    # 1. 优先取未复习题目
+    # 1. 优先取未复习题目（最多取count个）
     unvisited = query.filter(Question.review_count == 0).all()
-    selected_ids = [q.id for q in unvisited]
+    selected_ids = [q.id for q in unvisited[:data.count]]
 
     # 2. 不足时取低正确率题目
     remaining = data.count - len(selected_ids)
