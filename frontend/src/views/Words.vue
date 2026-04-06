@@ -284,33 +284,49 @@
       </div>
 
       <div v-else-if="reviewStep === 'result'" class="review-result">
-        <div class="result-summary">
-          <div class="big-number">{{ reviewResult.accuracy }}%</div>
-          <div class="label">正确率</div>
+        <!-- 顶部统计区 -->
+        <div class="result-header">
+          <div class="accuracy-display">
+            <div class="accuracy-big">{{ reviewResult.accuracy }}%</div>
+            <div class="accuracy-label">正确率</div>
+          </div>
+          <div class="stats-panel">
+            <div class="stat-item">
+              <span class="stat-value">{{ reviewResult.total }}</span>
+              <span class="stat-label">总题数</span>
+            </div>
+            <div class="stat-item correct">
+              <span class="stat-value">{{ reviewResult.correct }}</span>
+              <span class="stat-label">正确</span>
+            </div>
+            <div class="stat-item error">
+              <span class="stat-value">{{ reviewResult.error }}</span>
+              <span class="stat-label">错误</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ Math.floor(reviewResult.duration / 60) }}:{{ String(reviewResult.duration % 60).padStart(2, '0') }}</span>
+              <span class="stat-label">用时</span>
+            </div>
+          </div>
         </div>
-        <div class="result-detail">
-          <div>总题数: {{ reviewResult.total }}</div>
-          <div>正确: {{ reviewResult.correct }}</div>
-          <div>错误: {{ reviewResult.error }}</div>
-          <div>用时: {{ Math.floor(reviewResult.duration / 60) }}:{{ String(reviewResult.duration % 60).padStart(2, '0') }}</div>
-        </div>
+
         <!-- 错误单词列表 -->
         <div v-if="reviewResult.error > 0" class="error-word-list">
-          <h4>需要复习的单词</h4>
-          <div class="error-words">
+          <div class="error-words-scroll">
             <div v-for="(q, idx) in reviewQuestions.filter(q => !q.correct)" :key="idx" class="error-word-item">
-              <div class="error-word-info">
-                <span class="word-english">{{ q.english }}</span>
-                <span class="word-chinese">{{ q.chinese }}</span>
+              <div class="correct-side">
+                <span class="correct-en">{{ q.english }}</span>
+                <span class="correct-cn">{{ q.chinese }}</span>
               </div>
-              <div class="error-word-user">
-                <span class="label">你的答案：</span>
-                <span class="user-answer wrong">{{ q.userAnswer || '(未作答)' }}</span>
+              <div class="wrong-side">
+                <span class="wrong-tag">错误</span>
+                <span class="wrong-answer">{{ q.userAnswer || '(未作答)' }}</span>
               </div>
             </div>
           </div>
         </div>
-        <el-button type="primary" @click="reviewVisible = false" style="width: 100%">完成</el-button>
+
+        <el-button type="primary" @click="reviewVisible = false" class="finish-btn">完成</el-button>
       </div>
     </el-dialog>
 
@@ -528,7 +544,7 @@ const toggleAccuracyLevel = (level) => {
 const reviewVisible = ref(false)
 const reviewStep = ref('config')
 const reviewConfig = reactive({
-  count: 25,
+  count: 20,
   grade: null,
   type: 1,
 })
@@ -1568,82 +1584,160 @@ onMounted(() => {
 }
 
 .review-result {
-  padding: 60px;
-  text-align: center;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 75vh;
+  overflow: hidden;
 }
 
-.result-summary {
-  margin-bottom: 60px;
+.result-header {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
-.big-number {
-  font-size: 144px;
+.accuracy-display {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.accuracy-big {
+  font-size: 80px;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1;
+}
+
+.accuracy-label {
+  font-size: 20px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 8px;
+}
+
+.stats-panel {
+  flex: 1.1;
+  background: linear-gradient(145deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.stat-item.correct .stat-value { color: #67c23a; }
+.stat-item.error .stat-value { color: #f56c6c; }
+
+.stat-value {
+  font-size: 32px;
   font-weight: bold;
   color: #409eff;
+  line-height: 1;
 }
 
-.label {
-  font-size: 36px;
+.stat-label {
+  font-size: 13px;
   color: #909399;
+  margin-top: 4px;
 }
 
 .error-word-list {
-  margin-top: 20px;
-  padding: 16px;
-  background: #fef0f0;
-  border-radius: 8px;
-  text-align: left;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.error-word-list h4 {
-  margin: 0 0 12px 0;
-  color: #f56c6c;
-}
-
-.error-words {
+.error-word-list .error-words-scroll {
+  flex: 1;
+  overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  padding: 4px;
 }
 
 .error-word-item {
-  background: #fff;
-  padding: 12px;
-  border-radius: 6px;
-  border-left: 3px solid #f56c6c;
-}
-
-.error-word-info {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
-.error-word-info .word-english {
+.correct-side {
+  flex: 1;
+  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.correct-en {
+  font-size: 18px;
   font-weight: bold;
-  color: #303133;
+  color: #fff;
 }
 
-.error-word-info .word-chinese {
-  color: #606266;
-}
-
-.error-word-user {
+.correct-cn {
   font-size: 13px;
+  color: rgba(255,255,255,0.9);
+  margin-top: 2px;
 }
 
-.error-word-user .label {
-  color: #909399;
+.wrong-side {
+  width: 100px;
+  background: #fef0f0;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-left: 2px solid #f56c6c;
 }
 
-.error-word-user .user-answer {
+.wrong-tag {
+  font-size: 10px;
   color: #f56c6c;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.result-detail {
-  font-size: 32px;
-  line-height: 2.5;
-  margin-bottom: 60px;
+.wrong-answer {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f56c6c;
+  text-align: center;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+.finish-btn {
+  margin-top: 12px;
+  flex-shrink: 0;
+  height: 44px;
+  font-size: 16px;
 }
 
 .ocr-preview {
