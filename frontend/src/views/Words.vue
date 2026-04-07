@@ -241,7 +241,7 @@
             <el-radio :label="2">选择中文</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-button type="primary" @click="startReviewGame" style="width: 100%">开始复习</el-button>
+        <el-button type="primary" @click="startReviewGame" :disabled="reviewStarting" style="width: 100%">开始复习</el-button>
       </div>
 
       <div v-else-if="reviewStep === 'question'" class="review-question">
@@ -542,6 +542,7 @@ const toggleAccuracyLevel = (level) => {
 
 // 复习相关
 const reviewVisible = ref(false)
+const reviewStarting = ref(false) // 防止重复点击开始复习
 const reviewStep = ref('config')
 const reviewConfig = reactive({
   count: 20,
@@ -843,6 +844,8 @@ const handleSelectionChange = (selection) => {
 }
 
 const startReviewGame = async () => {
+  if (reviewStarting.value) return
+  reviewStarting.value = true
   try {
     const params = {
       count: reviewConfig.count,
@@ -865,7 +868,10 @@ const startReviewGame = async () => {
     currentQuestion.value = reviewQuestions.value[0]
     reviewStep.value = 'question'
 
-    // 启动计时器
+    // 启动计时器 - 先清除可能存在的旧计时器
+    if (reviewTimer.value) {
+      clearInterval(reviewTimer.value)
+    }
     reviewStartTime.value = Date.now()
     reviewElapsed.value = 0
     reviewTimer.value = setInterval(() => {
@@ -873,6 +879,8 @@ const startReviewGame = async () => {
     }, 1000)
   } catch (error) {
     ElMessage.error('获取复习内容失败')
+  } finally {
+    reviewStarting.value = false
   }
 }
 
