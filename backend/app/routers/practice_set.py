@@ -122,23 +122,27 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     if data.grade:
         query = query.filter(Question.grade == data.grade)
 
-    # 1. 优先取未复习题目（最多取count个）
+    # 1. 优先取未复习题目（最多取count个，随机选择）
+    import random
     unvisited = query.filter(Question.review_count == 0).all()
+    random.shuffle(unvisited)
     selected_ids = [q.id for q in unvisited[:data.count]]
 
-    # 2. 不足时取低正确率题目
+    # 2. 不足时取低正确率题目（从低正确率中随机选择）
     remaining = data.count - len(selected_ids)
     if remaining > 0:
         reviewed = query.filter(Question.review_count > 0).all()
         # 按正确率升序排序
         reviewed_sorted = sorted(reviewed, key=lambda q: q.correct_count / q.review_count if q.review_count > 0 else 0)
-        for q in reviewed_sorted[:remaining]:
+        # 从最低正确率的题目中随机选择（避免总是选择ID最小的）
+        low_accuracy_pool = reviewed_sorted[:min(remaining * 3, len(reviewed_sorted))]
+        random.shuffle(low_accuracy_pool)
+        for q in low_accuracy_pool[:remaining]:
             selected_ids.append(q.id)
             remaining -= 1
 
     # 3. 仍不足时随机补充
     if remaining > 0:
-        import random
         all_ids = [q.id for q in query.all() if q.id not in selected_ids]
         random.shuffle(all_ids)
         selected_ids.extend(all_ids[:remaining])
