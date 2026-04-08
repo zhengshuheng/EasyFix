@@ -4,7 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] - 2026-04-04
+## [Unreleased] - 2026-04-08
+
+### Added
+- 错题页生成练习功能
+  - 错题列表页添加"生成练习"按钮（位于顶部新增按钮旁）
+  - 生成练习弹窗：支持选择学科（必填）、年级（选填）、数量（默认5，上限99）
+  - 后端 API `/api/practice-sets/generate-from-questions`
+  - 优先级选择逻辑：未复习 → 低正确率 → 随机
+  - 生成后自动创建练习集并生成PDF
+- 练习集PDF增强
+  - 题目头部显示 ID、知识点、错误类型
+  - 难度星号彩色显示（1-2绿、3橙、4-5红）
+- 统计页面重构（Dashboard风格）
+  - 顶部4个渐变色统计卡片（错题总数、学科数、错题本数、平均难度）
+  - 半圆仪表盘展示难度分布和错误类型分布
+
+### Changed
+- 单词复习默认数量从25改为20
+- 错题列表操作列按钮大小与单词页保持一致
+- 答案解析显示保留换行符（white-space: pre-wrap）
+
+### Fixed
+- 单词复习计时器暂停问题（清除旧计时器，防止重复点击）
+- 生成练习题目数量错误（限制未复习题目选取数量）
+- 生成练习题目相同问题（低正确率题目随机选择）
+- 练习批改/列表答案解析换行显示
 
 ### Added
 - 艾宾浩斯记忆曲线复习功能
