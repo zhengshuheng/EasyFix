@@ -176,9 +176,11 @@
           <el-pagination
             v-if="pointsRecordsTotal > 0"
             v-model:current-page="pointsQuery.page"
-            :page-size="pointsQuery.limit"
+            v-model:page-size="pointsQuery.limit"
+            :page-sizes="[20, 50, 100]"
             :total="pointsRecordsTotal"
-            layout="prev, pager, next"
+            layout="sizes, prev, pager, next"
+            @size-change="fetchRecords"
             @current-change="fetchRecords"
             style="margin-top: 16px; justify-content: center;"
           />
