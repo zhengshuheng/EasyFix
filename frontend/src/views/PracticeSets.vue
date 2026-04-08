@@ -1223,6 +1223,9 @@ onMounted(() => {
   font-size: 16px;
   color: #67c23a;
   font-weight: bold;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.8;
 }
 
 .grading-question-buttons {
@@ -1371,6 +1374,9 @@ onMounted(() => {
 .info-row .value.answer {
   color: #67c23a;
   font-weight: bold;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.8;
 }
 
 /* 单词卡片网格 */
