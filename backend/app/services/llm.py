@@ -377,12 +377,21 @@ class LLMService:
 
     def analyze_learning_data(self, prompt: str) -> str:
         """分析学习数据"""
-        response = self._client.messages.create(
-            model=self._get_config("model", "claude-sonnet-4-20250514"),
-            max_tokens=4000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.content[0].text
+        try:
+            response = self._client.messages.create(
+                model=self._get_config("model", "claude-sonnet-4-20250514"),
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            # 获取文本内容（跳过ThinkingBlock，只取TextBlock）
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+            return content or ""
+        except Exception as e:
+            raise Exception(f"LLM调用失败: {str(e)}")
 
 
 # 全局单例

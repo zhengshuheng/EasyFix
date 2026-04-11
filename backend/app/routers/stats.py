@@ -431,7 +431,10 @@ def get_full_analysis(db: Session = Depends(get_db)):
 @router.post("/analysis/llm")
 def get_llm_analysis(db: Session = Depends(get_db)):
     """获取LLM学习分析"""
-    service = LearningAnalysisService(db)
-    stats = service.get_full_stats()
-    analysis = service.analyze_with_llm(stats)
-    return analysis
+    try:
+        service = LearningAnalysisService(db)
+        stats = service.get_full_stats()
+        analysis = service.analyze_with_llm(stats)
+        return analysis
+    except Exception as e:
+        return {"error": f"获取LLM分析失败: {str(e)}"}

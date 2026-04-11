@@ -264,20 +264,22 @@ class LearningAnalysisService:
             )
 
             # 频率热力图（按星期）- 使用数据库分组聚合
+            # 使用 func.extract('dow', ...) 获取星期几，0=周日, 1=周一, ..., 6=周六
             weekday_results = (
                 self.db.query(
-                    func.date_trunc('dow', PracticeSet.created_at).label('dow'),
+                    func.extract('dow', PracticeSet.created_at).label('dow'),
                     func.count(PracticeSet.id)
                 )
                 .filter(PracticeSet.deleted == False)
-                .group_by(func.date_trunc('dow', PracticeSet.created_at))
+                .group_by(func.extract('dow', PracticeSet.created_at))
                 .all()
             )
-            # 注意：不同数据库的date_trunc语法可能不同，这里简化处理
+            # 映射数字星期到星期名称
+            weekday_names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
             weekday_counts = {}
             for r in weekday_results:
-                if r.dow:
-                    weekday_counts[str(r.dow)] = r[1]
+                dow = int(r.dow) if r.dow is not None else 0
+                weekday_counts[weekday_names[dow]] = r[1]
 
             # 正确率趋势
             accuracy_trend = self._get_practice_accuracy_trend()
