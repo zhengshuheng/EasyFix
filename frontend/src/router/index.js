@@ -51,6 +51,11 @@ const routes = [
     name: 'Motivation',
     component: () => import('@/views/Motivation.vue'),
   },
+  {
+    path: '/learning-analysis',
+    name: 'LearningAnalysis',
+    component: () => import('@/views/LearningAnalysis.vue'),
+  },
 ]
 
 const router = createRouter({
