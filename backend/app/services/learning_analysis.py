@@ -1,4 +1,5 @@
 """学习分析服务 - 数据聚合"""
+import re
 from sqlalchemy.orm import Session
 from sqlalchemy import func, Integer
 from app.models import Question, Subject, Word, WordReviewLog, PracticeSet, PracticeSetQuestion, KnowledgePoint
@@ -352,3 +353,65 @@ class LearningAnalysisService:
         except Exception as e:
             # 错误处理：返回空数据而不是崩溃
             return {"nodes": [], "edges": []}
+
+    def analyze_with_llm(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+        """使用LLM分析学习数据，生成结构化建议"""
+        from app.services.llm import LLMService
+
+        prompt = self._build_analysis_prompt(stats)
+
+        llm = LLMService()
+        try:
+            response = llm.analyze_learning_data(prompt)
+            return self._parse_llm_response(response)
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _build_analysis_prompt(self, stats: Dict[str, Any]) -> str:
+        """构建分析提示词"""
+        q = stats.get("question_stats", {})
+        w = stats.get("word_stats", {})
+        p = stats.get("practice_stats", {})
+
+        prompt = f"""基于以下学习数据，生成结构化分析报告：
+
+## 错题统计
+- 总数: {q.get('total', 0)}
+- 难度分布: {q.get('by_difficulty', {})}
+- 错误类型: {q.get('by_error_type', {})}
+- 高频错误知识点: {q.get('top_error_knowledge_points', [])}
+- 复习效果: 未复习{q.get('review_effectiveness', {}).get('not_reviewed', 0)}题, 已复习多次{q.get('review_effectiveness', {}).get('reviewed_multiple', 0)}题
+
+## 单词统计
+- 总数: {w.get('total', 0)}
+- 掌握分布: 未掌握{w.get('mastery_distribution', {}).get('unmastered', 0)}, 学习中{w.get('mastery_distribution', {}).get('learning', 0)}, 已牢记{w.get('mastery_distribution', {}).get('mastered', 0)}
+- 待复习: {w.get('memory_curve_status', {}).get('due_review', 0)}个
+- 低准确率单词: {w.get('low_accuracy_words', [])[:5]}
+
+## 练习统计
+- 总练习次数: {p.get('total_practices', 0)}
+- 周频率: {p.get('frequency_heatmap', {})}
+
+请生成JSON格式的分析报告，包含：
+{{
+  "weak_points": [{{"point": "知识点名", "reason": "原因分析", "suggestion": "改进建议"}}],  // TOP3薄弱点
+  "trends": {{"pattern": "趋势描述", "cause": "原因分析", "prediction": "趋势预测"}},
+  "suggestions": [{{"type": "练习|记忆|复习|策略", "content": "建议内容", "priority": 1-3}}],  // 3-5条建议
+  "learning_plan": {{"daily_time": "每日建议时长", "focus_areas": ["重点领域"], "priority_order": ["优先级排序"]}}
+}}
+
+只返回JSON，不要其他内容。"""
+        return prompt
+
+    def _parse_llm_response(self, response: str) -> Dict[str, Any]:
+        """解析LLM响应"""
+        import json
+
+        # 提取JSON
+        match = re.search(r'\{[\s\S]*\}', response)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                return {"error": "解析失败", "raw": response}
+        return {"error": "未找到JSON", "raw": response}

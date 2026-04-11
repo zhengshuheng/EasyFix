@@ -375,6 +375,15 @@ class LLMService:
         # 如果解析失败，返回一个错误结构
         raise Exception("无法解析LLM返回的报告内容，请重试")
 
+    def analyze_learning_data(self, prompt: str) -> str:
+        """分析学习数据"""
+        response = self._client.messages.create(
+            model=self._get_config("model", "claude-sonnet-4-20250514"),
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.content[0].text
+
 
 # 全局单例
 llm_service = LLMService()
