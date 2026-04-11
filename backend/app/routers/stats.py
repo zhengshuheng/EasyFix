@@ -417,3 +417,12 @@ def get_learning_overview(db: Session = Depends(get_db)):
         today_word_accuracy=today['word_accuracy'],
         today_question_accuracy=today['question_accuracy'],
     )
+
+
+from app.services.learning_analysis import LearningAnalysisService
+
+@router.get("/analysis/full")
+def get_full_analysis(db: Session = Depends(get_db)):
+    """获取完整学习分析数据"""
+    service = LearningAnalysisService(db)
+    return service.get_full_stats()

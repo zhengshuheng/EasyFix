@@ -18,6 +18,9 @@ from app.schemas.word import (
 
 router = APIRouter(prefix="/api/words", tags=["单词"])
 
+# 默认用户ID
+DEFAULT_USER_ID = 1
+
 
 def _get_accuracy_level(review_count: int, correct_count: int) -> str:
     """计算正确率等级"""
@@ -531,16 +534,26 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         review_session.error_count = error_count
         review_session.duration = data.duration
 
-    # 触发积分行为
+    # 计算正确率
+    accuracy = round(correct_count / len(data.results) * 100, 1) if data.results else 0
+
+    # 触发积分行为和成就检查
     from app.services.motivation import MotivationService
     try:
         service = MotivationService(db)
-        service.trigger_action("review_word", reason="背单词复习")
-    except Exception:
-        pass  # 激励系统不影响主流程
+        # 单词复习通过练习集完成会计入review_practice_set
+        service.trigger_action("review_practice_set", reason="单词练习")
 
-    # 计算正确率
-    accuracy = round(correct_count / len(data.results) * 100, 1) if data.results else 0
+        # 检查单词正确率成就（满足条件时触发）
+        if len(data.results) >= 10 and accuracy >= 90:
+            service.check_word_accuracy(
+                user_id=DEFAULT_USER_ID,
+                total_count=len(data.results),
+                correct_count=correct_count,
+                reason=f"单词正确率{accuracy}%"
+            )
+    except Exception as e:
+        pass  # 激励系统不影响主流程
 
     # 创建练习集记录（单词复习也认为是练习集）
     if reviewed_words:

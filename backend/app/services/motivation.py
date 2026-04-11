@@ -242,10 +242,10 @@ class MotivationService:
         # 获取连续学习相关的行为
         continuous_actions = ['continuous_7day', 'continuous_14day', 'continuous_30day']
 
-        # 查询用户的学习日期记录
+        # 查询用户的学习日期记录（只统计练习完成）
         records = self.db.query(StarRecord).filter(
             StarRecord.user_id == user_id,
-            StarRecord.action_code.in_(['upload_question', 'review_practice_set', 'review_word', 'generate_similar', 'create_practice_set'])
+            StarRecord.action_code == 'review_practice_set'
         ).order_by(StarRecord.created_at.desc()).all()
 
         if not records:

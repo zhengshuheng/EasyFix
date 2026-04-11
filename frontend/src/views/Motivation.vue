@@ -4,10 +4,6 @@
       <template #header>
         <div class="card-header">
           <span>激励中心</span>
-          <el-button type="primary" @click="showPointsDetail">
-            <el-icon><List /></el-icon>
-            积分明细
-          </el-button>
         </div>
       </template>
 
@@ -152,7 +148,7 @@
 
         <!-- 积分明细 Tab -->
         <el-tab-pane label="积分明细" name="points">
-          <el-table :data="pointsRecords" stripe style="width: 100%" max-height="400">
+          <el-table :data="pointsRecords" stripe style="width: 100%">
             <el-table-column prop="action_code" label="行为" width="150">
               <template #default="{ row }">
                 {{ getActionName(row.action_code) }}
@@ -176,11 +172,11 @@
           <el-pagination
             v-if="pointsRecordsTotal > 0"
             v-model:current-page="pointsQuery.page"
-            v-model:page-size="pointsQuery.limit"
+            v-model:page-size="pageSize"
             :page-sizes="[20, 50, 100]"
             :total="pointsRecordsTotal"
             layout="sizes, prev, pager, next"
-            @size-change="fetchRecords"
+            @size-change="handleSizeChange"
             @current-change="fetchRecords"
             style="margin-top: 16px; justify-content: center;"
           />
@@ -225,7 +221,7 @@
     <!-- 积分明细弹窗 -->
     <el-dialog v-model="pointsDetailVisible" title="积分明细" width="700px" destroy-on-close>
       <div class="points-detail">
-        <el-table :data="pointsRecords" stripe style="width: 100%" max-height="400">
+        <el-table :data="pointsRecords" stripe style="width: 100%">
           <el-table-column prop="created_at" label="时间" width="160">
             <template #default="{ row }">
               {{ formatDate(row.created_at) }}
@@ -279,9 +275,9 @@ const rewards = ref([])
 const pointsRecords = ref([])
 const pointsRecordsTotal = ref(0)
 const pointsQuery = reactive({
-  page: 1,
-  limit: 20
+  page: 1
 })
+const pageSize = ref(20)
 
 // 兑换记录数据
 const redemptionList = ref([])
@@ -384,11 +380,18 @@ const selectReward = (reward) => {
   selectedReward.value = reward
 }
 
+// 切换每页数量时重置到第一页
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  pointsQuery.page = 1
+  fetchRecords()
+}
+
 // 获取积分记录
 const fetchRecords = async () => {
   try {
-    const skip = (pointsQuery.page - 1) * pointsQuery.limit
-    const res = await motivationApi.getRecords({ skip, limit: pointsQuery.limit })
+    const skip = (pointsQuery.page - 1) * pageSize.value
+    const res = await motivationApi.getRecords({ skip, limit: pageSize.value })
     pointsRecords.value = res.data.items
     pointsRecordsTotal.value = res.data.total
   } catch (error) {
@@ -459,11 +462,6 @@ const achievementGroups = computed(() => {
 const showAchievementDetail = (item) => {
   selectedAchievement.value = item
   achievementDialogVisible.value = true
-}
-
-// 显示积分明细
-const showPointsDetail = () => {
-  pointsDetailVisible.value = true
 }
 
 // 格式化日期
