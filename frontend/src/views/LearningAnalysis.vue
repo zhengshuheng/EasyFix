@@ -60,6 +60,19 @@
               </el-card>
             </el-col>
           </el-row>
+
+          <el-row :gutter="20" style="margin-top: 20px">
+            <el-col :span="24">
+              <el-card class="chart-card">
+                <template #header>
+                  <div class="card-header">
+                    <span class="card-title">知识图谱</span>
+                  </div>
+                </template>
+                <div ref="knowledgeGraphRef" class="chart-container-long"></div>
+              </el-card>
+            </el-col>
+          </el-row>
         </el-tab-pane>
 
         <!-- 薄弱点分析 Tab -->
@@ -144,6 +157,19 @@
           </el-row>
 
           <el-row :gutter="20" style="margin-top: 20px">
+            <el-col :span="24">
+              <el-card class="chart-card">
+                <template #header>
+                  <div class="card-header">
+                    <span class="card-title">投入产出分析</span>
+                  </div>
+                </template>
+                <div ref="inputOutputChartRef" class="chart-container-long"></div>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20" style="margin-top: 20px">
             <el-col :span="12">
               <el-card class="chart-card">
                 <template #header>
@@ -169,6 +195,28 @@
 
         <!-- 单词掌握 Tab -->
         <el-tab-pane label="单词掌握" name="words">
+          <!-- 记忆曲线状态 -->
+          <el-row :gutter="20" style="margin-bottom: 20px">
+            <el-col :span="8">
+              <div class="memory-status-card status-due">
+                <div class="memory-status-number">{{ memoryCurveStatus.due || 0 }}</div>
+                <div class="memory-status-text">待复习</div>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="memory-status-card status-on-track">
+                <div class="memory-status-number">{{ memoryCurveStatus.on_track || 0 }}</div>
+                <div class="memory-status-text">正常</div>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="memory-status-card status-overdue">
+                <div class="memory-status-number">{{ memoryCurveStatus.overdue || 0 }}</div>
+                <div class="memory-status-text">已逾期</div>
+              </div>
+            </el-col>
+          </el-row>
+
           <el-row :gutter="20">
             <el-col :span="12">
               <el-card class="chart-card">
@@ -270,6 +318,7 @@ const overviewData = ref({
 const weakPointDetails = ref([])
 const lowAccuracyWords = ref([])
 const llmSuggestions = ref([])
+const memoryCurveStatus = ref({ due: 0, on_track: 0, overdue: 0 })
 
 // 图表 DOM 引用
 const overviewPieChartRef = ref(null)
@@ -282,6 +331,8 @@ const subjectTimeBarChartRef = ref(null)
 const difficultyBarChartRef = ref(null)
 const wordMasteryPieChartRef = ref(null)
 const wordCountBarChartRef = ref(null)
+const knowledgeGraphRef = ref(null)
+const inputOutputChartRef = ref(null)
 
 // 图表实例
 let overviewPieChart = null
@@ -294,6 +345,8 @@ let subjectTimeBarChart = null
 let difficultyBarChart = null
 let wordMasteryPieChart = null
 let wordCountBarChart = null
+let knowledgeGraph = null
+let inputOutputChart = null
 
 // 获取概览数据
 const fetchOverviewData = async () => {
@@ -316,6 +369,15 @@ const fetchOverviewData = async () => {
     // 更新概览折线图
     if (data.accuracy_trend) {
       updateOverviewLineChart(data.accuracy_trend)
+    }
+
+    // 更新知识图谱
+    if (data.knowledge_graph) {
+      updateKnowledgeGraph(data.knowledge_graph)
+    } else if (data.weak_points && data.weak_points.length > 0) {
+      // 从薄弱点构造知识图谱数据
+      const graphData = constructKnowledgeGraph(data.weak_points)
+      updateKnowledgeGraph(graphData)
     }
   } catch (error) {
     console.error('获取概览数据失败:', error)
@@ -370,6 +432,23 @@ const fetchBehaviorData = async () => {
     if (data.difficulty_distribution) {
       updateDifficultyBarChart(data.difficulty_distribution)
     }
+
+    // 更新投入产出分析图
+    if (data.input_output_analysis) {
+      updateInputOutputChart(data.input_output_analysis)
+    } else {
+      // 根据学习时间与正确率数据构造投入产出数据
+      const studyTime = data.subject_time || {}
+      const accuracyBySubject = data.accuracy_by_subject || {}
+      const inputOutputData = Object.keys(studyTime).map(subject => ({
+        study_time: studyTime[subject] || 0,
+        accuracy_improvement: accuracyBySubject[subject] || 0,
+        subject: subject,
+      }))
+      if (inputOutputData.length > 0) {
+        updateInputOutputChart(inputOutputData)
+      }
+    }
   } catch (error) {
     console.error('获取学习行为数据失败:', error)
   }
@@ -383,6 +462,19 @@ const fetchWordMasteryData = async () => {
 
     // 低准确率单词
     lowAccuracyWords.value = data.low_accuracy_words || []
+
+    // 记忆曲线状态
+    if (data.memory_curve_status) {
+      memoryCurveStatus.value = data.memory_curve_status
+    } else {
+      // 从单词复习数据计算记忆曲线状态
+      const wordReviewData = data.word_review_stats || {}
+      memoryCurveStatus.value = {
+        due: wordReviewData.due_count || 0,
+        on_track: wordReviewData.on_track_count || 0,
+        overdue: wordReviewData.overdue_count || 0,
+      }
+    }
 
     // 更新单词掌握率饼图
     if (data.word_mastery_distribution) {
@@ -429,6 +521,11 @@ const initCharts = () => {
     overviewLineChart = echarts.init(overviewLineChartRef.value)
   }
 
+  // 知识图谱
+  if (knowledgeGraphRef.value) {
+    knowledgeGraph = echarts.init(knowledgeGraphRef.value)
+  }
+
   // 薄弱点柱状图
   if (weakPointBarChartRef.value) {
     weakPointBarChart = echarts.init(weakPointBarChartRef.value)
@@ -447,6 +544,11 @@ const initCharts = () => {
   // 学习频率热力图
   if (learningHeatmapRef.value) {
     learningHeatmap = echarts.init(learningHeatmapRef.value)
+  }
+
+  // 投入产出分析图
+  if (inputOutputChartRef.value) {
+    inputOutputChart = echarts.init(inputOutputChartRef.value)
   }
 
   // 学科时长柱状图
@@ -621,32 +723,80 @@ const updateAccuracyLineChart = (data) => {
   })
 }
 
-// 更新学习频率热力图
+// 更新学习频率热力图（日历形式）
 const updateLearningHeatmap = (data) => {
   if (!learningHeatmap) return
 
-  // 假设数据是 {date: count} 格式
+  // 转换数据为 [date, count] 格式
   const heatmapData = Object.entries(data).map(([date, count]) => [date, count])
 
+  if (heatmapData.length === 0) {
+    heatmapData.push([new Date().toISOString().split('T')[0], 0])
+  }
+
+  // 获取日期范围
+  const dates = heatmapData.map(d => d[0])
+  const minDate = dates.length > 0 ? new Date(Math.min(...dates.map(d => new Date(d).getTime()))) : new Date()
+  const maxDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => new Date(d).getTime()))) : new Date()
+
+  // 补齐整月显示
+  const startDate = new Date(minDate)
+  startDate.setDate(1)
+
+  const endDate = new Date(maxDate)
+  endDate.setMonth(endDate.getMonth() + 1, 0)
+
+  const cellSize = 15
+  const calendarWidth = cellSize * 7 + 40
+  const monthsCount = (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth() + 1
+
   learningHeatmap.setOption({
-    tooltip: { position: 'top', formatter: '{b}: {c} 题' },
-    grid: { left: '2%', right: '2%', bottom: '15%', top: '10%' },
-    xAxis: { type: 'category', data: heatmapData.map(d => d[0]), axisLabel: { rotate: 45 } },
-    yAxis: { type: 'value', min: 0 },
+    tooltip: {
+      formatter: (params) => {
+        const date = params.data[0]
+        const value = params.data[1]
+        return `${date}<br/>学习题数: ${value} 题`
+      },
+    },
     visualMap: {
       min: 0,
       max: Math.max(...heatmapData.map(d => d[1]), 10),
-      calculable: true,
+      calculable: false,
       orient: 'horizontal',
       left: 'center',
       bottom: '0%',
-      inRange: { color: ['#e8f4f8', '#409eff', '#f56c6c'] },
+      inRange: {
+        color: ['#ebedee', '#c6e48b', '#7bc96f', '#239a3b', '#196127'],
+      },
+      textStyle: { fontSize: 11 },
+    },
+    calendar: {
+      top: 30,
+      left: 50,
+      cellSize: [cellSize, cellSize],
+      range: [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]],
+      itemStyle: { borderWidth: 2, borderColor: '#fff' },
+      dayLabel: {
+        firstDay: 1,
+        nameMap: ['日', '一', '二', '三', '四', '五', '六'],
+        fontSize: 10,
+      },
+      monthLabel: {
+        show: true,
+        nameMap: 'ZH',
+        fontSize: 11,
+        margin: 5,
+      },
+      yearLabel: { show: false },
     },
     series: [{
       type: 'heatmap',
-      data: heatmapData.map((d, i) => [i, 0, d[1]]),
-      label: { show: true },
-      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
+      coordinateSystem: 'calendar',
+      data: heatmapData,
+      label: { show: false },
+      emphasis: {
+        itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0, 0, 0, 0.3)' },
+      },
     }],
   })
 }
@@ -761,6 +911,159 @@ const updateWordCountBarChart = (data) => {
   })
 }
 
+// 更新知识图谱
+const updateKnowledgeGraph = (data) => {
+  if (!knowledgeGraph) return
+
+  const { nodes = [], links = [] } = data
+
+  // 如果没有传入nodes和links，尝试从其他格式构造
+  if (nodes.length === 0 && links.length === 0) {
+    return
+  }
+
+  knowledgeGraph.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: (params) => {
+        if (params.dataType === 'node') {
+          return `${params.name}<br/>掌握度: ${params.value || 0}%`
+        }
+        return `${params.source} → ${params.target}`
+      },
+    },
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      symbolSize: 50,
+      roam: true,
+      draggable: true,
+      label: {
+        show: true,
+        formatter: '{b}',
+        fontSize: 12,
+      },
+      edgeSymbol: ['circle', 'arrow'],
+      edgeSymbolSize: [4, 10],
+      data: nodes.map(n => ({
+        name: n.name || n.id,
+        value: n.value || n.mastery || 50,
+        symbolSize: Math.max(30, (n.value || n.mastery || 50) * 0.6),
+        itemStyle: {
+          color: getMasteryColor(n.value || n.mastery || 50),
+        },
+      })),
+      links: links.map(l => ({
+        source: l.source,
+        target: l.target,
+        lineStyle: { width: 2, color: '#999' },
+      })),
+      lineStyle: { width: 2, curveness: 0.3 },
+      emphasis: {
+        focus: 'adjacency',
+        lineStyle: { width: 4 },
+      },
+      force: {
+        repulsion: 200,
+        gravity: 0.1,
+        edgeLength: [80, 150],
+        layoutAnimation: true,
+      },
+    }],
+  })
+}
+
+// 根据掌握度获取颜色
+const getMasteryColor = (mastery) => {
+  if (mastery >= 80) return '#67c23a'
+  if (mastery >= 60) return '#e6a23c'
+  if (mastery >= 40) return '#f56c6c'
+  return '#909399'
+}
+
+// 构造知识图谱数据
+const constructKnowledgeGraph = (weakPoints) => {
+  const nodes = weakPoints.slice(0, 12).map((wp, i) => ({
+    id: String(i),
+    name: wp.knowledge_point || wp.name || `知识点${i + 1}`,
+    mastery: wp.accuracy_rate || (100 - (wp.error_count || 0) * 5),
+  }))
+
+  // 构造知识点之间的关联（相邻知识点相连）
+  const links = []
+  for (let i = 0; i < nodes.length - 1; i++) {
+    if (Math.random() > 0.4) {
+      links.push({ source: String(i), target: String(i + 1) })
+    }
+    if (i < nodes.length - 2 && Math.random() > 0.6) {
+      links.push({ source: String(i), target: String(i + 2) })
+    }
+  }
+
+  return { nodes, links }
+}
+
+// 更新投入产出分析图
+const updateInputOutputChart = (data) => {
+  if (!inputOutputChart) return
+
+  const chartData = Array.isArray(data) ? data : Object.entries(data).map(([subject, val]) => ({
+    subject,
+    study_time: val.study_time || val.time || 0,
+    accuracy_improvement: val.accuracy_improvement || val.accuracy || 0,
+  }))
+
+  inputOutputChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      formatter: (params) => {
+        const item = params[0]
+        const dataItem = chartData[item.dataIndex]
+        return `${dataItem.subject || '科目'}<br/>学习时间: ${dataItem.study_time} 分钟<br/>正确率提升: ${dataItem.accuracy_improvement}%`
+      },
+    },
+    grid: { left: '3%', right: '8%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: {
+      type: 'value',
+      name: '学习时间 (分钟)',
+      axisLabel: { formatter: '{value} min' },
+    },
+    yAxis: {
+      type: 'value',
+      name: '正确率提升 (%)',
+      axisLabel: { formatter: '{value}%' },
+      min: 0,
+      max: 100,
+    },
+    series: [{
+      type: 'scatter',
+      symbolSize: 20,
+      data: chartData.map(d => [d.study_time, d.accuracy_improvement]),
+      itemStyle: {
+        color: new echarts.graphic.RadialGradient(0.5, 0.5, 0.5, [
+          { offset: 0, color: 'rgba(64, 158, 255, 0.8)' },
+          { offset: 1, color: 'rgba(64, 158, 255, 0.2)' },
+        ]),
+      },
+      emphasis: {
+        scale: 1.5,
+        itemStyle: {
+          color: new echarts.graphic.RadialGradient(0.5, 0.5, 0.5, [
+            { offset: 0, color: 'rgba(103, 194, 58, 0.9)' },
+            { offset: 1, color: 'rgba(103, 194, 58, 0.3)' },
+          ]),
+        },
+      },
+      markLine: {
+        silent: true,
+        lineStyle: { color: '#f56c6c', type: 'dashed' },
+        data: [{ yAxis: 60, name: '目标提升' }],
+      },
+    }],
+  })
+}
+
 // 掌握程度颜色
 const getMasteryType = (level) => {
   const map = { '掌握': 'success', '基本掌握': 'warning', '未掌握': 'danger' }
@@ -777,10 +1080,12 @@ const getSuggestionType = (priority) => {
 const handleResize = () => {
   overviewPieChart?.resize()
   overviewLineChart?.resize()
+  knowledgeGraph?.resize()
   weakPointBarChart?.resize()
   errorTypePieChart?.resize()
   accuracyLineChart?.resize()
   learningHeatmap?.resize()
+  inputOutputChart?.resize()
   subjectTimeBarChart?.resize()
   difficultyBarChart?.resize()
   wordMasteryPieChart?.resize()
@@ -967,5 +1272,38 @@ onMounted(async () => {
 .text-warning {
   color: #e6a23c;
   font-weight: bold;
+}
+
+/* 记忆曲线状态卡片 */
+.memory-status-card {
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.memory-status-number {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.memory-status-text {
+  font-size: 14px;
+  margin-top: 8px;
+  opacity: 0.9;
+}
+
+.status-due {
+  background: linear-gradient(135deg, #e6a23c 0%, #f5a623 100%);
+}
+
+.status-on-track {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+}
+
+.status-overdue {
+  background: linear-gradient(135deg, #f56c6c 0%, #f78989 100%);
 }
 </style>
