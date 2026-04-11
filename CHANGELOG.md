@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] - 2026-04-08
+## [Unreleased] - 2026-04-11
 
 ### Added
-- 错题页生成练习功能
+- 学习分析增强功能
+  - 新增 `GET /api/stats/analysis/full` 聚合所有学习数据（错题、单词、练习）
+  - 新增 `POST /api/stats/analysis/llm` LLM深度分析接口
+  - 新增 `/learning-analysis` 页面，5个Tab展示：概览、薄弱点分析、学习行为、单词掌握、改进建议
+  - ECharts图表：知识点错误排行柱状图、错误类型饼图、日历热力图、掌握率环形图、知识图谱、投入产出分析
+  - LLM生成结构化建议：薄弱点、趋势、建议、学习计划
+
+### Changed
   - 错题列表页添加"生成练习"按钮（位于顶部新增按钮旁）
   - 生成练习弹窗：支持选择学科（必填）、年级（选填）、数量（默认5，上限99）
   - 后端 API `/api/practice-sets/generate-from-questions`

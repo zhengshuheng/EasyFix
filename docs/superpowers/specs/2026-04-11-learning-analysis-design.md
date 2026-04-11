@@ -1,5 +1,17 @@
 # 学习分析报告增强方案
 
+> **状态**: 已实现 ✅
+>
+> **实现日期**: 2026-04-11
+>
+> **相关提交**:
+> - `feat(stats): add full learning analysis data aggregation API`
+> - `feat(stats): add LLM-powered learning analysis`
+> - `feat(api): add learning analysis API client`
+> - `feat: add LearningAnalysis page with charts and LLM insights`
+
+---
+
 ## 一、需求概述
 
 在学习分析中，整合所有已有数据（错题、单词、练习）并通过LLM进行深度分析，生成更完整的学习分析报告。
