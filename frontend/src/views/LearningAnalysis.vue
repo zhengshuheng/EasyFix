@@ -300,8 +300,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
 import { learningAnalysisApi } from '@/api/learning_analysis'
 
 const activeTab = ref('overview')
@@ -347,6 +348,7 @@ let wordMasteryPieChart = null
 let wordCountBarChart = null
 let knowledgeGraph = null
 let inputOutputChart = null
+let isResizing = false
 
 // 获取概览数据
 const fetchOverviewData = async () => {
@@ -381,6 +383,7 @@ const fetchOverviewData = async () => {
     }
   } catch (error) {
     console.error('获取概览数据失败:', error)
+    ElMessage.error('获取概览数据失败')
   }
 }
 
@@ -404,6 +407,7 @@ const fetchWeakPointData = async () => {
     }
   } catch (error) {
     console.error('获取薄弱点数据失败:', error)
+    ElMessage.error('获取薄弱点数据失败')
   }
 }
 
@@ -451,6 +455,7 @@ const fetchBehaviorData = async () => {
     }
   } catch (error) {
     console.error('获取学习行为数据失败:', error)
+    ElMessage.error('获取学习行为数据失败')
   }
 }
 
@@ -487,6 +492,7 @@ const fetchWordMasteryData = async () => {
     }
   } catch (error) {
     console.error('获取单词掌握数据失败:', error)
+    ElMessage.error('获取单词掌握数据失败')
   }
 }
 
@@ -505,6 +511,7 @@ const fetchLlmSuggestions = async () => {
     }
   } catch (error) {
     console.error('获取LLM建议失败:', error)
+    ElMessage.error('获取LLM建议失败')
     llmSuggestions.value = []
   }
 }
@@ -1076,8 +1083,11 @@ const getSuggestionType = (priority) => {
   return map[priority] || 'info'
 }
 
-// 窗口resize时重绘图表
+// 窗口resize时重绘图表（带防抖）
 const handleResize = () => {
+  if (isResizing) return
+  isResizing = true
+
   overviewPieChart?.resize()
   overviewLineChart?.resize()
   knowledgeGraph?.resize()
@@ -1090,6 +1100,10 @@ const handleResize = () => {
   difficultyBarChart?.resize()
   wordMasteryPieChart?.resize()
   wordCountBarChart?.resize()
+
+  setTimeout(() => {
+    isResizing = false
+  }, 100)
 }
 
 // 监听tab切换，加载对应数据
@@ -1123,6 +1137,25 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
 
   loading.value = false
+})
+
+// 清理函数 - 防止内存泄漏
+onUnmounted(() => {
+  // 移除resize监听
+  window.removeEventListener('resize', handleResize)
+  // 销毁所有图表实例
+  overviewPieChart?.dispose()
+  overviewLineChart?.dispose()
+  weakPointBarChart?.dispose()
+  errorTypePieChart?.dispose()
+  accuracyLineChart?.dispose()
+  learningHeatmap?.dispose()
+  subjectTimeBarChart?.dispose()
+  difficultyBarChart?.dispose()
+  wordMasteryPieChart?.dispose()
+  wordCountBarChart?.dispose()
+  inputOutputChart?.dispose()
+  knowledgeGraph?.dispose()
 })
 </script>
 
