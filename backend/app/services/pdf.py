@@ -111,7 +111,7 @@ class PracticeSetPDF(FPDF):
         self.cell(0, 10, f'第 {self.page_no()} 页', align='C')
 
     def add_question(self, index: int, question_text: str, difficulty: int, question_id: int = None,
-                  knowledge_point: str = None, error_type: str = None):
+                  knowledge_point: str = None, error_type: str = None, review_count: int = None):
         """添加一道题目（新版布局：无答题框，有表头信息）"""
         # ===== 第一行：[ID:xxx]  第{index}题  ★★★★★ =====
 
@@ -120,7 +120,7 @@ class PracticeSetPDF(FPDF):
             self.set_font('chinese_b', size=11)
             self.set_fill_color(*self.METADATA_TEXT_COLOR)  # 灰色背景
             self.set_text_color(255, 255, 255)
-            self.cell(28, 8, f'[ID:{question_id}]', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C', fill=True)
+            self.cell(28, 8, f'[ID:{question_id}]', new_x=XPos.RIGHT, new_y=YPos.TAP, align='C', fill=True)
 
         # 题目编号背景
         self.set_font('chinese_b', size=11)
@@ -142,17 +142,22 @@ class PracticeSetPDF(FPDF):
         self.set_text_color(*self.TEXT_COLOR)
         self.ln(8)
 
-        # ===== 第二行（如果有知识点或错误类型）：知识点: XXX  |  错误类型: XXX =====
+        # ===== 第二行（如果有知识点、错误类型或复习次数）：知识点: XXX  |  错误类型: XXX  |  复习: X次 =====
 
-        if knowledge_point or error_type:
+        if knowledge_point or error_type or (review_count is not None and review_count > 0):
             self.set_font('chinese', size=9)
             self.set_text_color(*self.METADATA_TEXT_COLOR)
 
             if knowledge_point:
-                self.cell(90, 6, f'知识点: {knowledge_point}', new_x=XPos.RIGHT, new_y=YPos.TOP, align='L')
+                self.cell(60, 6, f'知识点: {knowledge_point}', new_x=XPos.RIGHT, new_y=YPos.TOP, align='L')
 
             if error_type:
-                self.cell(0, 6, f'错误类型: {error_type}', new_x=XPos.LMARGIN, new_y=YPos.TOP, align='L')
+                self.cell(60, 6, f'错误类型: {error_type}', new_x=XPos.RIGHT, new_y=YPos.TOP, align='L')
+
+            if review_count is not None and review_count > 0:
+                self.set_text_color(245, 108, 108)  # 红色
+                self.cell(0, 6, f'复习: {review_count}次', new_x=XPos.LMARGIN, new_y=YPos.TOP, align='L')
+                self.set_text_color(*self.METADATA_TEXT_COLOR)
 
             self.ln(6)
 
@@ -180,12 +185,13 @@ class PracticeSetPDF(FPDF):
             question_id = q.get('id')
             knowledge_point = q.get('knowledge_point')
             error_type = q.get('error_type')
+            review_count = q.get('review_count')
 
             # 检查是否需要新页面
             if self.get_y() > 220:
                 self.add_page()
 
-            self.add_question(idx, question_text, difficulty, question_id, knowledge_point, error_type)
+            self.add_question(idx, question_text, difficulty, question_id, knowledge_point, error_type, review_count)
 
         # 输出到文件
         self.output(output_path)
