@@ -541,14 +541,26 @@ const gradingCurrentIndex = ref(0)
 const gradingResults = ref({}) // { questionId: true/false }
 const currentPsQuestions = ref([])
 
+// 计算属性
+const gradedCount = computed(() => Object.keys(gradingResults.value).length)
+const correctCount = computed(() => Object.values(gradingResults.value).filter(v => v === true).length)
+const wrongCount = computed(() => Object.values(gradingResults.value).filter(v => v === false).length)
+
+const gradingDetailDialogVisible = ref(false)
+const gradingQuestionDetail = ref(null)
+
+const showQuestionDetail = (question) => {
+  gradingQuestionDetail.value = question
+  gradingDetailDialogVisible.value = true
+}
+
 const initGrading = async (ps) => {
   // 获取练习集详情（含题目）
   try {
     const { data } = await questionApi.getPracticeSet(ps.id)
     currentPsQuestions.value = data.questions || []
     gradingResults.value = {}
-    gradingCurrentIndex.value = 0
-    gradingStep.value = 'overall'
+    gradingStep.value = 'list' // 直接进入列表视图
   } catch (error) {
     ElMessage.error('获取练习集详情失败')
     gradingDialogVisible.value = false
@@ -570,12 +582,13 @@ const handleOverallGrading = (isAllCorrect) => {
 
 const handleQuestionGrading = (questionId, isCorrect) => {
   gradingResults.value[questionId] = isCorrect
-  gradingCurrentIndex.value++
+  // 移除自动前进逻辑，支持跳序批改
+}
 
-  if (gradingCurrentIndex.value >= currentPsQuestions.value.length) {
-    // 全部批改完成，进入图片上传
-    gradingStep.value = 'upload'
-  }
+const getQuestionRowClass = (questionId) => {
+  if (gradingResults.value[questionId] === true) return 'graded-correct'
+  if (gradingResults.value[questionId] === false) return 'graded-wrong'
+  return 'graded-pending'
 }
 
 const getGradingAccuracy = () => {
