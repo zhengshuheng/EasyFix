@@ -201,7 +201,7 @@
             <el-button @click="gradingDialogVisible = false">返回</el-button>
             <el-button
               type="primary"
-              @click="gradingStep = 'upload'"
+              @click="submitGrading"
               :disabled="gradedCount < currentPsQuestions.length"
             >提交批改结果</el-button>
           </div>
