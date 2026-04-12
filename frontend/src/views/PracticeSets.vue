@@ -100,7 +100,7 @@
             <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
             <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
             <el-button v-else type="info" size="default" disabled>无PDF</el-button>
-            <el-button type="warning" size="default" @click="markReviewed(row)" :disabled="row.reviewed">标记已复习</el-button>
+            <el-button type="success" size="default" @click="markReviewed(row)" :disabled="row.reviewed">批改</el-button>
             <el-button type="danger" size="default" @click="deletePracticeSet(row)">删除</el-button>
           </template>
         </el-table-column>
