@@ -210,8 +210,9 @@
     </el-dialog>
 
     <!-- 查看原题弹层（二合一） -->
-    <el-dialog v-model="gradingDetailDialogVisible" title="查看原题" width="700px" destroy-on-close>
-      <div v-if="gradingQuestionDetail" class="question-detail-content">
+    <el-dialog v-model="gradingDetailDialogVisible" :title="isEditingGradingQuestion ? '编辑原题' : '查看原题'" width="800px" destroy-on-close>
+      <!-- 查看模式 -->
+      <div v-if="gradingQuestionDetail && !isEditingGradingQuestion" class="question-detail-content">
         <el-row :gutter="20">
           <el-col :span="12">
             <div class="detail-block">
@@ -244,9 +245,47 @@
           <span v-if="gradingQuestionDetail.error_type">错误类型: {{ gradingQuestionDetail.error_type }}</span>
         </div>
       </div>
+
+      <!-- 编辑模式 -->
+      <div v-if="gradingQuestionDetail && isEditingGradingQuestion" class="question-edit-content">
+        <el-form :model="gradingQuestionEditForm" label-width="80px">
+          <el-form-item label="题目内容">
+            <el-input v-model="gradingQuestionEditForm.original_question_text" type="textarea" :rows="3" placeholder="请输入题目内容" />
+          </el-form-item>
+          <el-form-item label="题目图片">
+            <div v-if="gradingQuestionDetail.original_image" class="mb-2">
+              <el-image
+                :src="'/uploads/' + gradingQuestionDetail.original_image"
+                fit="contain"
+                style="max-width: 200px; max-height: 150px;"
+              />
+            </div>
+            <el-input v-model="gradingQuestionEditForm.original_image" placeholder="图片路径（可选）" />
+          </el-form-item>
+          <el-form-item label="答案">
+            <el-input v-model="gradingQuestionEditForm.original_answer" placeholder="请输入答案" />
+          </el-form-item>
+          <el-form-item label="知识点">
+            <el-input v-model="gradingQuestionEditForm.knowledge_point" placeholder="请输入知识点" />
+          </el-form-item>
+          <el-form-item label="错误类型">
+            <el-input v-model="gradingQuestionEditForm.error_type" placeholder="请输入错误类型" />
+          </el-form-item>
+          <el-form-item label="难度">
+            <el-rate v-model="gradingQuestionEditForm.difficulty" :max="5" show-text :texts="['1星', '2星', '3星', '4星', '5星']" />
+          </el-form-item>
+        </el-form>
+      </div>
+
       <template #footer>
         <el-button @click="gradingDetailDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="editQuestionFromGrading">编辑此题</el-button>
+        <template v-if="!isEditingGradingQuestion">
+          <el-button type="primary" @click="startEditGradingQuestion">编辑此题</el-button>
+        </template>
+        <template v-else>
+          <el-button @click="cancelEditGradingQuestion">取消</el-button>
+          <el-button type="success" @click="saveGradingQuestion" :loading="gradingEditLoading">保存</el-button>
+        </template>
       </template>
     </el-dialog>
 
@@ -589,18 +628,64 @@ const wrongCount = computed(() => Object.values(gradingResults.value).filter(v =
 
 const gradingDetailDialogVisible = ref(false)
 const gradingQuestionDetail = ref(null)
+const isEditingGradingQuestion = ref(false)
+const gradingEditLoading = ref(false)
+const gradingQuestionEditForm = reactive({
+  original_question_text: '',
+  original_image: '',
+  original_answer: '',
+  knowledge_point: '',
+  error_type: '',
+  difficulty: 3
+})
 
 const showQuestionDetail = (question) => {
   gradingQuestionDetail.value = question
+  isEditingGradingQuestion.value = false
   gradingDetailDialogVisible.value = true
 }
 
-const editQuestionFromGrading = () => {
-  // 关闭当前弹层，打开练习集详情弹层的编辑tab
-  gradingDetailDialogVisible.value = false
-  // 跳转到详情弹层的编辑tab
-  // 需要获取题目详情并填充编辑表单
-  ElMessage.info('编辑功能开发中')
+const startEditGradingQuestion = () => {
+  // 填充编辑表单
+  gradingQuestionEditForm.original_question_text = gradingQuestionDetail.value.original_question_text || ''
+  gradingQuestionEditForm.original_image = gradingQuestionDetail.value.original_image || ''
+  gradingQuestionEditForm.original_answer = gradingQuestionDetail.value.original_answer || ''
+  gradingQuestionEditForm.knowledge_point = gradingQuestionDetail.value.knowledge_point || ''
+  gradingQuestionEditForm.error_type = gradingQuestionDetail.value.error_type || ''
+  gradingQuestionEditForm.difficulty = gradingQuestionDetail.value.difficulty || 3
+  isEditingGradingQuestion.value = true
+}
+
+const cancelEditGradingQuestion = () => {
+  isEditingGradingQuestion.value = false
+}
+
+const saveGradingQuestion = async () => {
+  gradingEditLoading.value = true
+  try {
+    await questionApi.update(gradingQuestionDetail.value.question_id, {
+      original_question_text: gradingQuestionEditForm.original_question_text,
+      original_image: gradingQuestionEditForm.original_image,
+      original_answer: gradingQuestionEditForm.original_answer,
+      knowledge_point: gradingQuestionEditForm.knowledge_point,
+      error_type: gradingQuestionEditForm.error_type,
+      difficulty: gradingQuestionEditForm.difficulty
+    })
+    ElMessage.success('保存成功')
+    isEditingGradingQuestion.value = false
+    // 更新列表中的题目数据
+    const idx = currentPsQuestions.value.findIndex(q => q.question_id === gradingQuestionDetail.value.question_id)
+    if (idx !== -1) {
+      currentPsQuestions.value[idx] = {
+        ...currentPsQuestions.value[idx],
+        ...gradingQuestionEditForm
+      }
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  } finally {
+    gradingEditLoading.value = false
+  }
 }
 
 const initGrading = async (ps) => {
