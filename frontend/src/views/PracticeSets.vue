@@ -263,7 +263,7 @@
             <el-input v-model="gradingQuestionEditForm.original_image" placeholder="图片路径（可选）" />
           </el-form-item>
           <el-form-item label="答案">
-            <el-input v-model="gradingQuestionEditForm.original_answer" placeholder="请输入答案" />
+            <el-input v-model="gradingQuestionEditForm.original_answer" type="textarea" :rows="3" placeholder="请输入答案" />
           </el-form-item>
           <el-form-item label="知识点">
             <el-input v-model="gradingQuestionEditForm.knowledge_point" placeholder="请输入知识点" />
