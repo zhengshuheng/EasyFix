@@ -1570,6 +1570,271 @@ onMounted(() => {
 .text-gray-400 {
   color: #909399;
 }
+
+/* 批改弹层样式 */
+.grading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.grading-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.grading-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.grading-progress-text {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.accuracy-display {
+  text-align: right;
+}
+
+.accuracy-value {
+  font-size: 28px;
+  font-weight: bold;
+  display: block;
+}
+
+.accuracy-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.grading-progress-bar {
+  padding: 16px 20px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e4e7ed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #67c23a, #85ce61);
+  transition: width 0.3s;
+}
+
+.grading-stats {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.stat-correct { color: #67c23a; }
+.stat-wrong { color: #f56c6c; }
+.stat-pending { color: #909399; }
+
+/* 题目列表 */
+.grading-question-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.question-row {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all 0.2s;
+  border-left: 4px solid #e4e7ed;
+}
+
+.question-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.question-row.graded-correct {
+  border-left-color: #67c23a;
+  background: linear-gradient(90deg, #f0f9eb 0%, white 30%);
+}
+
+.question-row.graded-wrong {
+  border-left-color: #f56c6c;
+  background: linear-gradient(90deg, #fef0f0 0%, white 30%);
+}
+
+.question-row.graded-pending {
+  border-left-color: #e4e7ed;
+}
+
+.question-number {
+  width: 40px;
+  height: 40px;
+  background: #409eff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.question-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.question-text {
+  font-size: 14px;
+  color: #303133;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.question-answer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.answer-label {
+  font-size: 13px;
+  color: #909399;
+}
+
+.answer-badge {
+  background: #67c23a;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.question-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-correct,
+.btn-wrong {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  color: white;
+}
+
+.btn-correct {
+  background: #67c23a;
+}
+
+.btn-correct:hover {
+  background: #5daf34;
+  transform: scale(1.02);
+}
+
+.btn-correct.active {
+  background: #529b2e;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.btn-wrong {
+  background: #f56c6c;
+}
+
+.btn-wrong:hover {
+  background: #e64242;
+  transform: scale(1.02);
+}
+
+.btn-wrong.active {
+  background: #d93636;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* 底部栏 */
+.grading-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-stats {
+  font-size: 14px;
+  color: #606266;
+}
+
+.footer-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* 查看原题弹层 */
+.question-detail-content {
+  padding: 10px 0;
+}
+
+.detail-block {
+  margin-bottom: 16px;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: #909399;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.detail-value {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+}
+
+.detail-value.answer-value {
+  background: #f0f9eb;
+  color: #67c23a;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 20px;
+  padding: 12px 0;
+  border-top: 1px solid #ebeef5;
+  font-size: 13px;
+  color: #606266;
+}
+
+.detail-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 </style>
 <style>
 .practice-detail-dialog .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__cell {
