@@ -209,6 +209,47 @@
       </template>
     </el-dialog>
 
+    <!-- 查看原题弹层（二合一） -->
+    <el-dialog v-model="gradingDetailDialogVisible" title="查看原题" width="700px" destroy-on-close>
+      <div v-if="gradingQuestionDetail" class="question-detail-content">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <div class="detail-block">
+              <div class="detail-label">原题</div>
+              <div class="detail-value">
+                <p v-if="gradingQuestionDetail.original_question_text">{{ gradingQuestionDetail.original_question_text }}</p>
+                <el-image
+                  v-if="gradingQuestionDetail.original_image"
+                  :src="'/uploads/' + gradingQuestionDetail.original_image"
+                  fit="contain"
+                  style="max-width: 100%; max-height: 200px;"
+                  :preview-src-list="['/uploads/' + gradingQuestionDetail.original_image]"
+                />
+                <span v-if="!gradingQuestionDetail.original_question_text && !gradingQuestionDetail.original_image" class="text-gray-400">无</span>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="detail-block">
+              <div class="detail-label">答案</div>
+              <div class="detail-value answer-value">
+                {{ gradingQuestionDetail.original_answer || '-' }}
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+        <div class="detail-meta">
+          <span>题目ID: {{ gradingQuestionDetail.question_id }}</span>
+          <span v-if="gradingQuestionDetail.knowledge_point">知识点: {{ gradingQuestionDetail.knowledge_point }}</span>
+          <span v-if="gradingQuestionDetail.error_type">错误类型: {{ gradingQuestionDetail.error_type }}</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="gradingDetailDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="editQuestionFromGrading">编辑此题</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 复习完成上传图片弹窗 -->
     <el-dialog v-model="uploadDialogVisible" title="上传复习完成图片" width="600px" destroy-on-close>
       <div class="upload-tips">请上传复习完成的图片（可上传多张）</div>
@@ -552,6 +593,14 @@ const gradingQuestionDetail = ref(null)
 const showQuestionDetail = (question) => {
   gradingQuestionDetail.value = question
   gradingDetailDialogVisible.value = true
+}
+
+const editQuestionFromGrading = () => {
+  // 关闭当前弹层，打开练习集详情弹层的编辑tab
+  gradingDetailDialogVisible.value = false
+  // 跳转到详情弹层的编辑tab
+  // 需要获取题目详情并填充编辑表单
+  ElMessage.info('编辑功能开发中')
 }
 
 const initGrading = async (ps) => {
@@ -1476,6 +1525,50 @@ onMounted(() => {
 /* 统计摘要 */
 .word-stats-summary {
   margin-bottom: 0;
+}
+
+/* 查看原题弹层样式 */
+.question-detail-content {
+  padding: 10px 0;
+}
+
+.detail-block {
+  margin-bottom: 16px;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+}
+
+.detail-value.answer-value {
+  font-size: 16px;
+  color: #67c23a;
+  font-weight: bold;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 20px;
+  padding: 12px 0;
+  border-top: 1px solid #ebeef5;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.text-gray-400 {
+  color: #909399;
 }
 </style>
 <style>
