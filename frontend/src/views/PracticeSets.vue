@@ -122,76 +122,90 @@
     </el-card>
 
     <!-- 批改弹窗 -->
-    <el-dialog v-model="gradingDialogVisible" title="批改练习集" width="600px" destroy-on-close>
-      <!-- 整体批改 -->
-      <div v-if="gradingStep === 'overall'" class="grading-overall">
-        <p class="grading-tip">共 {{ currentPsQuestions.length }} 道题目</p>
-        <p class="grading-question">本次练习整体正确情况如何？</p>
-        <div class="grading-buttons">
-          <el-button type="success" size="large" @click="handleOverallGrading(true)">全部正确</el-button>
-          <el-button type="danger" size="large" @click="handleOverallGrading(false)">有错误</el-button>
+    <el-dialog v-model="gradingDialogVisible" title="批改练习集" width="900px" destroy-on-close>
+      <!-- 进度头部 -->
+      <div class="grading-header">
+        <div class="grading-header-left">
+          <div class="grading-title">批改进度</div>
+          <div class="grading-progress-text">
+            <span class="text-green-600 font-bold">{{ gradedCount }}</span> / {{ currentPsQuestions.length }} 已批改
+          </div>
+        </div>
+        <div class="grading-header-right">
+          <div class="accuracy-display">
+            <span class="accuracy-value">{{ getGradingAccuracy() }}%</span>
+            <span class="accuracy-label">正确率</span>
+          </div>
         </div>
       </div>
 
-      <!-- 逐题批改 -->
-      <div v-if="gradingStep === 'detail'" class="grading-detail">
-        <div class="grading-progress">
-          <span>{{ gradingCurrentIndex + 1 }} / {{ currentPsQuestions.length }}</span>
-          <span class="grading-accuracy">正确率: {{ getGradingAccuracy() }}%</span>
+      <!-- 进度条 -->
+      <div class="grading-progress-bar">
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: (gradedCount / currentPsQuestions.length * 100) + '%' }"></div>
         </div>
-        <div class="grading-question-item">
-          <!-- 原题 -->
-          <div class="original-question-block">
-            <div class="block-label">原题</div>
-            <div class="block-content">
-              <p v-if="currentPsQuestions[gradingCurrentIndex]?.original_question_text" class="question-text">{{ currentPsQuestions[gradingCurrentIndex].original_question_text }}</p>
-              <el-image
-                v-if="currentPsQuestions[gradingCurrentIndex]?.original_image"
-                :src="'/uploads/' + currentPsQuestions[gradingCurrentIndex].original_image"
-                fit="contain"
-                style="max-width: 200px; max-height: 150px; cursor: pointer;"
-                @click="previewImage(currentPsQuestions[gradingCurrentIndex].original_image)"
-              />
-              <span v-if="!currentPsQuestions[gradingCurrentIndex]?.original_question_text && !currentPsQuestions[gradingCurrentIndex]?.original_image" class="text-muted">无</span>
-            </div>
-          </div>
-          <!-- 原题答案 -->
-          <div class="original-answer-block">
-            <div class="block-label">答案</div>
-            <div class="block-content">
-              <span class="answer-text">{{ currentPsQuestions[gradingCurrentIndex]?.original_answer || '-' }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="grading-question-buttons">
-          <el-button type="success" size="large" @click="handleQuestionGrading(currentPsQuestions[gradingCurrentIndex].question_id, true)">正确</el-button>
-          <el-button type="danger" size="large" @click="handleQuestionGrading(currentPsQuestions[gradingCurrentIndex].question_id, false)">错误</el-button>
+        <div class="grading-stats">
+          <span class="stat-correct">✓ 正确 {{ correctCount }}</span>
+          <span class="stat-wrong">✗ 错误 {{ wrongCount }}</span>
+          <span class="stat-pending">○ 待批改 {{ currentPsQuestions.length - gradedCount }}</span>
         </div>
       </div>
 
-      <!-- 图片上传（批改完成后） -->
-      <div v-if="gradingStep === 'upload'" class="grading-upload">
-        <p class="grading-tip">批改完成，正确率: {{ getGradingAccuracy() }}%</p>
-        <p class="grading-subtip">可选：上传复习完成的图片</p>
-        <el-upload
-          ref="uploadRef"
-          :auto-upload="false"
-          :multiple="true"
-          :limit="9"
-          accept="image/*"
-          list-type="picture-card"
-          :on-change="handleImageChange"
-          :on-remove="handleImageRemove"
-          :file-list="reviewImages"
+      <!-- 题目列表 -->
+      <div class="grading-question-list">
+        <div
+          v-for="(question, index) in currentPsQuestions"
+          :key="question.question_id"
+          :class="['question-row', getQuestionRowClass(question.question_id)]"
         >
-          <el-icon><Plus /></el-icon>
-        </el-upload>
+          <div class="question-number">{{ index + 1 }}</div>
+          <div class="question-content">
+            <div class="question-text">
+              <template v-if="question.original_question_text">{{ question.original_question_text }}</template>
+              <template v-else-if="question.original_image">
+                <el-image
+                  :src="'/uploads/' + question.original_image"
+                  fit="contain"
+                  style="max-width: 60px; max-height: 60px; cursor: pointer;"
+                  @click="previewImage(question.original_image)"
+                />
+              </template>
+              <template v-else><span class="text-gray-400">无题目内容</span></template>
+            </div>
+            <div class="question-answer">
+              <span class="answer-label">答案：</span>
+              <span class="answer-badge">{{ question.original_answer || '-' }}</span>
+            </div>
+          </div>
+          <div class="question-actions">
+            <button
+              :class="['btn-correct', { active: gradingResults[question.question_id] === true }]"
+              @click="handleQuestionGrading(question.question_id, true)"
+            >✓ 正确</button>
+            <button
+              :class="['btn-wrong', { active: gradingResults[question.question_id] === false }]"
+              @click="handleQuestionGrading(question.question_id, false)"
+            >✗ 错误</button>
+            <el-button type="primary" @click="showQuestionDetail(question)">查看原题</el-button>
+          </div>
+        </div>
       </div>
 
       <template #footer>
-        <el-button v-if="gradingStep === 'detail'" @click="gradingStep = 'overall'">返回</el-button>
-        <el-button @click="gradingDialogVisible = false">取消</el-button>
-        <el-button v-if="gradingStep === 'upload'" type="primary" @click="submitGrading" :loading="uploadLoading">完成</el-button>
+        <div class="grading-footer">
+          <div class="footer-stats">
+            <span class="text-green-600 font-bold">{{ correctCount }}</span> 正确,
+            <span class="text-red-600 font-bold">{{ wrongCount }}</span> 错误
+          </div>
+          <div class="footer-buttons">
+            <el-button @click="gradingDialogVisible = false">返回</el-button>
+            <el-button
+              type="primary"
+              @click="gradingStep = 'upload'"
+              :disabled="gradedCount < currentPsQuestions.length"
+            >提交批改结果</el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
 
