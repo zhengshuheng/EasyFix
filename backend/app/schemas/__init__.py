@@ -42,6 +42,15 @@ from app.schemas.reward import (
     RewardResponse,
     RedemptionResponse,
 )
+from app.schemas.reading import (
+    ReadingPassageCreate,
+    ReadingPassageUpdate,
+    ReadingPassageResponse,
+    ReadingPassageListResponse,
+    ReadingQuestionCreate,
+    ReadingQuestionResponse,
+    GenerateReadingRequest,
+)
 
 __all__ = [
     "QuestionCreate",
@@ -86,4 +95,12 @@ __all__ = [
     "RewardUpdate",
     "RewardResponse",
     "RedemptionResponse",
+    # Reading schemas
+    "ReadingPassageCreate",
+    "ReadingPassageUpdate",
+    "ReadingPassageResponse",
+    "ReadingPassageListResponse",
+    "ReadingQuestionCreate",
+    "ReadingQuestionResponse",
+    "GenerateReadingRequest",
 ]
