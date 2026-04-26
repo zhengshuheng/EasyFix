@@ -20,6 +20,7 @@ class PracticeSet(Base):
     accuracy = Column(Float, nullable=True)  # 整体正确率百分比
     last_reviewed_at = Column(DateTime, nullable=True)  # 最近复习时间
     review_images = Column(Text, nullable=True)  # JSON数组，复习完成上传的图片
+    passage_id = Column(Integer, ForeignKey("reading_passage.id"), nullable=True, comment="关联短文ID（阅读理解练习集使用）")
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
     created_at = Column(DateTime, server_default=func.now())
 
