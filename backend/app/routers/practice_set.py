@@ -2,7 +2,7 @@
 练习集路由 - 管理练习集的创建、打印、复习等功能
 """
 from fastapi import APIRouter, Depends, HTTPException, Form, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional, Union
 from datetime import datetime
@@ -42,6 +42,12 @@ class GenerateFromQuestionsRequest(BaseModel):
         }
 
 
+class GenerateFromReadingRequest(BaseModel):
+    """从短文生成练习集请求"""
+    passage_id: int
+    name: Optional[str] = None
+
+
 class PracticeSetQuestionResponse(BaseModel):
     id: int
     question_id: int
@@ -51,6 +57,9 @@ class PracticeSetQuestionResponse(BaseModel):
     answer: Optional[str] = None
     phonetic: Optional[str] = None
     difficulty: Optional[int] = None
+    knowledge_point: Optional[str] = None
+    error_type: Optional[str] = None
+    review_count: Optional[int] = 0
     is_correct: Optional[bool] = None
     user_answer: Optional[str] = None
     tags: Optional[List[dict]] = None
@@ -222,6 +231,75 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
         "questions": [],
         "pdf_url": pdf_url,
     }
+
+
+@router.post("/generate-from-reading", response_model=PracticeSetResponse, status_code=201)
+def generate_practice_from_reading(data: GenerateFromReadingRequest, db: Session = Depends(get_db)):
+    """
+    从短文生成阅读理解练习集
+
+    创建 source_type=reading 的练习集，关联短文
+    """
+    from app.models.reading import ReadingPassage, ReadingQuestion
+
+    # 验证短文存在
+    passage = db.query(ReadingPassage).options(
+        joinedload(ReadingPassage.questions)
+    ).filter(
+        ReadingPassage.id == data.passage_id,
+        ReadingPassage.deleted == False
+    ).first()
+
+    if not passage:
+        raise HTTPException(status_code=404, detail="短文不存在")
+
+    if not passage.questions:
+        raise HTTPException(status_code=400, detail="该短文没有选择题")
+
+    # 创建练习集（reading 类型不创建 PracticeSetQuestion 记录，
+    # 题目来自 ReadingQuestion 表，通过 passage_id 关联）
+    practice_set = PracticeSet(
+        name=data.name or f"阅读理解-{passage.title}"[:200],
+        subject_id=_get_english_subject_id(db),
+        source_type="reading",
+        question_type="original",
+        total_questions=len(passage.questions),
+        passage_id=passage.id,
+    )
+    db.add(practice_set)
+    db.commit()
+    db.refresh(practice_set)
+
+    subject_name = db.query(Subject).filter(Subject.id == practice_set.subject_id).first().name if practice_set.subject_id else ""
+
+    return {
+        "id": practice_set.id,
+        "name": practice_set.name,
+        "subject_id": practice_set.subject_id,
+        "subject_name": subject_name,
+        "source_type": "reading",
+        "question_type": "original",
+        "pdf_path": practice_set.pdf_path,
+        "total_questions": len(passage.questions),
+        "reviewed": False,
+        "review_count": 0,
+        "created_at": practice_set.created_at,
+        "questions": [],
+    }
+
+
+def _get_english_subject_id(db: Session) -> int:
+    """获取英语学科ID，如果不存在则创建"""
+    from app.models.subject import Subject
+    subject = db.query(Subject).filter(Subject.name == "英语").first()
+    if subject:
+        return subject.id
+    # 创建英语学科
+    subject = Subject(name="英语")
+    db.add(subject)
+    db.commit()
+    db.refresh(subject)
+    return subject.id
 
 
 @router.post("", response_model=PracticeSetResponse, status_code=201)
@@ -483,6 +561,30 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                         "user_answer": log.user_answer,
                         "tags": tags,
                     })
+
+    if ps.source_type == "reading" and ps.passage_id:
+        from app.models.reading import ReadingPassage, ReadingQuestion
+        passage = db.query(ReadingPassage).options(
+            joinedload(ReadingPassage.questions)
+        ).filter(ReadingPassage.id == ps.passage_id).first()
+
+        if passage:
+            for idx, q in enumerate(passage.questions):
+                questions.append({
+                    "id": q.id,
+                    "question_id": q.id,
+                    "similar_question_id": None,
+                    "display_order": idx,
+                    "question_text": q.question_text,
+                    "answer": q.correct_answer,
+                    "difficulty": passage.difficulty,
+                    "knowledge_point": f"阅读理解-{passage.topic}",
+                    "is_correct": None,
+                    "tags": [],
+                    "original_question_text": q.question_text,
+                    "original_answer": q.correct_answer,
+                    "original_image": None,
+                })
     else:
         # 错题练习集：获取题目列表
         ps_questions = db.query(PracticeSetQuestion).filter(
@@ -510,6 +612,9 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "question_text": question_text,
                 "answer": answer,
                 "difficulty": question.difficulty,
+                "knowledge_point": question.knowledge_point or "",
+                "error_type": question.error_type or "",
+                "review_count": question.review_count or 0,
                 "is_correct": psq.is_correct,
                 "original_question_text": question.parsed_question or question.original_text or "",
                 "original_answer": question.answer or "",
@@ -623,7 +728,11 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
 
         questions_data.append({
             "question_text": question_text,
-            "difficulty": question.difficulty,
+            "difficulty": question.difficulty or 3,
+            "id": question.id,
+            "knowledge_point": question.knowledge_point or "",
+            "error_type": question.error_type or "",
+            "review_count": question.review_count or 0,
         })
 
     if not questions_data:
@@ -690,46 +799,55 @@ def mark_reviewed(
     if images:
         ps.review_images = images
 
-    # 获取所有关联题目
-    ps_questions = db.query(PracticeSetQuestion).filter(
-        PracticeSetQuestion.practice_set_id == practice_set_id
-    ).all()
-
-    correct_count = 0
-    total_count = len(ps_questions)
-
-    for psq in ps_questions:
-        question = db.query(Question).filter(Question.id == psq.question_id).first()
-        if not question:
-            continue
-
-        # 更新复习次数
-        question.review_count = (question.review_count or 0) + 1
-
-        # 根据整体批改或逐题批改更新
-        if is_all_correct == True:
-            # 整体全对
-            psq.is_correct = True
-            question.correct_count = (question.correct_count or 0) + 1
-            correct_count += 1
-        elif results_list:
-            # 逐题批改
-            result = next((r for r in results_list if r.get('question_id') == psq.question_id), None)
-            if result is not None:
-                psq.is_correct = result.get('is_correct')
-                if result.get('is_correct'):
-                    question.correct_count = (question.correct_count or 0) + 1
-                    correct_count += 1
-                else:
-                    question.error_count = (question.error_count or 0) + 1
-
-        question.last_reviewed_at = now
-
-    # 计算并保存整体正确率
-    if total_count > 0:
-        ps.accuracy = round(correct_count / total_count * 100, 1)
+    if ps.source_type == "reading":
+        # reading 类型：直接从 question_results 计算正确率
+        correct_count = sum(1 for r in results_list if r.get('is_correct'))
+        total_count = len(results_list)
+        if total_count > 0:
+            ps.accuracy = round(correct_count / total_count * 100, 1)
+        else:
+            ps.accuracy = None
     else:
-        ps.accuracy = None
+        # 获取所有关联题目
+        ps_questions = db.query(PracticeSetQuestion).filter(
+            PracticeSetQuestion.practice_set_id == practice_set_id
+        ).all()
+
+        correct_count = 0
+        total_count = len(ps_questions)
+
+        for psq in ps_questions:
+            question = db.query(Question).filter(Question.id == psq.question_id).first()
+            if not question:
+                continue
+
+            # 更新复习次数
+            question.review_count = (question.review_count or 0) + 1
+
+            # 根据整体批改或逐题批改更新
+            if is_all_correct == True:
+                # 整体全对
+                psq.is_correct = True
+                question.correct_count = (question.correct_count or 0) + 1
+                correct_count += 1
+            elif results_list:
+                # 逐题批改
+                result = next((r for r in results_list if r.get('question_id') == psq.question_id), None)
+                if result is not None:
+                    psq.is_correct = result.get('is_correct')
+                    if result.get('is_correct'):
+                        question.correct_count = (question.correct_count or 0) + 1
+                        correct_count += 1
+                    else:
+                        question.error_count = (question.error_count or 0) + 1
+
+            question.last_reviewed_at = now
+
+        # 计算并保存整体正确率
+        if total_count > 0:
+            ps.accuracy = round(correct_count / total_count * 100, 1)
+        else:
+            ps.accuracy = None
 
     db.commit()
 
