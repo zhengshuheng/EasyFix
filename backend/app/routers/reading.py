@@ -33,6 +33,71 @@ def get_topics():
     return TOPICS
 
 
+@router.post("/generate", status_code=201)
+def generate_reading(data: GenerateReadingRequest, db: Session = Depends(get_db)):
+    """
+    调用LLM生成英语短文 + 配套选择题，保存到数据库
+    """
+    from app.services.llm import llm_service
+
+    # 1. 生成短文
+    passage_result = llm_service.generate_reading_passage(
+        grade=data.grade,
+        topic=data.topic,
+        difficulty=data.difficulty,
+    )
+
+    if "error" in passage_result:
+        raise HTTPException(status_code=500, detail=f"短文生成失败: {passage_result['error']}")
+
+    if not passage_result.get("content"):
+        raise HTTPException(status_code=500, detail="生成了空短文")
+
+    # 2. 生成选择题
+    questions_result = llm_service.generate_reading_questions(
+        passage_content=passage_result["content"]
+    )
+
+    if "error" in questions_result:
+        raise HTTPException(status_code=500, detail=f"选择题生成失败: {questions_result['error']}")
+
+    raw_questions = questions_result.get("questions", [])
+    if not raw_questions:
+        raise HTTPException(status_code=500, detail="未生成选择题")
+
+    # 3. 保存到数据库
+    passage = ReadingPassage(
+        title=passage_result["title"],
+        content=passage_result["content"],
+        topic=data.topic,
+        grade=data.grade,
+        difficulty=data.difficulty,
+        word_count=passage_result.get("word_count") or len(passage_result["content"].split()),
+        source="generated",
+    )
+    db.add(passage)
+    db.flush()
+
+    for i, q in enumerate(raw_questions[:4]):
+        question = ReadingQuestion(
+            passage_id=passage.id,
+            question_number=q.get("question_number", i + 1),
+            question_text=q.get("question_text", ""),
+            option_a=q.get("option_a", ""),
+            option_b=q.get("option_b", ""),
+            option_c=q.get("option_c", ""),
+            option_d=q.get("option_d", ""),
+            correct_answer=q.get("correct_answer", "A"),
+            explanation=q.get("explanation", ""),
+        )
+        db.add(question)
+
+    db.commit()
+    db.refresh(passage)
+
+    return passage
+
+
 @router.get("", response_model=ReadingPassageListResponse)
 def list_readings(
     skip: int = Query(0, ge=0),

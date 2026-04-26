@@ -375,6 +375,198 @@ class LLMService:
         # 如果解析失败，返回一个错误结构
         raise Exception("无法解析LLM返回的报告内容，请重试")
 
+    def generate_reading_passage(self, grade: int, topic: str, difficulty: int) -> dict:
+        """
+        生成英语阅读理解短文
+
+        Returns:
+            dict: {"title": str, "content": str, "word_count": int}
+        """
+        self._config = load_llm_config()
+        self._init_client()
+
+        api_key = self._get_config("api_key", settings.ANTHROPIC_API_KEY)
+        if not api_key:
+            return {"error": "LLM API Key not configured. Please set it in Settings."}
+
+        model = self._get_config("model", "claude-sonnet-4-20250514")
+
+        # 根据难度确定词数范围
+        word_ranges = {
+            1: "80-120词", 2: "120-180词", 3: "180-250词",
+            4: "250-320词", 5: "320-400词",
+        }
+        difficulty_labels = {
+            1: "简单", 2: "较简单", 3: "中等", 4: "较难", 5: "困难",
+        }
+
+        prompt = f"""你是一位专业的英语教师。请根据以下要求生成一篇英语阅读理解短文。
+
+## 要求
+- 年级：{self._get_grade_name(grade)}
+- 话题：{topic}
+- 难度：{difficulty_labels.get(difficulty, '中等')}
+- 词数：{word_ranges.get(difficulty, '180-250词')}
+
+## 输出格式
+请以以下JSON格式返回：
+{{
+    "title": "短文标题（中文或英文均可）",
+    "content": "英语短文内容",
+    "word_count": 实际词数
+}}
+
+注意：
+- 短文内容应为2-4段，难度与指定等级匹配
+- 避免使用过于生僻的词汇
+- 内容健康积极，适合对应年级学生阅读
+"""
+        try:
+            response = self._client.messages.create(
+                model=model,
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=60,
+                thinking={"type": "disabled"},
+            )
+
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+
+            if not content:
+                return {"error": "LLM返回内容为空"}
+
+            return self._parse_generate_response(content)
+        except Exception as e:
+            return {"error": str(e)}
+
+    def generate_reading_questions(self, passage_content: str) -> dict:
+        """
+        为短文生成4道阅读理解选择题
+
+        Returns:
+            dict: {"questions": [...]}
+        """
+        self._config = load_llm_config()
+        self._init_client()
+
+        api_key = self._get_config("api_key", settings.ANTHROPIC_API_KEY)
+        if not api_key:
+            return {"error": "LLM API Key not configured"}
+
+        model = self._get_config("model", "claude-sonnet-4-20250514")
+
+        prompt = f"""你是一位专业的英语教师。请为以下英语短文生成4道阅读理解选择题。
+
+## 短文
+{passage_content}
+
+## 要求
+- 题型：4选1选择题
+- 每题必须包含A/B/C/D四个选项
+- 问题应涵盖：主旨大意、细节理解、推理判断、词义猜测等类型
+- 正确答案分布合理（不全部选同一选项）
+
+## 输出格式
+请以以下JSON格式返回：
+{{
+    "questions": [
+        {{
+            "question_number": 1,
+            "question_text": "What is the main idea of the passage?",
+            "option_a": "A. 选项内容",
+            "option_b": "B. 选项内容",
+            "option_c": "C. 选项内容",
+            "option_d": "D. 选项内容",
+            "correct_answer": "A",
+            "explanation": "解析说明"
+        }}
+    ]
+}}
+
+注意：
+- 题目和选项都要用英文
+- 选项长度适中，避免过长
+- 解析用中文简要说明
+"""
+        try:
+            response = self._client.messages.create(
+                model=model,
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=60,
+                thinking={"type": "disabled"},
+            )
+
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+
+            if not content:
+                return {"error": "LLM返回内容为空"}
+
+            return self._parse_reading_questions_response(content)
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _parse_generate_response(self, content: str) -> dict:
+        """解析短文生成响应"""
+        import json, re
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
+        if json_match:
+            content = json_match.group(1)
+
+        try:
+            data = json.loads(content)
+            return {
+                "title": data.get("title", ""),
+                "content": data.get("content", ""),
+                "word_count": data.get("word_count", 0),
+            }
+        except json.JSONDecodeError:
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            if start != -1 and end != 0:
+                try:
+                    data = json.loads(content[start:end])
+                    return {
+                        "title": data.get("title", ""),
+                        "content": data.get("content", ""),
+                        "word_count": data.get("word_count", 0),
+                    }
+                except json.JSONDecodeError:
+                    pass
+            return {"error": "解析失败"}
+
+    def _parse_reading_questions_response(self, content: str) -> dict:
+        """解析选择题生成响应"""
+        import json, re
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
+        if json_match:
+            content = json_match.group(1)
+
+        try:
+            data = json.loads(content)
+            questions = data.get("questions", [])
+            if not questions and "question" in data:
+                questions = [data["question"]]
+            return {"questions": questions}
+        except json.JSONDecodeError:
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            if start != -1 and end != 0:
+                try:
+                    data = json.loads(content[start:end])
+                    return {"questions": data.get("questions", [])}
+                except json.JSONDecodeError:
+                    pass
+            return {"error": "解析失败"}
+
     def analyze_learning_data(self, prompt: str) -> str:
         """分析学习数据"""
         try:
