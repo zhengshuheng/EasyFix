@@ -9,6 +9,7 @@
             <el-menu-item index="/questions">错题</el-menu-item>
             <el-menu-item index="/words">单词</el-menu-item>
             <el-menu-item index="/practice-sets">练习</el-menu-item>
+            <el-menu-item index="/reading">阅读</el-menu-item>
             <el-menu-item index="/stats">统计</el-menu-item>
             <el-menu-item index="/learning-reports">学习分析</el-menu-item>
             <el-menu-item index="/motivation">激励中心</el-menu-item>

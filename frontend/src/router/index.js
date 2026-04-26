@@ -37,6 +37,16 @@ const routes = [
     component: () => import('@/views/PracticeSets.vue'),
   },
   {
+    path: '/reading',
+    name: 'Reading',
+    component: () => import('@/views/Reading.vue'),
+  },
+  {
+    path: '/reading-test/:id',
+    name: 'ReadingTest',
+    component: () => import('@/views/ReadingTest.vue'),
+  },
+  {
     path: '/words',
     name: 'Words',
     component: () => import('@/views/Words.vue'),
