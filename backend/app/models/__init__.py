@@ -12,6 +12,7 @@ from app.models.star import StarAction, StarBalance, StarRecord
 from app.models.achievement import Achievement, AchievementProgress
 from app.models.reward import Reward, Redemption
 from app.models.error_type import ErrorType
+from app.models.reading import ReadingPassage, ReadingQuestion
 
 __all__ = [
     "Subject",
@@ -39,4 +40,6 @@ __all__ = [
     "Reward",
     "Redemption",
     "ErrorType",
+    "ReadingPassage",
+    "ReadingQuestion",
 ]
