@@ -69,7 +69,7 @@
         <el-table-column prop="subject_name" label="学科" width="100" />
         <el-table-column prop="source_type" label="类型" width="100">
           <template #default="{ row }">
-            {{ row.source_type === 'word' ? '单词复习' : '错题练习' }}
+            {{ row.source_type === 'word' ? '单词复习' : (row.source_type === 'reading' ? '阅读理解' : '错题练习') }}
           </template>
         </el-table-column>
         <el-table-column prop="total_questions" label="题目数" width="80" align="center" />
@@ -237,6 +237,16 @@
                 {{ gradingQuestionDetail.original_answer || '-' }}
               </div>
             </div>
+            <!-- 阅读理解选项 -->
+            <div v-if="gradingQuestionDetail.is_reading_question" class="detail-block mt-4">
+              <div class="detail-label">选项</div>
+              <div class="detail-value reading-options">
+                <div class="option-row">{{ formatOption('A', gradingQuestionDetail.option_a) }}</div>
+                <div class="option-row">{{ formatOption('B', gradingQuestionDetail.option_b) }}</div>
+                <div class="option-row">{{ formatOption('C', gradingQuestionDetail.option_c) }}</div>
+                <div class="option-row">{{ formatOption('D', gradingQuestionDetail.option_d) }}</div>
+              </div>
+            </div>
           </el-col>
         </el-row>
         <div class="detail-meta">
@@ -323,7 +333,7 @@
                 <el-descriptions :column="2" border size="small">
                   <el-descriptions-item label="名称">{{ detailData.name }}</el-descriptions-item>
                   <el-descriptions-item label="学科">{{ detailData.subject_name }}</el-descriptions-item>
-                  <el-descriptions-item label="类型">{{ detailData.source_type === 'word' ? '单词复习' : '错题练习' }}</el-descriptions-item>
+                  <el-descriptions-item label="类型">{{ detailData.source_type === 'word' ? '单词复习' : (detailData.source_type === 'reading' ? '阅读理解' : '错题练习') }}</el-descriptions-item>
                   <el-descriptions-item label="题目数">{{ detailData.total_questions }}</el-descriptions-item>
                   <el-descriptions-item label="复习次数">{{ detailData.review_count }}</el-descriptions-item>
                   <el-descriptions-item label="备注" :span="2">{{ detailData.notes || '无' }}</el-descriptions-item>
@@ -337,9 +347,9 @@
                 <div class="card-header-green">单词复习统计</div>
                 <div class="card-content">
                   <el-descriptions :column="4" border size="small">
+                    <el-descriptions-item label="复习类型">{{ getReviewTypeLabel(detailData.word_review_stats.review_type) }}</el-descriptions-item>
                     <el-descriptions-item label="总单词数">{{ detailData.word_review_stats.total_count }}</el-descriptions-item>
                     <el-descriptions-item label="正确数">{{ detailData.word_review_stats.correct_count }}</el-descriptions-item>
-                    <el-descriptions-item label="错误数">{{ (detailData.word_review_stats.total_count || 0) - (detailData.word_review_stats.correct_count || 0) }}</el-descriptions-item>
                     <el-descriptions-item label="准确率">{{ detailData.word_review_stats.accuracy }}%</el-descriptions-item>
                   </el-descriptions>
                 </div>
@@ -418,9 +428,20 @@
                             <span class="label">原题：</span>
                             <span class="value">{{ row.original_question_text?.substring(0, 100) || '无' }}</span>
                           </div>
+                          <!-- 阅读理解选项 -->
+                          <div v-if="row.is_reading_question" class="reading-options">
+                            <div class="option-row">{{ formatOption('A', row.option_a) }}</div>
+                            <div class="option-row">{{ formatOption('B', row.option_b) }}</div>
+                            <div class="option-row">{{ formatOption('C', row.option_c) }}</div>
+                            <div class="option-row">{{ formatOption('D', row.option_d) }}</div>
+                          </div>
                           <div class="info-row">
                             <span class="label">答案：</span>
                             <span class="value answer">{{ row.original_answer || '-' }}</span>
+                          </div>
+                          <div v-if="row.explanation" class="info-row">
+                            <span class="label">解析：</span>
+                            <span class="value explanation">{{ row.explanation }}</span>
                           </div>
                         </div>
                         <div v-if="row.original_image" class="question-image">
@@ -448,9 +469,9 @@
               <div class="card-content">
                 <div class="word-stats-summary">
                   <el-descriptions :column="4" border size="small">
+                    <el-descriptions-item label="复习类型">{{ getReviewTypeLabel(detailData.word_review_stats?.review_type) }}</el-descriptions-item>
                     <el-descriptions-item label="总单词数">{{ detailData.word_review_stats?.total_count || 0 }}</el-descriptions-item>
                     <el-descriptions-item label="正确">{{ detailData.word_review_stats?.correct_count || 0 }}</el-descriptions-item>
-                    <el-descriptions-item label="错误">{{ (detailData.word_review_stats?.total_count || 0) - (detailData.word_review_stats?.correct_count || 0) }}</el-descriptions-item>
                     <el-descriptions-item label="用时">{{ formatDuration(detailData.word_review_stats?.duration || 0) }}</el-descriptions-item>
                   </el-descriptions>
                 </div>
@@ -664,9 +685,9 @@ const saveGradingQuestion = async () => {
   gradingEditLoading.value = true
   try {
     await questionApi.update(gradingQuestionDetail.value.question_id, {
-      original_question_text: gradingQuestionEditForm.original_question_text,
+      parsed_question: gradingQuestionEditForm.original_question_text,
       original_image: gradingQuestionEditForm.original_image,
-      original_answer: gradingQuestionEditForm.original_answer,
+      answer: gradingQuestionEditForm.original_answer,
       knowledge_point: gradingQuestionEditForm.knowledge_point,
       error_type: gradingQuestionEditForm.error_type,
       difficulty: gradingQuestionEditForm.difficulty
@@ -861,6 +882,17 @@ const saveDetail = async () => {
   }
 }
 
+// 格式化选项（带字母前缀，避免重复）
+const formatOption = (letter, text) => {
+  if (!text) return ''
+  text = text.trim()
+  // 去除已有的选项前缀（A. B. C. D. / A、B、C、D、 / (A) / A) 等各种格式）
+  text = text.replace(/^[A-Da-d]\s*[.、．]\s*/, '')
+  text = text.replace(/^\([A-Da-d]\)\s*/, '')
+  text = text.replace(/^[A-Da-d]\)\s*/, '')
+  return letter + '. ' + text
+}
+
 // 格式化时长
 const formatDuration = (seconds) => {
   if (!seconds && seconds !== 0) return '-'
@@ -868,6 +900,12 @@ const formatDuration = (seconds) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}分${secs}秒`
+}
+
+// 获取复习类型标签
+const getReviewTypeLabel = (type) => {
+  const labels = { 1: '默写英文', 2: '选择中文', 3: '听力' }
+  return labels[type] || '默写英文'
 }
 
 const deletePracticeSet = async (ps) => {
@@ -981,9 +1019,12 @@ const saveEditImages = async () => {
 
     // 分离新上传的文件和已有的图片
     const newFiles = editImagesFileList.value.filter(f => !f.isOld)
-    let newImagePaths = [...editImagesUploaded.value]
-
+    // 获取仍然保留的旧图片（从 editImagesFileList 中筛选 isOld 为 true 的）
+    const keptOldImages = editImagesFileList.value
+      .filter(f => f.isOld)
+      .map(f => f.name)
     // 上传新文件
+    let newImagePaths = [...keptOldImages]
     if (newFiles.length > 0) {
       const formData = new FormData()
       newFiles.forEach(file => {
@@ -999,7 +1040,7 @@ const saveEditImages = async () => {
         const uploadedPaths = uploadData.images
           .filter(img => img.success)
           .map(img => img.image_path)
-        newImagePaths = [...editImagesUploaded.value, ...uploadedPaths]
+        newImagePaths = [...keptOldImages, ...uploadedPaths]
       }
     }
 
@@ -1355,6 +1396,8 @@ onMounted(() => {
 .grading-question-item .question-answer {
   font-size: 14px;
   color: #67c23a;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .original-question-block,
@@ -1538,6 +1581,26 @@ onMounted(() => {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.8;
+}
+
+.reading-options {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.reading-options .option-row {
+  margin: 4px 0;
+}
+
+.info-row .value.explanation {
+  color: #909399;
+  font-size: 13px;
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
 
 /* 单词卡片网格 */
@@ -1810,6 +1873,9 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
+  display: inline-block;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .question-actions {
@@ -1904,6 +1970,12 @@ onMounted(() => {
   color: #67c23a;
   font-weight: bold;
   font-size: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reading-options .option-row {
+  margin: 4px 0;
 }
 
 .detail-meta {

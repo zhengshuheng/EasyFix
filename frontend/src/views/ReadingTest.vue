@@ -4,7 +4,10 @@
       <template #header>
         <div class="card-header">
           <span>阅读理解测试 - {{ practiceSet?.name || '' }}</span>
-          <el-button @click="goBack">返回</el-button>
+          <div>
+            <el-button @click="downloadPdf" :loading="downloading" type="success">打印PDF</el-button>
+            <el-button @click="goBack">返回</el-button>
+          </div>
         </div>
       </template>
 
@@ -32,10 +35,10 @@
             <div v-for="q in questions" :key="q.id" class="question-block">
               <p class="q-text">{{ q.question_number }}. {{ q.question_text }}</p>
               <el-radio-group v-model="answers[q.id]" class="options-group">
-                <el-radio :value="'A'" class="option-item">A. {{ q.option_a }}</el-radio>
-                <el-radio :value="'B'" class="option-item">B. {{ q.option_b }}</el-radio>
-                <el-radio :value="'C'" class="option-item">C. {{ q.option_c }}</el-radio>
-                <el-radio :value="'D'" class="option-item">D. {{ q.option_d }}</el-radio>
+                <el-radio :value="'A'" class="option-item">{{ formatOption('A', q.option_a) }}</el-radio>
+                <el-radio :value="'B'" class="option-item">{{ formatOption('B', q.option_b) }}</el-radio>
+                <el-radio :value="'C'" class="option-item">{{ formatOption('C', q.option_c) }}</el-radio>
+                <el-radio :value="'D'" class="option-item">{{ formatOption('D', q.option_d) }}</el-radio>
               </el-radio-group>
             </div>
 
@@ -80,6 +83,7 @@ const passage = ref(null)
 const questions = ref([])
 const answers = ref({})
 const testResult = ref(false)
+const downloading = ref(false)
 
 const contentParagraphs = computed(() => {
   if (!passage.value) return []
@@ -99,6 +103,17 @@ const resultTotal = computed(() => questions.value.length)
 const resultRate = computed(() => {
   return resultTotal.value > 0 ? Math.round(resultCorrect.value / resultTotal.value * 100) : 0
 })
+
+// 格式化选项（带字母前缀，避免重复）
+function formatOption(letter, text) {
+  if (!text) return ''
+  text = text.trim()
+  // 去除已有的选项前缀（A. B. C. D. / A、B、C、D、 / (A) / A) 等各种格式）
+  text = text.replace(/^[A-Da-d]\s*[.、．]\s*/, '')
+  text = text.replace(/^\([A-Da-d]\)\s*/, '')
+  text = text.replace(/^[A-Da-d]\)\s*/, '')
+  return letter + '. ' + text
+}
 
 async function fetchTestData() {
   try {
@@ -133,6 +148,18 @@ async function submitTest() {
 
 function goBack() {
   router.push('/reading')
+}
+
+async function downloadPdf() {
+  downloading.value = true
+  try {
+    const res = await axios.post(`/api/practice-sets/${practiceSetId}/generate-pdf`)
+    window.open(res.data.pdf_url, '_blank')
+  } catch {
+    ElMessage.error('PDF生成失败')
+  } finally {
+    downloading.value = false
+  }
 }
 
 onMounted(fetchTestData)

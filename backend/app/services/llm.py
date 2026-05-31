@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from typing import Optional
 import anthropic
 from app.config import get_settings
@@ -85,7 +86,9 @@ class LLMService:
         prompt = self._build_prompt(question, answer, subject, knowledge_point)
 
         try:
-            response = self._client.messages.create(
+            # 使用重试机制调用API
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
                 model=model,
                 max_tokens=1000,
                 messages=[
@@ -117,6 +120,13 @@ class LLMService:
                 }
 
             return self._parse_response(content)
+        except anthropic.RateLimitError as e:
+            return {
+                "error": f"API速率限制，请稍后再试: {str(e)}",
+                "similar_question": "",
+                "similar_answer": "",
+                "explanation": "",
+            }
         except Exception as e:
             return {
                 "error": str(e),
@@ -231,7 +241,9 @@ class LLMService:
         )
 
         try:
-            response = self._client.messages.create(
+            # 使用重试机制调用API
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
                 model=model,
                 max_tokens=4000,  # 报告较长，需要更多token
                 messages=[
@@ -257,6 +269,8 @@ class LLMService:
                 raise Exception("LLM返回内容为空")
 
             return self._parse_learning_report_response(content)
+        except anthropic.RateLimitError as e:
+            raise Exception(f"API速率限制，请稍后再试: {str(e)}")
         except Exception as e:
             raise Exception(f"LLM调用失败: {str(e)}")
 
@@ -375,6 +389,27 @@ class LLMService:
         # 如果解析失败，返回一个错误结构
         raise Exception("无法解析LLM返回的报告内容，请重试")
 
+    def _retry_on_rate_limit(self, func, *args, max_retries=3, **kwargs):
+        """
+        重试装饰器，处理API速率限制错误
+
+        Args:
+            func: 要重试的函数
+            max_retries: 最大重试次数
+        """
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except anthropic.RateLimitError as e:
+                if attempt == max_retries - 1:  # 最后一次重试
+                    raise e
+                # 指数退避：等待 2^attempt * 2 秒
+                wait_time = (2 ** attempt) * 2
+                print(f"API速率限制，等待 {wait_time} 秒后重试 (尝试 {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+            except Exception as e:
+                raise e
+
     def generate_reading_passage(self, grade: int, topic: str, difficulty: int) -> dict:
         """
         生成英语阅读理解短文
@@ -422,7 +457,9 @@ class LLMService:
 - 内容健康积极，适合对应年级学生阅读
 """
         try:
-            response = self._client.messages.create(
+            # 使用重试机制调用API
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
                 model=model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
@@ -440,6 +477,8 @@ class LLMService:
                 return {"error": "LLM返回内容为空"}
 
             return self._parse_generate_response(content)
+        except anthropic.RateLimitError as e:
+            return {"error": f"API速率限制，请稍后再试: {str(e)}"}
         except Exception as e:
             return {"error": str(e)}
 
@@ -477,23 +516,26 @@ class LLMService:
         {{
             "question_number": 1,
             "question_text": "What is the main idea of the passage?",
-            "option_a": "A. 选项内容",
-            "option_b": "B. 选项内容",
-            "option_c": "C. 选项内容",
-            "option_d": "D. 选项内容",
-            "correct_answer": "A",
+            "option_a": "The school has many buildings.",
+            "option_b": "The students enjoy playing sports.",
+            "option_c": "The writer describes his school life.",
+            "option_d": "The Book Club is very popular.",
+            "correct_answer": "C",
             "explanation": "解析说明"
         }}
     ]
 }}
 
-注意：
-- 题目和选项都要用英文
-- 选项长度适中，避免过长
-- 解析用中文简要说明
+重要规则：
+1. option_a/option_b/option_c/option_d 的值必须是纯英文选项内容，绝对不要加 "A." "B." "C." "D." 等字母前缀！
+2. 选项必须以大写字母开头，是完整的英文句子或短语
+3. 题目和选项都要用英文
+4. 解析用中文简要说明
 """
         try:
-            response = self._client.messages.create(
+            # 使用重试机制调用API
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
                 model=model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
@@ -511,6 +553,8 @@ class LLMService:
                 return {"error": "LLM返回内容为空"}
 
             return self._parse_reading_questions_response(content)
+        except anthropic.RateLimitError as e:
+            return {"error": f"API速率限制，请稍后再试: {str(e)}"}
         except Exception as e:
             return {"error": str(e)}
 
@@ -546,31 +590,81 @@ class LLMService:
     def _parse_reading_questions_response(self, content: str) -> dict:
         """解析选择题生成响应"""
         import json, re
+
+        def strip_option_prefix(text: str) -> str:
+            """去除选项前缀A. B. C. D. 等各种格式，保留完整内容"""
+            if not text:
+                return ''
+            text = text.strip()
+            # 匹配前缀：A. / A、 / A． / (A) / A) 等，后面可能有空格
+            # 注意：只匹配明确的选项前缀，避免误删内容首字母
+            match = re.match(r'^[A-Da-d]\s*[.、．]\s*', text)
+            if match:
+                return text[match.end():]
+            match = re.match(r'^\([A-Da-d]\)\s*', text)
+            if match:
+                return text[match.end():]
+            match = re.match(r'^[A-Da-d]\)\s*', text)
+            if match:
+                return text[match.end():]
+            return text
+
+        # 添加调试信息
+        print(f"[DEBUG] 原始响应内容: {content[:500]}...")
+
         json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
         if json_match:
             content = json_match.group(1)
+            print(f"[DEBUG] 提取的JSON内容: {content[:500]}...")
 
         try:
             data = json.loads(content)
             questions = data.get("questions", [])
             if not questions and "question" in data:
                 questions = [data["question"]]
+            # 去除选项前缀
+            for q in questions:
+                if "option_a" in q:
+                    q["option_a"] = strip_option_prefix(q["option_a"])
+                if "option_b" in q:
+                    q["option_b"] = strip_option_prefix(q["option_b"])
+                if "option_c" in q:
+                    q["option_c"] = strip_option_prefix(q["option_c"])
+                if "option_d" in q:
+                    q["option_d"] = strip_option_prefix(q["option_d"])
+            print(f"[DEBUG] 解析成功，共 {len(questions)} 道题")
             return {"questions": questions}
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"[DEBUG] JSON解析失败: {e}")
             start = content.find("{")
             end = content.rfind("}") + 1
             if start != -1 and end != 0:
                 try:
                     data = json.loads(content[start:end])
-                    return {"questions": data.get("questions", [])}
-                except json.JSONDecodeError:
+                    questions = data.get("questions", [])
+                    # 去除选项前缀
+                    for q in questions:
+                        if "option_a" in q:
+                            q["option_a"] = strip_option_prefix(q["option_a"])
+                        if "option_b" in q:
+                            q["option_b"] = strip_option_prefix(q["option_b"])
+                        if "option_c" in q:
+                            q["option_c"] = strip_option_prefix(q["option_c"])
+                        if "option_d" in q:
+                            q["option_d"] = strip_option_prefix(q["option_d"])
+                    print(f"[DEBUG] 备用解析成功，共 {len(questions)} 道题")
+                    return {"questions": questions}
+                except json.JSONDecodeError as e:
+                    print(f"[DEBUG] 备用JSON解析也失败: {e}")
                     pass
             return {"error": "解析失败"}
 
     def analyze_learning_data(self, prompt: str) -> str:
         """分析学习数据"""
         try:
-            response = self._client.messages.create(
+            # 使用重试机制调用API
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
                 model=self._get_config("model", "claude-sonnet-4-20250514"),
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}]
@@ -582,6 +676,8 @@ class LLMService:
                     content = block.text
                     break
             return content or ""
+        except anthropic.RateLimitError as e:
+            raise Exception(f"API速率限制，请稍后再试: {str(e)}")
         except Exception as e:
             raise Exception(f"LLM调用失败: {str(e)}")
 

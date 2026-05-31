@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models import PracticeSet, PracticeSetQuestion, Question, SimilarQuestion, Subject, WordReviewSession
 from app.models.word import WordReview, WordReviewLog, Word
+from app.models.reading import ReadingPassage, ReadingQuestion
 from app.services.pdf import generate_practice_set_pdf
 from app.services.logger import logger_service
 
@@ -67,6 +68,13 @@ class PracticeSetQuestionResponse(BaseModel):
     original_question_text: Optional[str] = None
     original_answer: Optional[str] = None
     original_image: Optional[str] = None
+    # 阅读理解额外字段
+    option_a: Optional[str] = None
+    option_b: Optional[str] = None
+    option_c: Optional[str] = None
+    option_d: Optional[str] = None
+    explanation: Optional[str] = None
+    is_reading_question: Optional[bool] = None
 
     class Config:
         from_attributes = True
@@ -111,6 +119,25 @@ class BatchSimilarResponse(BaseModel):
     results: List[dict]
 
 
+# ============ 辅助函数 ============
+
+def get_consecutive_correct(db: Session, question_id: int) -> int:
+    """获取某道题最近的连续正确次数"""
+    records = db.query(PracticeSetQuestion).join(PracticeSet).filter(
+        PracticeSetQuestion.question_id == question_id,
+        PracticeSetQuestion.is_correct.isnot(None),
+        PracticeSet.deleted == False
+    ).order_by(PracticeSet.created_at.desc()).all()
+
+    count = 0
+    for r in records:
+        if r.is_correct:
+            count += 1
+        else:
+            break
+    return count
+
+
 # ============ 路由实现 ============
 
 @router.post("/generate-from-questions", response_model=PracticeSetResponse, status_code=201)
@@ -119,10 +146,13 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     根据条件生成练习集
 
     选择逻辑（优先级）：
-    1. review_count = 0 的题目（未复习）
-    2. 不足时按正确率低排序补充
-    3. 仍不足时随机补充
+    1. 未复习（review_count = 0）
+    2. 需巩固（最近有错误 或 正确率 < 60%）
+    3. 其他（正确率 >= 60% 且最近连续正确 < 3）
+    4. 已掌握（最近连续正确 >= 3 次）
     """
+    import random
+
     # 构建基础查询
     query = db.query(Question).filter(
         Question.subject_id == data.subject_id,
@@ -131,30 +161,38 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     if data.grade:
         query = query.filter(Question.grade == data.grade)
 
-    # 1. 优先取未复习题目（最多取count个，随机选择）
-    import random
-    unvisited = query.filter(Question.review_count == 0).all()
-    random.shuffle(unvisited)
-    selected_ids = [q.id for q in unvisited[:data.count]]
+    all_questions = query.all()
 
-    # 2. 不足时取低正确率题目（从低正确率中随机选择）
-    remaining = data.count - len(selected_ids)
-    if remaining > 0:
-        reviewed = query.filter(Question.review_count > 0).all()
-        # 按正确率升序排序
-        reviewed_sorted = sorted(reviewed, key=lambda q: q.correct_count / q.review_count if q.review_count > 0 else 0)
-        # 从最低正确率的题目中随机选择（避免总是选择ID最小的）
-        low_accuracy_pool = reviewed_sorted[:min(remaining * 3, len(reviewed_sorted))]
-        random.shuffle(low_accuracy_pool)
-        for q in low_accuracy_pool[:remaining]:
-            selected_ids.append(q.id)
-            remaining -= 1
+    # 分类到4个优先级池
+    pool_unvisited = []   # 优先级1：未复习
+    pool_need_review = [] # 优先级2：需巩固
+    pool_other = []       # 优先级3：其他
+    pool_mastered = []    # 优先级4：已掌握
 
-    # 3. 仍不足时随机补充
-    if remaining > 0:
-        all_ids = [q.id for q in query.all() if q.id not in selected_ids]
-        random.shuffle(all_ids)
-        selected_ids.extend(all_ids[:remaining])
+    for q in all_questions:
+        consecutive = get_consecutive_correct(db, q.id)
+
+        if q.review_count == 0:
+            pool_unvisited.append(q)
+        elif consecutive >= 3:
+            pool_mastered.append(q)
+        elif q.error_count > 0 or (q.correct_count / q.review_count < 0.6):
+            pool_need_review.append(q)
+        else:
+            pool_other.append(q)
+
+    # 按优先级依次抽取
+    selected_ids = []
+    remaining = data.count
+
+    for pool in [pool_unvisited, pool_need_review, pool_other, pool_mastered]:
+        if remaining <= 0:
+            break
+        if pool:
+            count = min(len(pool), remaining)
+            selected = random.sample(pool, count)
+            selected_ids.extend([q.id for q in selected])
+            remaining -= count
 
     # 实际取出的数量
     actual_count = len(selected_ids)
@@ -464,11 +502,28 @@ def list_practice_sets(
                 total_count = sum(s.total_count for s in sessions)
                 total_correct = sum(s.correct_count for s in sessions)
                 total_duration = sum(getattr(s, 'duration', 0) or 0 for s in sessions)
+
+                # 获取复习类型（从最近的复习日志中获取）
+                review_type = 1  # 默认默写
+                latest_session = sessions[0]  # 最近的复习场次
+                if latest_session.session_id:
+                    from app.models.word import WordReview
+                    word_review = db.query(WordReview).filter(WordReview.id == latest_session.session_id).first()
+                    if word_review:
+                        # 查找该场次的复习日志
+                        log = db.query(WordReviewLog).filter(
+                            WordReviewLog.reviewed_at >= word_review.reviewed_at,
+                            WordReviewLog.deleted == False
+                        ).order_by(WordReviewLog.reviewed_at.desc()).first()
+                        if log:
+                            review_type = log.review_type
+
                 word_review_stats = {
                     "total_count": total_count,
                     "correct_count": total_correct,
                     "accuracy": round(total_correct / total_count * 100, 1) if total_count > 0 else 0,
                     "duration": total_duration,
+                    "review_type": review_type,
                 }
                 print(f"[DEBUG] word_review_stats = {word_review_stats}")
 
@@ -528,12 +583,28 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
             total_count = sum(s.total_count for s in sessions)
             total_correct = sum(s.correct_count for s in sessions)
             total_duration = sum(getattr(s, 'duration', 0) or 0 for s in sessions)
+
+            # 获取复习类型（从最近的复习日志中获取）
+            review_type = 1  # 默认默写
+            latest_session = sessions[0]  # 最近的复习场次
+            if latest_session.session_id:
+                from app.models.word import WordReview
+                word_review = db.query(WordReview).filter(WordReview.id == latest_session.session_id).first()
+                if word_review:
+                    log = db.query(WordReviewLog).filter(
+                        WordReviewLog.reviewed_at >= word_review.reviewed_at,
+                        WordReviewLog.deleted == False
+                    ).order_by(WordReviewLog.reviewed_at.desc()).first()
+                    if log:
+                        review_type = log.review_type
+
             word_review_stats = {
                 "total_count": total_count,
                 "correct_count": total_correct,
                 "accuracy": round(total_correct / total_count * 100, 1) if total_count > 0 else 0,
                 "duration": total_duration,
                 "reviewed_at": sessions[0].reviewed_at if sessions else None,
+                "review_type": review_type,
             }
 
             # 获取单词题目（从 WordReviewLog 中获取，通过 reviewed_at 时间匹配）
@@ -584,6 +655,13 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                     "original_question_text": q.question_text,
                     "original_answer": q.correct_answer,
                     "original_image": None,
+                    # 阅读理解额外字段
+                    "option_a": q.option_a,
+                    "option_b": q.option_b,
+                    "option_c": q.option_c,
+                    "option_d": q.option_d,
+                    "explanation": q.explanation,
+                    "is_reading_question": True,
                 })
     else:
         # 错题练习集：获取题目列表
@@ -709,31 +787,59 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
     if not ps:
         raise HTTPException(status_code=404, detail="练习集不存在")
 
-    # 获取所有题目
-    ps_questions = db.query(PracticeSetQuestion).filter(
-        PracticeSetQuestion.practice_set_id == practice_set_id
-    ).order_by(PracticeSetQuestion.display_order).all()
-
     questions_data = []
-    for psq in ps_questions:
-        question = db.query(Question).filter(Question.id == psq.question_id).first()
-        if not question:
-            continue
 
-        if ps.question_type == "similar" and psq.similar_question_id:
-            similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
-            question_text = similar.similar_text if similar else ""
-        else:
-            question_text = question.parsed_question or question.original_text or ""
+    # 阅读理解类型：从ReadingPassage和ReadingQuestion获取题目
+    if ps.source_type == "reading" and ps.passage_id:
+        passage = db.query(ReadingPassage).filter(
+            ReadingPassage.id == ps.passage_id,
+            ReadingPassage.deleted == False
+        ).first()
+        if passage:
+            reading_questions = db.query(ReadingQuestion).filter(
+                ReadingQuestion.passage_id == ps.passage_id,
+                ReadingQuestion.deleted == False
+            ).order_by(ReadingQuestion.question_number).all()
 
-        questions_data.append({
-            "question_text": question_text,
-            "difficulty": question.difficulty or 3,
-            "id": question.id,
-            "knowledge_point": question.knowledge_point or "",
-            "error_type": question.error_type or "",
-            "review_count": question.review_count or 0,
-        })
+            for rq in reading_questions:
+                questions_data.append({
+                    "question_text": f"{rq.question_number}. {rq.question_text}",
+                    "option_a": rq.option_a,
+                    "option_b": rq.option_b,
+                    "option_c": rq.option_c,
+                    "option_d": rq.option_d,
+                    "is_reading_question": True,
+                    "id": rq.id,
+                })
+            # 保存短文标题供PDF使用
+            if questions_data:
+                questions_data[0]["_passage_title"] = passage.title
+                questions_data[0]["_passage_content"] = passage.content
+    else:
+        # 普通练习集：从PracticeSetQuestion获取题目
+        ps_questions = db.query(PracticeSetQuestion).filter(
+            PracticeSetQuestion.practice_set_id == practice_set_id
+        ).order_by(PracticeSetQuestion.display_order).all()
+
+        for psq in ps_questions:
+            question = db.query(Question).filter(Question.id == psq.question_id).first()
+            if not question:
+                continue
+
+            if ps.question_type == "similar" and psq.similar_question_id:
+                similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
+                question_text = similar.similar_text if similar else ""
+            else:
+                question_text = question.parsed_question or question.original_text or ""
+
+            questions_data.append({
+                "question_text": question_text,
+                "difficulty": question.difficulty or 3,
+                "id": question.id,
+                "knowledge_point": question.knowledge_point or "",
+                "error_type": question.error_type or "",
+                "review_count": question.review_count or 0,
+            })
 
     if not questions_data:
         raise HTTPException(status_code=400, detail="练习集没有题目")

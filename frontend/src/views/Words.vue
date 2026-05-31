@@ -70,9 +70,10 @@
         @sort-change="handleSortChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="english" label="英文" width="150">
+        <el-table-column prop="english" label="英文" width="180">
           <template #default="{ row }">
             <span class="word-english">{{ row.english }}</span>
+            <el-button class="audio-btn-table" @click.stop="playWordAudio(row.id)" :loading="audioLoading" size="small" circle>🔊</el-button>
           </template>
         </el-table-column>
         <el-table-column prop="chinese" label="中文" min-width="200" />
@@ -164,7 +165,10 @@
       <el-tabs v-if="detailVisible" v-model="activeTab">
         <el-tab-pane label="基本信息" name="info">
           <el-form label-width="80px" size="default">
-            <el-form-item label="英文">{{ detailWord.english }}</el-form-item>
+            <el-form-item label="英文">
+              {{ detailWord.english }}
+              <el-button class="audio-btn" @click="playWordAudio(detailWord.id)" :loading="audioLoading" size="small">🔊</el-button>
+            </el-form-item>
             <el-form-item label="中文">{{ detailWord.chinese }}</el-form-item>
             <el-form-item label="音标">{{ detailWord.phonetic || '-' }}</el-form-item>
             <el-form-item label="年级">{{ detailWord.grade ? detailWord.grade + '年级' : '-' }}</el-form-item>
@@ -228,7 +232,7 @@
     <el-dialog v-model="reviewVisible" title="单词复习" width="1200px" :close-on-click-modal="false" class="review-dialog">
       <div v-if="reviewStep === 'config'" class="review-config">
         <el-form-item label="复习数量">
-          <el-input-number v-model="reviewConfig.count" :min="1" :max="50" />
+          <el-input-number v-model="reviewConfig.count" :min="10" :max="50" />
         </el-form-item>
         <el-form-item label="年级筛选">
           <el-select v-model="reviewConfig.grade" placeholder="全部" clearable style="width: 100%">
@@ -237,8 +241,9 @@
         </el-form-item>
         <el-form-item label="题型">
           <el-radio-group v-model="reviewConfig.type">
-            <el-radio :label="1">默写英文</el-radio>
-            <el-radio :label="2">选择中文</el-radio>
+            <el-radio :value="1">默写英文</el-radio>
+            <el-radio :value="2">选择中文</el-radio>
+            <el-radio :value="3">听力</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-button type="primary" @click="startReviewGame" :disabled="reviewStarting" style="width: 100%">开始复习</el-button>
@@ -251,8 +256,12 @@
         </div>
 
         <div class="question-content">
+          <!-- 默写模式：显示中文 + 喇叭按钮 -->
           <div v-if="reviewConfig.type === 1" class="dictation">
-            <div class="chinese">{{ currentQuestion.chinese }}</div>
+            <div class="chinese">
+              {{ currentQuestion.chinese }}
+              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
+            </div>
             <div class="hint-box">
               <div class="hint">提示：{{ currentQuestion.word_length }}个字母</div>
             </div>
@@ -266,13 +275,40 @@
             />
           </div>
 
-          <div v-else class="choice">
-            <div class="english">{{ currentQuestion.english }}</div>
+          <!-- 选择模式：显示英文 + 喇叭按钮 -->
+          <div v-else-if="reviewConfig.type === 2" class="choice">
+            <div class="english">
+              {{ currentQuestion.english }}
+              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
+            </div>
             <el-radio-group v-model="selectedOption" @change="submitAnswer">
-              <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :label="opt" :disabled="currentQuestion.correct !== undefined">
+              <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :value="opt" :disabled="currentQuestion.correct !== undefined">
                 {{ opt }}
               </el-radio>
             </el-radio-group>
+          </div>
+
+          <!-- 听力模式：仅喇叭按钮 + 输入框 -->
+          <div v-else class="listening">
+            <div class="audio-controls">
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-large" type="primary" size="large">
+                🔊 播放发音
+              </el-button>
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-replay" size="small">
+                重播
+              </el-button>
+            </div>
+            <div class="hint-box">
+              <div class="hint">提示：{{ currentQuestion.word_length }}个字母</div>
+            </div>
+            <el-input
+              ref="answerInputRef"
+              v-model="userAnswer"
+              placeholder="输入听到的英文单词"
+              @keyup.enter="submitAnswer"
+              :disabled="currentQuestion.correct !== undefined"
+              class="answer-input"
+            />
           </div>
         </div>
 
@@ -315,7 +351,10 @@
           <div class="error-words-scroll">
             <div v-for="(q, idx) in reviewQuestions.filter(q => !q.correct)" :key="idx" class="error-word-item">
               <div class="correct-side">
-                <span class="correct-en">{{ q.english }}</span>
+                <span class="correct-en">
+                  {{ q.english }}
+                  <el-button class="audio-btn" @click="playWordAudio(q.word_id)" :loading="audioLoading" size="small">🔊</el-button>
+                </span>
                 <span class="correct-cn">{{ q.chinese }}</span>
               </div>
               <div class="wrong-side">
@@ -554,6 +593,7 @@ const currentIndex = ref(0)
 const userAnswer = ref('')
 const selectedOption = ref('')
 const currentSessionId = ref(null)
+const audioLoading = ref(false)
 const reviewResult = reactive({
   total: 0,
   correct: 0,
@@ -868,6 +908,11 @@ const startReviewGame = async () => {
     currentQuestion.value = reviewQuestions.value[0]
     reviewStep.value = 'question'
 
+    // 听力模式自动播放第一题
+    if (reviewConfig.type === 3) {
+      setTimeout(() => playWordAudio(reviewQuestions.value[0].word_id), 500)
+    }
+
     // 启动计时器 - 先清除可能存在的旧计时器
     if (reviewTimer.value) {
       clearInterval(reviewTimer.value)
@@ -884,10 +929,42 @@ const startReviewGame = async () => {
   }
 }
 
+// 播放单词音频
+const playWordAudio = async (wordId) => {
+  if (!wordId) return
+  audioLoading.value = true
+  
+  try {
+    const response = await fetch(`/api/words/${wordId}/audio`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    
+    const blob = await response.blob()
+    const audioUrl = URL.createObjectURL(blob)
+    const audio = new Audio(audioUrl)
+    
+    audio.onended = () => {
+      audioLoading.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    audio.onerror = () => {
+      audioLoading.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    
+    await audio.play()
+  } catch (e) {
+    console.error('音频播放失败:', e)
+    ElMessage.warning('音频播放失败')
+    audioLoading.value = false
+  }
+}
+
 const submitAnswer = () => {
   const q = currentQuestion.value
-  if (reviewConfig.type === 1) {
-    // 默写
+  if (reviewConfig.type === 1 || reviewConfig.type === 3) {
+    // 默写 或 听力：比较英文输入
     q.correct = userAnswer.value.toLowerCase().trim() === q.english.toLowerCase().trim()
     q.userAnswer = userAnswer.value
   } else {
@@ -920,6 +997,10 @@ const nextQuestion = () => {
   currentQuestion.value = reviewQuestions.value[currentIndex.value]
   userAnswer.value = ''
   selectedOption.value = ''
+  // 听力模式自动播放音频
+  if (reviewConfig.type === 3) {
+    setTimeout(() => playWordAudio(currentQuestion.value.word_id), 300)
+  }
   setTimeout(() => {
     const input = answerInputRef.value?.$el?.querySelector('input')
     if (input) {
@@ -1578,6 +1659,80 @@ onMounted(() => {
 
 .choice .el-radio .el-radio__label {
   font-size: 28px;
+}
+
+/* 听力模式 */
+.listening {
+  text-align: center;
+  padding: 20px;
+}
+
+.listening .audio-controls {
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.listening .audio-btn-large {
+  font-size: 32px;
+  padding: 30px 60px;
+}
+
+.listening .audio-btn-replay {
+  font-size: 18px;
+}
+
+.listening .hint-box {
+  margin-bottom: 40px;
+}
+
+.listening .hint {
+  font-size: 28px;
+  color: #606266;
+  background: #f5f7fa;
+  padding: 12px 32px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.listening .answer-input {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.listening .answer-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.listening .answer-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.3);
+}
+
+.listening .answer-input :deep(.el-input__inner) {
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 8px;
+  height: 60px;
+}
+
+/* 喇叭按钮通用样式 */
+.audio-btn {
+  font-size: 20px;
+  padding: 8px 12px;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.audio-btn-table {
+  font-size: 14px;
+  padding: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 .question-actions {

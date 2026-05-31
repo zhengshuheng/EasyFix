@@ -11,7 +11,7 @@ from app.models.word import Word, WordReview
 
 
 PRESET_ACTIONS = [
-    {"code": "upload_question", "name": "上传错题", "star_value": 10},
+    {"code": "upload_question", "name": "上传错题", "star_value": 0},
     {"code": "review_practice_set", "name": "复习练习集", "star_value": 5},
     {"code": "generate_similar", "name": "生成相似题", "star_value": 3},
     {"code": "review_word", "name": "背单词", "star_value": 2},

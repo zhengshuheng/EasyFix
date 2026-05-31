@@ -210,6 +210,28 @@ def create_word(data: WordCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(word)
 
+    # 异步预生成音频 + 获取音标
+    import threading
+    word_id = word.id
+    word_english = word.english
+    def _generate():
+        try:
+            from app.services.tts import tts_service
+            from app.database import SessionLocal
+            tts_service.generate_word_audio(word_english)
+            # 从 Free Dictionary API 获取音标
+            db2 = SessionLocal()
+            w = db2.query(Word).filter(Word.id == word_id).first()
+            if w and not w.phonetic:
+                info = tts_service.get_word_info(word_english)
+                if info and info.get("phonetic"):
+                    w.phonetic = info["phonetic"]
+                    db2.commit()
+            db2.close()
+        except Exception:
+            pass
+    threading.Thread(target=_generate, daemon=True).start()
+
     return word
 
 
@@ -254,6 +276,21 @@ def batch_create_words(data: WordBatchCreate, db: Session = Depends(get_db)):
             fail_count += 1
             results.append({"english": word_data.get('english', ''), "success": False, "error": str(e)})
 
+    # 异步预生成音频缓存
+    import threading
+    import concurrent.futures
+    created_words = [r["english"] for r in results if r.get("success")]
+    def _generate(word_text):
+        try:
+            from app.services.tts import tts_service
+            tts_service.generate_word_audio(word_text)
+        except Exception:
+            pass
+    def _batch_generate():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            executor.map(_generate, created_words)
+    threading.Thread(target=_batch_generate, daemon=True).start()
+
     return {
         "success_count": success_count,
         "fail_count": fail_count,
@@ -292,6 +329,73 @@ def delete_word(word_id: int, db: Session = Depends(get_db)):
 
     word.deleted = True
     db.commit()
+
+
+@router.get("/{word_id}/audio")
+def get_word_audio(word_id: int, db: Session = Depends(get_db)):
+    """获取单词发音音频（带缓存）"""
+    from fastapi.responses import FileResponse
+    from app.services.tts import tts_service
+
+    word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
+    if not word:
+        raise HTTPException(status_code=404, detail="单词不存在")
+
+    try:
+        audio_path = tts_service.generate_word_audio(word.english)
+        media_type = "audio/mpeg" if audio_path.endswith(".mp3") else "audio/wav"
+        return FileResponse(audio_path, media_type=media_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"音频生成失败: {str(e)}")
+
+
+@router.post("/generate-audio")
+def generate_audio(grade: Optional[int] = None, db: Session = Depends(get_db)):
+    """为所有单词批量预生成音频 + 音标（已缓存的跳过，后台异步执行）"""
+    import os
+    import threading
+    from app.services.tts import tts_service
+
+    query = db.query(Word).filter(Word.deleted == False)
+    if grade:
+        query = query.filter(Word.grade == grade)
+    words = query.all()
+
+    def _generate_all():
+        from app.database import SessionLocal
+        db2 = SessionLocal()
+        words2 = db2.query(Word).filter(Word.deleted == False).all()
+        if grade:
+            words2 = [w for w in words2 if w.grade == grade]
+
+        results = {"total": len(words2), "generated": 0, "skipped": 0, "failed": 0}
+        for word in words2:
+            text = word.english
+            mp3 = os.path.join(tts_service.audio_dir, f"{text.lower()}.mp3")
+            wav = os.path.join(tts_service.audio_dir, f"{text.lower()}.wav")
+            if os.path.exists(mp3) or os.path.exists(wav):
+                results["skipped"] += 1
+            else:
+                try:
+                    tts_service.generate_word_audio(text)
+                    results["generated"] += 1
+                except Exception:
+                    results["failed"] += 1
+            # 补全音标
+            if not word.phonetic:
+                info = tts_service.get_word_info(text)
+                if info and info.get("phonetic"):
+                    word.phonetic = info["phonetic"]
+        db2.commit()
+        db2.close()
+        print(f"[TTS] 批量预生成完成: {results}")
+
+    threading.Thread(target=_generate_all, daemon=True).start()
+
+    return {
+        "total": len(words),
+        "message": f"后台已开始生成，预计需要 {len(words) * 0.5:.0f} 秒"
+    }
 
 
 @router.get("/stats/summary", response_model=WordStatsResponse)
@@ -366,7 +470,7 @@ def get_stats(db: Session = Depends(get_db)):
 
 @router.post("/review/start", response_model=ReviewStartResponse)
 def start_review(
-    count: int = Query(25, ge=1, le=100, description="复习单词数量"),
+    count: int = Query(25, ge=10, le=100, description="复习单词数量"),
     grade: Optional[int] = Query(None, description="按年级筛选"),
     word_ids: Optional[str] = Query(None, description="指定单词ID，多个用逗号分隔"),
     db: Session = Depends(get_db)
@@ -484,7 +588,7 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
     # 获取复习的单词列表
     reviewed_words = []
     for result in data.results:
-        word = db.query(Word).filter(Word.id == result.word_id).first()
+        word = db.query(Word).filter(Word.id == result.word_id, Word.deleted == False).first()
         if not word:
             continue
         reviewed_words.append(word)
@@ -541,8 +645,9 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
     from app.services.motivation import MotivationService
     try:
         service = MotivationService(db)
-        # 单词复习通过练习集完成会计入review_practice_set
-        service.trigger_action("review_practice_set", reason="单词练习")
+        # 单词复习通过练习集完成会计入review_practice_set（需至少10个单词才积分）
+        if len(data.results) >= 10:
+            service.trigger_action("review_practice_set", reason="单词练习")
 
         # 检查单词正确率成就（满足条件时触发）
         if len(data.results) >= 10 and accuracy >= 90:

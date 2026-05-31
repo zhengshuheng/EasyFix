@@ -46,7 +46,7 @@ def get_records(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
     # 查询列表
     records = db.query(StarRecord).filter(
         StarRecord.deleted == False
-    ).order_by(StarRecord.created_at.desc()).offset(skip).limit(limit).all()
+    ).order_by(StarRecord.created_at.desc(), StarRecord.id.desc()).offset(skip).limit(limit).all()
 
     return {
         "total": total,

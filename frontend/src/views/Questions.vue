@@ -295,6 +295,21 @@
           <span v-if="!currentQuestion.tags?.length" class="text-muted">暂无</span>
         </div>
 
+        <!-- 练习历史卡片 -->
+        <div v-if="practiceHistory.length" class="detail-card">
+          <div class="card-header-purple">练习历史</div>
+          <div class="card-content">
+            <div v-for="(record, idx) in practiceHistory" :key="idx" class="history-item">
+              <span class="history-date">{{ record.date }}</span>
+              <span class="history-name">{{ record.practice_set_name }}</span>
+              <el-tag :type="record.is_correct ? 'success' : 'danger'" size="small">
+                {{ record.is_correct ? '✓ 正确' : '✗ 错误' }}
+              </el-tag>
+            </div>
+            <div v-if="practiceHistory.length === 0" class="text-muted">暂无练习记录</div>
+          </div>
+        </div>
+
         <!-- 相似题卡片 -->
         <div v-if="currentQuestion.similar_questions?.length" class="detail-card">
           <div class="card-header-purple">相似题</div>
@@ -481,6 +496,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
+import axios from 'axios'
 
 // 年级选项：一年级到六年级，初一/初二/初三，高一/高二/高三
 const gradeOptions = [
@@ -565,6 +581,7 @@ const pagination = reactive({
 const detailVisible = ref(false)
 const editVisible = ref(false)
 const currentQuestion = ref(null)
+const practiceHistory = ref([])
 const imagePreviewVisible = ref(false)
 const imagePreviewUrl = ref('')
 const editLoading = ref(false)
@@ -822,6 +839,14 @@ const viewDetail = async (row) => {
   const { data } = await questionApi.get(row.id)
   currentQuestion.value = data
   detailVisible.value = true
+
+  // 获取练习历史
+  try {
+    const historyRes = await axios.get(`/api/questions/${row.id}/practice-history`)
+    practiceHistory.value = historyRes.data || []
+  } catch {
+    practiceHistory.value = []
+  }
 }
 
 const previewImage = (url) => {
@@ -1491,5 +1516,30 @@ onMounted(() => {
 .text-muted {
   color: #c0c4cc;
   font-size: 14px;
+}
+
+/* 练习历史 */
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-date {
+  color: #909399;
+  font-size: 13px;
+  min-width: 140px;
+}
+
+.history-name {
+  flex: 1;
+  font-size: 14px;
+  color: #303133;
 }
 </style>

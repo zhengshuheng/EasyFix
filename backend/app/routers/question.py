@@ -4,6 +4,7 @@ from typing import Optional, List
 import json
 from app.database import get_db
 from app.models import Question, Tag, QuestionTag
+from app.models.practice_set import PracticeSetQuestion, PracticeSet
 from app.models.operation_log import OperationType
 from app.schemas import QuestionCreate, QuestionUpdate, QuestionResponse, QuestionListResponse, QuestionBatchCreate, BatchCreateResponse
 from app.services.logger import logger_service
@@ -189,6 +190,27 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/{question_id}/practice-history")
+def get_practice_history(question_id: int, db: Session = Depends(get_db)):
+    """获取指定错题的练习历史记录"""
+    question = db.query(Question).filter(Question.id == question_id, Question.deleted == False).first()
+    if not question:
+        raise HTTPException(status_code=404, detail="错题不存在")
+
+    records = db.query(PracticeSetQuestion).join(PracticeSet).filter(
+        PracticeSetQuestion.question_id == question_id,
+        PracticeSetQuestion.is_correct.isnot(None),
+        PracticeSet.deleted == False
+    ).order_by(PracticeSet.created_at.desc()).all()
+
+    return [{
+        "practice_set_id": r.practice_set_id,
+        "practice_set_name": r.practice_set.name if r.practice_set else "未知练习集",
+        "date": r.practice_set.created_at.strftime("%Y-%m-%d %H:%M") if r.practice_set and r.practice_set.created_at else "未知日期",
+        "is_correct": r.is_correct
+    } for r in records]
+
+
 @router.post("", response_model=QuestionResponse, status_code=201)
 def create_question(data: QuestionCreate, db: Session = Depends(get_db)):
     try:
@@ -215,14 +237,6 @@ def create_question(data: QuestionCreate, db: Session = Depends(get_db)):
         db.add(question)
         db.commit()
         db.refresh(question)
-
-        # 触发积分行为
-        from app.services.motivation import MotivationService
-        try:
-            service = MotivationService(db)
-            service.trigger_action("upload_question", reason="上传错题")
-        except Exception:
-            pass  # 激励系统不影响主流程
 
         # 处理标签关联
         if data.tag_ids:

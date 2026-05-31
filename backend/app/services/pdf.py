@@ -120,7 +120,7 @@ class PracticeSetPDF(FPDF):
             self.set_font('chinese_b', size=11)
             self.set_fill_color(*self.METADATA_TEXT_COLOR)  # 灰色背景
             self.set_text_color(255, 255, 255)
-            self.cell(28, 8, f'[ID:{question_id}]', new_x=XPos.RIGHT, new_y=YPos.TAP, align='C', fill=True)
+            self.cell(28, 8, f'[ID:{question_id}]', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C', fill=True)
 
         # 题目编号背景
         self.set_font('chinese_b', size=11)
@@ -175,23 +175,121 @@ class PracticeSetPDF(FPDF):
         self.multi_cell(0, 6, safe_text, fill=True)
         self.ln(8)
 
+    def add_reading_passage(self, title: str, content: str):
+        """添加阅读短文"""
+        self.add_page()
+        # 标题
+        self.set_font('chinese_b', size=14)
+        self.set_text_color(*self.THEME_COLOR)
+        self.cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+        self.set_text_color(*self.TEXT_COLOR)
+        self.ln(5)
+        # 内容（英文原文）
+        self.set_font('chinese', size=11)
+        paragraphs = content.split('\n')
+        for para in paragraphs:
+            para = para.strip()
+            if para:
+                self.multi_cell(0, 6, para)
+                self.ln(2)
+        self.ln(8)
+
+    def add_reading_question(self, index: int, question_text: str, option_a: str = None,
+                             option_b: str = None, option_c: str = None, option_d: str = None):
+        """添加一道阅读理解选择题"""
+        def strip_option_prefix(text):
+            """去除选项前缀A. B. C. D. 等各种格式"""
+            if not text:
+                return ''
+            text = text.strip()
+            import re
+            match = re.match(r'^[A-Da-d]\s*[.、．]\s*', text)
+            if match:
+                return text[match.end():]
+            match = re.match(r'^\([A-Da-d]\)\s*', text)
+            if match:
+                return text[match.end():]
+            match = re.match(r'^[A-Da-d]\)\s*', text)
+            if match:
+                return text[match.end():]
+            return text
+
+        # 分隔线
+        self.set_draw_color(*self.SEPARATOR_COLOR)
+        self.set_line_width(0.3)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.ln(5)
+
+        # 题目编号
+        self.set_font('chinese_b', size=11)
+        self.set_fill_color(*self.THEME_COLOR)
+        self.set_text_color(255, 255, 255)
+        self.cell(22, 8, f'第{index}题', new_x=XPos.LMARGIN, new_y=YPos.TOP, align='C', fill=True)
+        self.set_text_color(*self.TEXT_COLOR)
+        self.ln(10)
+
+        # 题目文本
+        self.set_font('chinese', size=11)
+        self.multi_cell(0, 6, question_text)
+        self.ln(3)
+
+        # 选项（已包含字母前缀，直接显示）
+        self.set_font('chinese', size=10)
+        options = [
+            ('A', option_a),
+            ('B', option_b),
+            ('C', option_c),
+            ('D', option_d),
+        ]
+        for letter, option_text in options:
+            if option_text:
+                self.set_font('chinese_b', size=10)
+                self.cell(12, 6, f'{letter}.', new_x=XPos.RIGHT, new_y=YPos.TOP)
+                self.set_font('chinese', size=10)
+                self.multi_cell(0, 6, strip_option_prefix(option_text))
+                self.ln(1)
+        self.ln(6)
+
     def generate(self, output_path: str):
         """生成PDF文件"""
-        self.add_page()
+        # 检查是否有阅读理解题目
+        has_reading = any(q.get('is_reading_question') for q in self.questions)
 
-        for idx, q in enumerate(self.questions, 1):
-            question_text = q.get('question_text', '')
-            difficulty = q.get('difficulty', 3)
-            question_id = q.get('id')
-            knowledge_point = q.get('knowledge_point')
-            error_type = q.get('error_type')
-            review_count = q.get('review_count')
+        if has_reading:
+            # 阅读理解模式：先显示短文，再显示题目
+            first_reading_q = self.questions[0]
+            passage_title = first_reading_q.get('_passage_title', '阅读短文')
+            passage_content = first_reading_q.get('_passage_content', '')
+            self.add_reading_passage(passage_title, passage_content)
 
-            # 检查是否需要新页面
-            if self.get_y() > 220:
-                self.add_page()
+            for idx, q in enumerate(self.questions, 1):
+                # 检查是否需要新页面
+                if self.get_y() > 220:
+                    self.add_page()
+                self.add_reading_question(
+                    idx,
+                    q.get('question_text', ''),
+                    q.get('option_a'),
+                    q.get('option_b'),
+                    q.get('option_c'),
+                    q.get('option_d'),
+                )
+        else:
+            # 普通练习集模式
+            self.add_page()
+            for idx, q in enumerate(self.questions, 1):
+                question_text = q.get('question_text', '')
+                difficulty = q.get('difficulty', 3)
+                question_id = q.get('id')
+                knowledge_point = q.get('knowledge_point')
+                error_type = q.get('error_type')
+                review_count = q.get('review_count')
 
-            self.add_question(idx, question_text, difficulty, question_id, knowledge_point, error_type, review_count)
+                # 检查是否需要新页面
+                if self.get_y() > 220:
+                    self.add_page()
+
+                self.add_question(idx, question_text, difficulty, question_id, knowledge_point, error_type, review_count)
 
         # 输出到文件
         self.output(output_path)

@@ -83,10 +83,10 @@
             <div v-for="q in selectedPassage.questions" :key="q.id" class="question-item">
               <p class="question-text">{{ q.question_number }}. {{ q.question_text }}</p>
               <div class="options">
-                <div class="option">A. {{ q.option_a }}</div>
-                <div class="option">B. {{ q.option_b }}</div>
-                <div class="option">C. {{ q.option_c }}</div>
-                <div class="option">D. {{ q.option_d }}</div>
+                <div class="option">{{ formatOption('A', q.option_a) }}</div>
+                <div class="option">{{ formatOption('B', q.option_b) }}</div>
+                <div class="option">{{ formatOption('C', q.option_c) }}</div>
+                <div class="option">{{ formatOption('D', q.option_d) }}</div>
               </div>
               <el-button v-if="showAllAnswers" size="small" type="warning" @click="toggleQuestionAnswer(q)">
                 {{ q._showAnswer ? '隐藏答案' : '查看答案' }}
@@ -161,6 +161,17 @@ const generateForm = reactive({
   topic: '校园生活',
   difficulty: 3,
 })
+
+// 格式化选项（带字母前缀，避免重复）
+function formatOption(letter, text) {
+  if (!text) return ''
+  text = text.trim()
+  // 去除已有的选项前缀（A. B. C. D. / A、B、C、D、 / (A) / A) 等各种格式）
+  text = text.replace(/^[A-Da-d]\s*[.、．]\s*/, '')
+  text = text.replace(/^\([A-Da-d]\)\s*/, '')
+  text = text.replace(/^[A-Da-d]\)\s*/, '')
+  return letter + '. ' + text
+}
 
 const contentParagraphs = computed(() => {
   if (!selectedPassage.value) return []
