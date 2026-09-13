@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, Integer
+from typing import Optional
+import json
 from app.database import get_db
 from app.models import Question, Subject, ErrorBook, Word, WordReviewLog, PracticeSet, PracticeSetQuestion
+from app.models.practice_set import WordReviewSession
 from app.schemas import StatsResponse, SubjectStats, GradeStats, SemesterStats, WordStats, AccuracyCurvePoint, TodayStats, LearningOverview
 from datetime import datetime, timedelta
 
@@ -10,32 +13,42 @@ router = APIRouter(prefix="/api/stats", tags=["统计"])
 
 
 @router.get("/summary", response_model=StatsResponse)
-def get_stats_summary(db: Session = Depends(get_db)):
-    """获取统计概览（只统计未删除的记录）"""
-    total_questions = db.query(func.count(Question.id)).filter(Question.deleted == False).scalar()
-    to_review_questions = db.query(func.count(Question.id)).filter(
-        Question.deleted == False,
+def get_stats_summary(
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤，不区分学期"),
+    db: Session = Depends(get_db),
+):
+    """获取统计概览（只统计未删除的记录；可按年级过滤）"""
+    q_base = db.query(Question).filter(Question.deleted == False)
+    w_base = db.query(Word).filter(Word.deleted == False)
+    if grade is not None:
+        q_base = q_base.filter(Question.grade == grade)
+        w_base = w_base.filter(Word.grade == grade)
+
+    total_questions = q_base.count()
+    to_review_questions = q_base.filter(
         (Question.review_count == 0) | (Question.review_count.is_(None)) |
         ((Question.review_count > 0) & (Question.correct_count == 0))
-    ).scalar() or 0
+    ).count() or 0
     total_subjects = db.query(func.count(Subject.id)).filter(Subject.deleted == False).scalar()
     total_error_books = db.query(func.count(ErrorBook.id)).filter(ErrorBook.deleted == False).scalar()
 
     difficulty_query = (
         db.query(Question.difficulty, func.count(Question.id))
         .filter(Question.deleted == False)
-        .group_by(Question.difficulty)
-        .all()
     )
+    if grade is not None:
+        difficulty_query = difficulty_query.filter(Question.grade == grade)
+    difficulty_query = difficulty_query.group_by(Question.difficulty).all()
     difficulty_distribution = {str(k): v for k, v in difficulty_query}
 
     error_type_query = (
         db.query(Question.error_type)
         .filter(Question.deleted == False, Question.error_type.isnot(None))
-        .all()
     )
+    if grade is not None:
+        error_type_query = error_type_query.filter(Question.grade == grade)
     error_type_counts = {}
-    for (et,) in error_type_query:
+    for (et,) in error_type_query.all():
         if et:
             for single_et in et.split(','):
                 single_et = single_et.strip()
@@ -47,18 +60,20 @@ def get_stats_summary(db: Session = Depends(get_db)):
         db.query(Subject.id, Subject.name, func.count(Question.id))
         .join(Question, Subject.id == Question.subject_id)
         .filter(Subject.deleted == False, Question.deleted == False)
-        .group_by(Subject.id, Subject.name)
-        .all()
     )
+    if grade is not None:
+        subject_query = subject_query.filter(Question.grade == grade)
+    subject_query = subject_query.group_by(Subject.id, Subject.name).all()
 
     by_subject = []
     for subject_id, subject_name, question_count in subject_query:
         error_counts = (
             db.query(Question.error_type, func.count(Question.id))
             .filter(Question.subject_id == subject_id, Question.deleted == False, Question.error_type.isnot(None))
-            .group_by(Question.error_type)
-            .all()
         )
+        if grade is not None:
+            error_counts = error_counts.filter(Question.grade == grade)
+        error_counts = error_counts.group_by(Question.error_type).all()
         error_type_counts = {}
         for (et, count) in error_counts:
             if et:
@@ -70,17 +85,19 @@ def get_stats_summary(db: Session = Depends(get_db)):
         difficulty_counts = (
             db.query(Question.difficulty, func.count(Question.id))
             .filter(Question.subject_id == subject_id, Question.deleted == False)
-            .group_by(Question.difficulty)
-            .all()
         )
+        if grade is not None:
+            difficulty_counts = difficulty_counts.filter(Question.grade == grade)
+        difficulty_counts = difficulty_counts.group_by(Question.difficulty).all()
         difficulty_dist = {str(k): v for k, v in difficulty_counts}
 
         kp_counts = (
             db.query(Question.knowledge_point, func.count(Question.id))
             .filter(Question.subject_id == subject_id, Question.deleted == False, Question.knowledge_point.isnot(None))
-            .group_by(Question.knowledge_point)
-            .all()
         )
+        if grade is not None:
+            kp_counts = kp_counts.filter(Question.grade == grade)
+        kp_counts = kp_counts.group_by(Question.knowledge_point).all()
         knowledge_point_counts = {k: v for k, v in kp_counts if k}
 
         practice_count = db.query(func.count(PracticeSet.id)).filter(
@@ -97,6 +114,15 @@ def get_stats_summary(db: Session = Depends(get_db)):
             practice_count=practice_count,
         ))
 
+    # 单词按年级分布（不区分学期）
+    word_grade_query = (
+        db.query(Word.grade, func.count(Word.id))
+        .filter(Word.deleted == False, Word.grade.isnot(None))
+        .group_by(Word.grade)
+        .all()
+    )
+    word_grade_dist = {int(g): int(c) for g, c in word_grade_query}
+
     grade_query = (
         db.query(Question.grade, func.count(Question.id))
         .filter(Question.deleted == False)
@@ -104,42 +130,80 @@ def get_stats_summary(db: Session = Depends(get_db)):
         .all()
     )
     by_grade = []
-    for grade, count in grade_query:
-        if grade is not None:
+    covered_grades = set()
+    for g, count in grade_query:
+        if g is not None:
+            g = int(g)
+            covered_grades.add(g)
             diff_counts = (
                 db.query(Question.difficulty, func.count(Question.id))
-                .filter(Question.deleted == False, Question.grade == grade)
+                .filter(Question.deleted == False, Question.grade == g)
                 .group_by(Question.difficulty)
                 .all()
             )
-            by_grade.append(GradeStats(grade=grade, question_count=count, difficulty_distribution={str(k): v for k, v in diff_counts}))
+            by_grade.append(GradeStats(
+                grade=g,
+                question_count=count,
+                word_count=word_grade_dist.get(g, 0),
+                difficulty_distribution={str(k): v for k, v in diff_counts}
+            ))
+    for g, wc in word_grade_dist.items():
+        if g not in covered_grades:
+            by_grade.append(GradeStats(grade=g, question_count=0, word_count=wc, difficulty_distribution={}))
+    by_grade.sort(key=lambda x: x.grade)
 
     semester_query = (
         db.query(Question.semester, func.count(Question.id))
         .filter(Question.deleted == False)
-        .group_by(Question.semester)
-        .all()
     )
+    if grade is not None:
+        semester_query = semester_query.filter(Question.grade == grade)
+    semester_query = semester_query.group_by(Question.semester).all()
     by_semester = []
     for semester, count in semester_query:
         if semester is not None:
-            diff_counts = (
+            diff_q = (
                 db.query(Question.difficulty, func.count(Question.id))
                 .filter(Question.deleted == False, Question.semester == semester)
-                .group_by(Question.difficulty)
-                .all()
             )
+            if grade is not None:
+                diff_q = diff_q.filter(Question.grade == grade)
+            diff_counts = diff_q.group_by(Question.difficulty).all()
             by_semester.append(SemesterStats(semester=semester, question_count=count, difficulty_distribution={str(k): v for k, v in diff_counts}))
 
-    total_words = db.query(func.count(Word.id)).filter(Word.deleted == False).scalar() or 0
-    reviewed_words = db.query(func.count(Word.id)).filter(Word.deleted == False, Word.review_count > 0).scalar() or 0
-    total_reviews = db.query(func.sum(Word.review_count)).filter(Word.deleted == False).scalar() or 0
-    total_correct = db.query(func.sum(Word.correct_count)).filter(Word.deleted == False).scalar() or 0
-    word_accuracy = round(total_correct / total_reviews * 100, 1) if total_reviews > 0 else 0.0
-    to_review_count = db.query(func.count(Word.id)).filter(
-        Word.deleted == False,
+    total_words = w_base.count()
+    reviewed_words = w_base.filter(Word.review_count > 0).count()
+
+    # 复习次数 = 练习场次数（排除已删除练习集）
+    total_reviews = (
+        db.query(func.count(WordReviewSession.id))
+        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
+        .filter(
+            (WordReviewSession.practice_set_id.is_(None))
+            | (PracticeSet.deleted == False)
+        )
+        .scalar() or 0
+    )
+
+    # 正确率按复习日志统计（排除已删日志；年级过滤时关联单词表）
+    word_total_logs = db.query(func.count(WordReviewLog.id)).filter(WordReviewLog.deleted == False)
+    word_correct_logs = db.query(func.count(WordReviewLog.id)).filter(
+        WordReviewLog.deleted == False, WordReviewLog.is_correct == True
+    )
+    if grade is not None:
+        word_total_logs = word_total_logs.join(Word, Word.id == WordReviewLog.word_id).filter(
+            Word.deleted == False, Word.grade == grade
+        )
+        word_correct_logs = word_correct_logs.join(Word, Word.id == WordReviewLog.word_id).filter(
+            Word.deleted == False, Word.grade == grade
+        )
+    total_log_count = word_total_logs.scalar() or 0
+    total_log_correct = word_correct_logs.scalar() or 0
+    word_accuracy = round(total_log_correct / total_log_count * 100, 1) if total_log_count > 0 else 0.0
+
+    to_review_count = w_base.filter(
         (Word.next_review_at == None) | (Word.next_review_at <= datetime.now())
-    ).scalar() or 0
+    ).count() or 0
 
     word_stats = WordStats(
         total_words=total_words,
@@ -147,15 +211,19 @@ def get_stats_summary(db: Session = Depends(get_db)):
         total_reviews=total_reviews,
         accuracy=word_accuracy,
         to_review_count=to_review_count,
+        grade_distribution={str(k): v for k, v in word_grade_dist.items()},
     )
 
     thirty_days_ago = datetime.now() - timedelta(days=30)
-    word_logs = (
+    word_logs_q = (
         db.query(WordReviewLog.reviewed_at, WordReviewLog.is_correct)
         .filter(WordReviewLog.deleted == False, WordReviewLog.reviewed_at >= thirty_days_ago)
-        .order_by(WordReviewLog.reviewed_at)
-        .all()
     )
+    if grade is not None:
+        word_logs_q = word_logs_q.join(Word, Word.id == WordReviewLog.word_id).filter(
+            Word.deleted == False, Word.grade == grade
+        )
+    word_logs = word_logs_q.order_by(WordReviewLog.reviewed_at).all()
     daily_word = {}
     for log in word_logs:
         date_str = log.reviewed_at.strftime('%Y-%m-%d')
@@ -173,8 +241,10 @@ def get_stats_summary(db: Session = Depends(get_db)):
 
     question_accuracy_curve = []
 
-    active_days_query = db.query(func.count(func.distinct(func.date(Question.created_at)))).filter(Question.deleted == False).scalar() or 0
-    active_days = active_days_query
+    active_days_query = db.query(func.count(func.distinct(func.date(Question.created_at)))).filter(Question.deleted == False)
+    if grade is not None:
+        active_days_query = active_days_query.filter(Question.grade == grade)
+    active_days = active_days_query.scalar() or 0
 
     return StatsResponse(
         total_questions=total_questions,
@@ -200,10 +270,16 @@ def get_today_stats(db: Session = Depends(get_db)):
     today_end = today_start + timedelta(days=1)
 
     from app.models import WordReviewSession
-    word_sessions = db.query(WordReviewSession).filter(
-        WordReviewSession.reviewed_at >= today_start,
-        WordReviewSession.reviewed_at < today_end
-    ).all()
+    word_sessions = (
+        db.query(WordReviewSession)
+        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
+        .filter(
+            WordReviewSession.reviewed_at >= today_start,
+            WordReviewSession.reviewed_at < today_end,
+            (WordReviewSession.practice_set_id.is_(None)) | (PracticeSet.deleted == False),
+        )
+        .all()
+    )
 
     today_word_review_count = sum(s.total_count for s in word_sessions)
     today_word_correct = sum(s.correct_count for s in word_sessions)
@@ -240,8 +316,8 @@ def get_today_stats(db: Session = Depends(get_db)):
     )
 
 
-def get_date_stats(db, date_start, date_end):
-    """获取指定日期范围的统计数据"""
+def get_date_stats(db, date_start, date_end, grade: Optional[int] = None):
+    """获取指定日期范围的统计数据，可按年级过滤"""
     from app.models import PracticeSet, PracticeSetQuestion, WordReviewSession
 
     practice_sets = db.query(PracticeSet).filter(
@@ -250,13 +326,60 @@ def get_date_stats(db, date_start, date_end):
         PracticeSet.created_at < date_end
     ).all()
 
-    word_sessions = db.query(WordReviewSession).filter(
-        WordReviewSession.reviewed_at >= date_start,
-        WordReviewSession.reviewed_at < date_end
-    ).all()
+    # 单词：优先按练习场次统计，并排除已删除练习
+    session_rows = (
+        db.query(WordReviewSession)
+        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
+        .filter(
+            WordReviewSession.reviewed_at >= date_start,
+            WordReviewSession.reviewed_at < date_end,
+            (WordReviewSession.practice_set_id.is_(None)) | (PracticeSet.deleted == False),
+        )
+        .all()
+    )
 
-    word_review_count = sum(s.total_count for s in word_sessions)
-    word_correct = sum(s.correct_count for s in word_sessions)
+    if grade is not None:
+        # 年级过滤：优先用场次明细中的单词结果
+        word_review_count = 0
+        word_correct = 0
+        used_detail = False
+        for s in session_rows:
+            if not s.word_results:
+                continue
+            used_detail = True
+            try:
+                items = json.loads(s.word_results)
+            except Exception:
+                continue
+            for item in items:
+                wid = item.get("word_id")
+                if not wid:
+                    continue
+                w = db.query(Word).filter(Word.id == wid, Word.deleted == False, Word.grade == grade).first()
+                if not w:
+                    continue
+                word_review_count += 1
+                if item.get("is_correct"):
+                    word_correct += 1
+        if not used_detail:
+            # 旧场次无明细时，退回日志关联（已删除练习的日志在删除时会软删）
+            word_logs = (
+                db.query(WordReviewLog.is_correct)
+                .join(Word, Word.id == WordReviewLog.word_id)
+                .filter(
+                    WordReviewLog.deleted == False,
+                    WordReviewLog.reviewed_at >= date_start,
+                    WordReviewLog.reviewed_at < date_end,
+                    Word.deleted == False,
+                    Word.grade == grade,
+                )
+                .all()
+            )
+            word_review_count = len(word_logs)
+            word_correct = sum(1 for (ok,) in word_logs if ok)
+    else:
+        word_review_count = sum(s.total_count or 0 for s in session_rows)
+        word_correct = sum(s.correct_count or 0 for s in session_rows)
     word_accuracy = round(word_correct / word_review_count * 100, 1) if word_review_count > 0 else 0.0
 
     question_sets = [ps for ps in practice_sets if ps.source_type == 'question']
@@ -269,6 +392,14 @@ def get_date_stats(db, date_start, date_end):
             PracticeSetQuestion.is_correct.isnot(None)
         ).all()
         for q in questions:
+            if grade is not None:
+                qq = db.query(Question).filter(
+                    Question.id == q.question_id,
+                    Question.deleted == False,
+                    Question.grade == grade,
+                ).first()
+                if not qq:
+                    continue
             question_ids_set.add(q.question_id)
             if q.is_correct:
                 question_correct_count += 1
@@ -285,7 +416,10 @@ def get_date_stats(db, date_start, date_end):
 
 
 @router.get("/overview", response_model=LearningOverview)
-def get_learning_overview(db: Session = Depends(get_db)):
+def get_learning_overview(
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤"),
+    db: Session = Depends(get_db),
+):
     """获取学习概览（昨日 + 今日数据）"""
     from datetime import datetime, timedelta
 
@@ -294,8 +428,8 @@ def get_learning_overview(db: Session = Depends(get_db)):
     yesterday_start = today_start - timedelta(days=1)
     yesterday_end = today_start
 
-    yesterday = get_date_stats(db, yesterday_start, yesterday_end)
-    today = get_date_stats(db, today_start, today_end)
+    yesterday = get_date_stats(db, yesterday_start, yesterday_end, grade=grade)
+    today = get_date_stats(db, today_start, today_end, grade=grade)
 
     return LearningOverview(
         yesterday_word_review_count=yesterday['word_review_count'],

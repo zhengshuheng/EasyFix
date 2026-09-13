@@ -59,6 +59,8 @@ class WordReviewSession(Base):
     accuracy = Column(Integer, default=0)  # 正确率(%)
     duration = Column(Integer, default=0)  # 用时（秒）
     reviewed_at = Column(DateTime, server_default=func.now())  # 复习时间
+    # JSON: [{"word_id":1,"is_correct":true}, ...] 删除练习时用于回滚单词复习计数
+    word_results = Column(Text, nullable=True)
 
     # Relationships
     practice_set = relationship("PracticeSet", back_populates="word_review_sessions")

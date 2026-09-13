@@ -34,6 +34,8 @@ npm run build                   # 生产构建，输出到 dist/
 - **文件上传路径**：`backend/uploads/images/{year}/{month}/{uuid}_{filename}`。Vite 开发服务器代理 `/uploads`，生产环境由 FastAPI 直接提供静态文件。
 - **访问密码**：Settings/Management 页面密码为 `32167`，硬编码在 `backend/app/access_config.py`。
 - **MCP 服务**：`.mcp.json` 配置了 MySQL（localhost:3306/easyfix）、browser、playwright。
+- **导航菜单**：`frontend/src/App.vue` 顶部水平菜单，包含首页、错题、单词、练习、阅读、统计、学习分析、激励中心、管理、配置。
+- **前端 API 层**：`frontend/src/api/` 下有 5 个模块（question、word、learning_report、motivation、learning_analysis），其余 API 直接在组件内调用。
 
 ## 新增后端路由步骤
 
@@ -47,7 +49,7 @@ npm run build                   # 生产构建，输出到 dist/
 
 1. 在 `frontend/src/views/<Name>.vue` 创建页面组件
 2. 在 `frontend/src/router/index.js` 添加路由配置
-3. 在 `frontend/src/App.vue` 添加侧边栏导航链接
+3. 在 `frontend/src/App.vue` 顶部菜单添加导航链接
 4. API 调用写在 `frontend/src/api/` 下，使用 axios
 
 ## 代码规范

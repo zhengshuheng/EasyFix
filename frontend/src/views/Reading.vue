@@ -138,6 +138,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useAppConfigStore } from '@/stores/appConfig'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -150,6 +151,7 @@ const showAllAnswers = ref(false)
 const showGenerateDialog = ref(false)
 const generating = ref(false)
 
+const appConfigStore = useAppConfigStore()
 const filters = reactive({
   topic: '',
   grade: null,
@@ -259,7 +261,12 @@ async function createPracticeSet() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await appConfigStore.load()
+  if (filters.grade == null) filters.grade = appConfigStore.defaultGrade
+  if (generateForm.grade == null && appConfigStore.defaultGrade != null) {
+    generateForm.grade = appConfigStore.defaultGrade
+  }
   fetchTopics()
   fetchReadings()
 })

@@ -7,6 +7,7 @@ from sqlalchemy import func, desc, or_
 from typing import Optional, List
 from pydantic import BaseModel
 import random
+import json
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models import Word, Tag, WordReviewLog, WordReview
@@ -404,12 +405,22 @@ def get_stats(db: Session = Depends(get_db)):
     # 总单词数
     total_words = db.query(Word).filter(Word.deleted == False).count()
 
-    # 总复习次数
-    total_reviews = db.query(WordReviewLog).filter(WordReviewLog.deleted == False).count()
+    # 总复习次数 = 练习场次数（排除已删除练习集）
+    from app.models.practice_set import WordReviewSession, PracticeSet
+    total_reviews = (
+        db.query(func.count(WordReviewSession.id))
+        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
+        .filter(
+            (WordReviewSession.practice_set_id.is_(None))
+            | (PracticeSet.deleted == False)
+        )
+        .scalar() or 0
+    )
     total_correct = db.query(WordReviewLog).filter(WordReviewLog.deleted == False, WordReviewLog.is_correct == True).count()
+    total_logs = db.query(WordReviewLog).filter(WordReviewLog.deleted == False).count()
 
     # 正确率
-    accuracy = (total_correct / total_reviews * 100) if total_reviews > 0 else 0
+    accuracy = (total_correct / total_logs * 100) if total_logs > 0 else 0
 
     # 各状态单词数
     mastered_words = db.query(Word).filter(
@@ -689,6 +700,10 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
             accuracy=int(accuracy),
             duration=data.duration or 0,
             reviewed_at=now,
+            word_results=json.dumps([
+                {"word_id": r.word_id, "is_correct": bool(r.is_correct)}
+                for r in data.results
+            ], ensure_ascii=False),
         )
         db.add(word_review_session)
         db.commit()

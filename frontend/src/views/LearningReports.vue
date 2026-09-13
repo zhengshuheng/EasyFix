@@ -265,11 +265,13 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useAppConfigStore } from '@/stores/appConfig'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { learningReportApi } from '@/api/learning_report'
 import { questionApi } from '@/api/question'
 
+const appConfigStore = useAppConfigStore()
 const reports = ref({ total: 0, items: [] })
 const subjects = ref([])
 const filters = reactive({
@@ -420,7 +422,9 @@ const deleteReport = async (row) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await appConfigStore.load()
+  if (generateForm.grade == null) generateForm.grade = appConfigStore.defaultGrade
   fetchReports()
   fetchSubjects()
 })

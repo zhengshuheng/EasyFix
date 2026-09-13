@@ -4,8 +4,8 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # Database
-    DB_TYPE: str = "sqlite"  # "mysql" or "sqlite"
+    # Database: sqlite / mysql / postgres
+    DB_TYPE: str = "sqlite"  # "sqlite" | "mysql" | "postgres"
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "root"
@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         if self.DB_TYPE == "sqlite":
             return f"sqlite:///{self.DB_PATH}"
+        if self.DB_TYPE in ("postgres", "postgresql"):
+            return (
+                f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            )
         return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
 
     class Config:

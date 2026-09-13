@@ -1031,7 +1031,7 @@ def batch_download_pdf(data: BatchDeleteRequest, db: Session = Depends(get_db)):
 
 @router.delete("/{practice_set_id}", status_code=204)
 def delete_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
-    """删除练习集（软删除）"""
+    """删除练习集（软删除）；单词练习会回滚对应单词的复习计数"""
     ps = db.query(PracticeSet).filter(
         PracticeSet.id == practice_set_id,
         PracticeSet.deleted == False
@@ -1040,5 +1040,61 @@ def delete_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
     if not ps:
         raise HTTPException(status_code=404, detail="练习集不存在")
 
+    # 单词练习：回滚单词复习计数，避免已删除练习继续计入复习统计
+    if ps.source_type == "word":
+        _revert_word_review_for_practice(ps, db)
+
     ps.deleted = True
     db.commit()
+
+
+def _revert_word_review_for_practice(ps, db):
+    """根据练习关联的场次记录，回滚单词 review_count/correct_count，并软删除对应日志"""
+    import json
+    from datetime import timedelta
+    from app.models import Word, WordReviewLog
+
+    sessions = (
+        db.query(WordReviewSession)
+        .filter(WordReviewSession.practice_set_id == ps.id)
+        .all()
+    )
+    for session in sessions:
+        results = []
+        if session.word_results:
+            try:
+                results = json.loads(session.word_results)
+            except Exception:
+                results = []
+        # 旧数据无 word_results 时，按时间窗近似回滚
+        if not results:
+            continue
+        for item in results:
+            word_id = item.get("word_id")
+            is_correct = bool(item.get("is_correct"))
+            if not word_id:
+                continue
+            word = db.query(Word).filter(Word.id == word_id).first()
+            if not word:
+                continue
+            word.review_count = max(0, (word.review_count or 0) - 1)
+            if is_correct:
+                word.correct_count = max(0, (word.correct_count or 0) - 1)
+            # 软删除该场次时间附近的一条匹配日志
+            start = session.reviewed_at - timedelta(minutes=2)
+            end = session.reviewed_at + timedelta(hours=3)
+            log = (
+                db.query(WordReviewLog)
+                .filter(
+                    WordReviewLog.word_id == word_id,
+                    WordReviewLog.deleted == False,
+                    WordReviewLog.reviewed_at >= start,
+                    WordReviewLog.reviewed_at <= end,
+                    WordReviewLog.is_correct == is_correct,
+                )
+                .order_by(WordReviewLog.reviewed_at.desc())
+                .first()
+            )
+            if log:
+                log.deleted = True
+

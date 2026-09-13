@@ -1,0 +1,1 @@
+import{b as s}from"./question-LfdxL33f.js";import"./_plugin-vue_export-helper-F66X__ZN.js";const l={getFullStats(){return s.get("/stats/analysis/full")},getLlmAnalysis(){return s.post("/stats/analysis/llm",{})}};export{l as default,l as learningAnalysisApi};

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local env / secrets
+backend/.env
+*.pem
+
+# DB dumps / local sqlite
+backend/easyfix.db
+*.sqlite3
+
+# Logs
+*.log
+backend/server*.log
+frontend/dev*.log
+frontend/dev.err.log
+frontend/dev.out.log
+
+# Uploads generated at runtime
+backend/uploads/audio/
+backend/uploads/images/
+
+# Node
+frontend/node_modules/
+
+# Editor / agent local
+.agents/
+.codex/
+.mimocode/
+.playwright-mcp/
+.claude/settings.local.json
+.claude/**/__pycache__/
+report/
+
+# OS
+Thumbs.db
+.DS_Store

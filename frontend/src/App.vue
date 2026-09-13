@@ -26,7 +26,15 @@
 </template>
 
 <script setup>
-// App root component
+import { onMounted } from 'vue'
+import { useAppConfigStore } from '@/stores/appConfig'
+
+const appConfigStore = useAppConfigStore()
+
+onMounted(() => {
+  // 预加载默认年级等应用配置，供各页面搜索使用
+  appConfigStore.load()
+})
 </script>
 
 <style>

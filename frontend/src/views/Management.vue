@@ -20,6 +20,35 @@
       </template>
 
       <el-tabs v-model="activeTab">
+        <!-- 系统配置 -->
+        <el-tab-pane label="系统配置" name="system">
+          <div class="tab-content system-config">
+            <el-form :model="appConfigForm" label-width="120px" style="max-width: 480px">
+              <el-form-item label="默认年级">
+                <el-select v-model="appConfigForm.defaultGrade" placeholder="选择默认年级" clearable style="width: 100%">
+                  <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+                </el-select>
+                <div class="form-tip">各页面搜索/筛选将默认使用该年级；可单独清空后查看全部</div>
+              </el-form-item>
+              <el-form-item label="默认学期">
+                <el-select v-model="appConfigForm.defaultSemester" placeholder="选择默认学期" clearable style="width: 100%">
+                  <el-option label="上学期" :value="1" />
+                  <el-option label="下学期" :value="2" />
+                </el-select>
+                <div class="form-tip">若页面提供学期筛选，将默认使用该值</div>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="saveAppConfig" :loading="savingAppConfig">保存配置</el-button>
+              </el-form-item>
+            </el-form>
+            <el-alert type="info" :closable="false" style="margin-top: 8px">
+              <template #title>
+                保存后立即生效：单词、错题、阅读、学习报告、上传录入等页面的默认筛选与新建表单会自动带入默认年级。
+              </template>
+            </el-alert>
+          </div>
+        </el-tab-pane>
+
         <!-- 学科管理 -->
         <el-tab-pane label="学科管理" name="subjects">
           <div class="tab-content">
@@ -493,9 +522,37 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
+import { useAppConfigStore } from '@/stores/appConfig'
 import axios from 'axios'
 
-const activeTab = ref('subjects')
+const appConfigStore = useAppConfigStore()
+const activeTab = ref('system')
+const appConfigForm = reactive({
+  defaultGrade: null,
+  defaultSemester: null,
+})
+const savingAppConfig = ref(false)
+
+const loadAppConfig = async () => {
+  await appConfigStore.load(true)
+  appConfigForm.defaultGrade = appConfigStore.defaultGrade
+  appConfigForm.defaultSemester = appConfigStore.defaultSemester
+}
+
+const saveAppConfig = async () => {
+  savingAppConfig.value = true
+  try {
+    await appConfigStore.save({
+      defaultGrade: appConfigForm.defaultGrade,
+      defaultSemester: appConfigForm.defaultSemester,
+    })
+    ElMessage.success('默认年级配置已保存')
+  } catch (e) {
+    ElMessage.error('保存失败')
+  } finally {
+    savingAppConfig.value = false
+  }
+}
 const showPasswordDialog = ref(true)
 const isVerified = ref(false)
 const password = ref('')
@@ -545,7 +602,11 @@ const errorTypeForm = reactive({
 
 // 知识点
 const knowledgePoints = ref([])
-const kpFilters = reactive({ subject_id: null, grade: null, semester: null })
+const kpFilters = reactive({
+  subject_id: null,
+  grade: appConfigStore.defaultGrade,
+  semester: appConfigStore.defaultSemester,
+})
 const showKnowledgeDialog = ref(false)
 const editKnowledgeData = ref(null)
 const knowledgeForm = reactive({
@@ -832,10 +893,14 @@ const createKnowledgePoint = async () => {
 const openKnowledgeDialog = () => {
   editKnowledgeData.value = null
   knowledgeForm.name = ''
-  // 设置最近使用的值
+  // 优先最近使用值，其次系统默认年级/学期
   knowledgeForm.subject_id = localStorage.getItem('lastKpSubject') ? parseInt(localStorage.getItem('lastKpSubject')) : null
-  knowledgeForm.grade = localStorage.getItem('lastKpGrade') ? parseInt(localStorage.getItem('lastKpGrade')) : null
-  knowledgeForm.semester = localStorage.getItem('lastKpSemester') ? parseInt(localStorage.getItem('lastKpSemester')) : null
+  knowledgeForm.grade = localStorage.getItem('lastKpGrade')
+    ? parseInt(localStorage.getItem('lastKpGrade'))
+    : appConfigStore.defaultGrade
+  knowledgeForm.semester = localStorage.getItem('lastKpSemester')
+    ? parseInt(localStorage.getItem('lastKpSemester'))
+    : appConfigStore.defaultSemester
   showKnowledgeDialog.value = true
 }
 
@@ -1170,7 +1235,11 @@ const verifyPassword = async () => {
   }
 }
 
-const fetchAll = () => {
+const fetchAll = async () => {
+  await loadAppConfig()
+  // 知识点筛选套用默认年级/学期
+  if (kpFilters.grade == null) kpFilters.grade = appConfigStore.defaultGrade
+  if (kpFilters.semester == null) kpFilters.semester = appConfigStore.defaultSemester
   fetchSubjects()
   fetchTags()
   fetchErrorTypes()
@@ -1200,6 +1269,13 @@ onMounted(() => {
 
 .tab-content {
   padding: 10px 0;
+}
+
+.system-config .form-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+  margin-top: 4px;
 }
 
 .action-bar {

@@ -494,9 +494,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
+import { useAppConfigStore } from '@/stores/appConfig'
 import axios from 'axios'
+
+const route = useRoute()
+const appConfigStore = useAppConfigStore()
 
 // 年级选项：一年级到六年级，初一/初二/初三，高一/高二/高三
 const gradeOptions = [
@@ -608,7 +613,7 @@ const subjectOptions = ref([])
 
 const showGenerateDialog = () => {
   generateForm.subject_id = null
-  generateForm.grade = null
+  generateForm.grade = appConfigStore.defaultGrade
   generateForm.count = 5
   generateDialogVisible.value = true
 }
@@ -1147,7 +1152,16 @@ const batchGenerateSimilar = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await appConfigStore.load()
+  // 首页年级维度跳转：/questions?grade=6
+  const routeGrade = Number(route.query.grade)
+  if (routeGrade) {
+    filters.grade = routeGrade
+  } else if (filters.grade == null) {
+    filters.grade = appConfigStore.defaultGrade
+  }
+  if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
   fetchQuestions()
   fetchSubjects()
   fetchTags()

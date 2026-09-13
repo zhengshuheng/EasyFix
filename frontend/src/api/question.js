@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
@@ -138,8 +138,8 @@ export const questionApi = {
 
 // 学习概览API
 export const statsOverviewApi = {
-  getOverview() {
-    return api.get('/stats/overview')
+  getOverview(params) {
+    return api.get('/stats/overview', { params })
   },
 }
 
@@ -164,8 +164,8 @@ export const uploadApi = {
 
 // 统计API
 export const statsApi = {
-  getSummary() {
-    return api.get('/stats/summary')
+  getSummary(params) {
+    return api.get('/stats/summary', { params })
   },
   getTodayStats() {
     return api.get('/stats/today')

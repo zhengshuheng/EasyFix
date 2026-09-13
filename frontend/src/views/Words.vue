@@ -70,10 +70,14 @@
         @sort-change="handleSortChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="english" label="英文" width="180">
+        <el-table-column prop="english" label="英文" width="210">
           <template #default="{ row }">
-            <span class="word-english">{{ row.english }}</span>
-            <el-button class="audio-btn-table" @click.stop="playWordAudio(row.id)" :loading="audioLoading" size="small" circle>🔊</el-button>
+            <div class="word-cell">
+              <span class="word-english">{{ row.english }}</span>
+              <el-button class="audio-btn-table" @click.stop="playWordAudio(row.id)" :loading="audioLoading" circle>
+                <span v-if="!audioLoading">🔊</span>
+              </el-button>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="chinese" label="中文" min-width="200" />
@@ -256,23 +260,48 @@
         </div>
 
         <div class="question-content">
-          <!-- 默写模式：显示中文 + 喇叭按钮 -->
+          <!-- 默写模式：显示中文 + 喇叭按钮 + 字母格输入 -->
           <div v-if="reviewConfig.type === 1" class="dictation">
-            <div class="chinese">
+            <div class="chinese" :style="{ fontSize: chineseFontSize }">
               {{ currentQuestion.chinese }}
+            </div>
+            <div class="audio-row">
               <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
             </div>
             <div class="hint-box">
-              <div class="hint">提示：{{ currentQuestion.word_length }}个字母</div>
+              <div class="hint">提示：{{ letterBlankCount }}个字母</div>
             </div>
-            <el-input
-              ref="answerInputRef"
-              v-model="userAnswer"
-              placeholder="输入英文单词"
-              @keyup.enter="submitAnswer"
-              :disabled="currentQuestion.correct !== undefined"
-              class="answer-input"
-            />
+            <div
+              ref="letterInputBoxRef"
+              class="letter-input"
+              tabindex="0"
+              @click="focusLetterInput"
+              @keydown="handleLetterKeydown"
+            >
+              <div class="letter-cells">
+                <div
+                  v-for="(cell, i) in dictationCells"
+                  :key="i"
+                  class="letter-cell"
+                  :class="{
+                    fixed: cell.fixed,
+                    filled: !!letterAnswers[i],
+                    active: i === activeLetterIdx && currentQuestion.correct === undefined,
+                    correct: currentQuestion.correct === true && !cell.fixed,
+                    wrong: currentQuestion.correct === false && !cell.fixed
+                  }"
+                >
+                  {{ cell.fixed ? cell.char : (letterAnswers[i] || '') }}
+                </div>
+              </div>
+              <input
+                ref="letterInputRef"
+                class="letter-hidden-input"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              />
+            </div>
           </div>
 
           <!-- 选择模式：显示英文 + 喇叭按钮 -->
@@ -506,13 +535,17 @@ orange 橙子"
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Printer, Upload } from '@element-plus/icons-vue'
 import { wordApi } from '@/api/word'
 import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
+import { useAppConfigStore } from '@/stores/appConfig'
 
+const route = useRoute()
+const appConfigStore = useAppConfigStore()
 const words = ref({ total: 0, items: [] })
 const allTags = ref([])
 const filters = reactive({
@@ -585,12 +618,17 @@ const reviewStarting = ref(false) // 防止重复点击开始复习
 const reviewStep = ref('config')
 const reviewConfig = reactive({
   count: 20,
-  grade: null,
+  grade: appConfigStore.defaultGrade,
   type: 1,
 })
 const reviewQuestions = ref([])
 const currentIndex = ref(0)
 const userAnswer = ref('')
+const letterAnswers = ref([])
+const activeLetterIdx = ref(0)
+const letterInputRef = ref(null)
+const letterInputBoxRef = ref(null)
+const autoPlayToken = ref(0)
 const selectedOption = ref('')
 const currentSessionId = ref(null)
 const audioLoading = ref(false)
@@ -607,12 +645,95 @@ const reviewStartTime = ref(null)
 const reviewTimer = ref(null)
 const reviewElapsed = ref(0) // 秒
 const answerInputRef = ref(null)
+const letterBlankCount = computed(() => {
+  const cells = dictationCells.value
+  return cells.filter(c => !c.fixed).length
+})
+
+// 长中文自适应字号，避免溢出
+const chineseFontSize = computed(() => {
+  const len = (currentQuestion.value?.chinese || '').length
+  if (len <= 6) return '64px'
+  if (len <= 10) return '48px'
+  if (len <= 16) return '36px'
+  if (len <= 24) return '28px'
+  if (len <= 36) return '22px'
+  return '18px'
+})
+
+// 默写字母格：空格/符号预填，字母留空
+const dictationCells = computed(() => {
+  const en = currentQuestion.value?.english || ''
+  return en.split('').map(ch => ({
+    char: ch,
+    fixed: !/[a-zA-Z]/.test(ch),
+  }))
+})
+
+const resetLetterInput = () => {
+  letterAnswers.value = dictationCells.value.map(c => (c.fixed ? c.char : ''))
+  const firstBlank = dictationCells.value.findIndex(c => !c.fixed)
+  activeLetterIdx.value = firstBlank >= 0 ? firstBlank : 0
+}
+
+const focusLetterInput = () => {
+  if (currentQuestion.value?.correct !== undefined) return
+  letterInputBoxRef.value?.focus()
+}
+
+const fillBuiltAnswer = () => {
+  // 按格子拼出完整答案（含预置空格/符号）
+  return dictationCells.value
+    .map((c, i) => (c.fixed ? c.char : (letterAnswers.value[i] || '')))
+    .join('')
+}
+
+const handleLetterKeydown = (e) => {
+  if (currentQuestion.value?.correct !== undefined) return
+
+  if (e.key === 'Backspace') {
+    e.preventDefault()
+    const cells = dictationCells.value
+    let idx = activeLetterIdx.value
+    // 当前格有内容则清空；否则回退到上一个可填格
+    if (idx < cells.length && !cells[idx].fixed && letterAnswers.value[idx]) {
+      letterAnswers.value[idx] = ''
+      return
+    }
+    let i = idx - 1
+    while (i >= 0 && cells[i].fixed) i--
+    if (i >= 0) {
+      letterAnswers.value[i] = ''
+      activeLetterIdx.value = i
+    }
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    submitAnswer()
+    return
+  }
+
+  if (/^[a-zA-Z]$/.test(e.key)) {
+    e.preventDefault()
+    const cells = dictationCells.value
+    let idx = activeLetterIdx.value
+    while (idx < cells.length && cells[idx].fixed) idx++
+    if (idx >= cells.length) return
+    letterAnswers.value[idx] = e.key.toLowerCase()
+    // 跳到下一个可填格
+    let next = idx + 1
+    while (next < cells.length && cells[next].fixed) next++
+    activeLetterIdx.value = Math.min(next, cells.length - 1)
+  }
+}
 
 // 打印相关
 const printDialogVisible = ref(false)
 const printForm = reactive({
   count: 25,
-  grade: null,
+  grade: appConfigStore.defaultGrade,
 })
 
 // 导入相关
@@ -627,8 +748,8 @@ const importForm = reactive({
   image: null,
   ocrText: '',
   parsedWords: [],  // 解析后的单词预览
-  grade: null,
-  semester: null,
+  grade: appConfigStore.defaultGrade,
+  semester: appConfigStore.defaultSemester,
   tag_ids: [],
 })
 
@@ -826,8 +947,8 @@ const resetForm = () => {
   form.english = ''
   form.chinese = ''
   form.phonetic = ''
-  form.grade = null
-  form.semester = null
+  form.grade = appConfigStore.defaultGrade
+  form.semester = appConfigStore.defaultSemester
   form.tag_ids = []
 }
 
@@ -907,10 +1028,14 @@ const startReviewGame = async () => {
     selectedOption.value = ''
     currentQuestion.value = reviewQuestions.value[0]
     reviewStep.value = 'question'
+    if (reviewConfig.type === 1) {
+      resetLetterInput()
+      setTimeout(() => focusLetterInput(), 100)
+    }
 
-    // 听力模式自动播放第一题
-    if (reviewConfig.type === 3) {
-      setTimeout(() => playWordAudio(reviewQuestions.value[0].word_id), 500)
+    // 默写/听力：自动播放（播完停3秒再播一次）
+    if (reviewConfig.type === 1 || reviewConfig.type === 3) {
+      setTimeout(() => autoPlayWithReplay(reviewQuestions.value[0].word_id), 400)
     }
 
     // 启动计时器 - 先清除可能存在的旧计时器
@@ -929,31 +1054,38 @@ const startReviewGame = async () => {
   }
 }
 
-// 播放单词音频
+// 播放单词音频（Promise 在播放结束/失败时 resolve）
 const playWordAudio = async (wordId) => {
   if (!wordId) return
   audioLoading.value = true
-  
+
   try {
     const response = await fetch(`/api/words/${wordId}/audio`)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
-    
+
     const blob = await response.blob()
     const audioUrl = URL.createObjectURL(blob)
     const audio = new Audio(audioUrl)
-    
-    audio.onended = () => {
-      audioLoading.value = false
-      URL.revokeObjectURL(audioUrl)
-    }
-    audio.onerror = () => {
-      audioLoading.value = false
-      URL.revokeObjectURL(audioUrl)
-    }
-    
-    await audio.play()
+
+    await new Promise((resolve) => {
+      audio.onended = () => {
+        audioLoading.value = false
+        URL.revokeObjectURL(audioUrl)
+        resolve()
+      }
+      audio.onerror = () => {
+        audioLoading.value = false
+        URL.revokeObjectURL(audioUrl)
+        resolve()
+      }
+      audio.play().catch(() => {
+        audioLoading.value = false
+        URL.revokeObjectURL(audioUrl)
+        resolve()
+      })
+    })
   } catch (e) {
     console.error('音频播放失败:', e)
     ElMessage.warning('音频播放失败')
@@ -961,10 +1093,26 @@ const playWordAudio = async (wordId) => {
   }
 }
 
+// 进入新题时：自动播放，暂停3秒后再播一次
+const autoPlayWithReplay = async (wordId) => {
+  if (!wordId) return
+  const token = ++autoPlayToken.value
+  await playWordAudio(wordId)
+  if (autoPlayToken.value !== token) return
+  await new Promise(r => setTimeout(r, 3000))
+  if (autoPlayToken.value !== token) return
+  await playWordAudio(wordId)
+}
+
 const submitAnswer = () => {
   const q = currentQuestion.value
-  if (reviewConfig.type === 1 || reviewConfig.type === 3) {
-    // 默写 或 听力：比较英文输入
+  if (reviewConfig.type === 1) {
+    // 默写：从字母格拼答案
+    userAnswer.value = fillBuiltAnswer()
+    q.correct = userAnswer.value.toLowerCase() === q.english.toLowerCase()
+    q.userAnswer = userAnswer.value
+  } else if (reviewConfig.type === 3) {
+    // 听力：比较英文输入
     q.correct = userAnswer.value.toLowerCase().trim() === q.english.toLowerCase().trim()
     q.userAnswer = userAnswer.value
   } else {
@@ -997,11 +1145,19 @@ const nextQuestion = () => {
   currentQuestion.value = reviewQuestions.value[currentIndex.value]
   userAnswer.value = ''
   selectedOption.value = ''
-  // 听力模式自动播放音频
-  if (reviewConfig.type === 3) {
-    setTimeout(() => playWordAudio(currentQuestion.value.word_id), 300)
+  if (reviewConfig.type === 1) {
+    resetLetterInput()
+    setTimeout(() => focusLetterInput(), 100)
+  }
+  // 默写/听力自动播放
+  if (reviewConfig.type === 1 || reviewConfig.type === 3) {
+    setTimeout(() => autoPlayWithReplay(currentQuestion.value.word_id), 300)
   }
   setTimeout(() => {
+    if (reviewConfig.type === 1) {
+      focusLetterInput()
+      return
+    }
     const input = answerInputRef.value?.$el?.querySelector('input')
     if (input) {
       input.focus()
@@ -1032,6 +1188,7 @@ const terminateReview = async () => {
 }
 
 const finishReview = async () => {
+  autoPlayToken.value++
   // 停止计时器
   if (reviewTimer.value) {
     clearInterval(reviewTimer.value)
@@ -1363,7 +1520,20 @@ const importWords = async () => {
   fetchWords()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await appConfigStore.load()
+  // 首页年级维度跳转：/words?grade=6
+  const routeGrade = Number(route.query.grade)
+  if (routeGrade) {
+    filters.grade = routeGrade
+  } else if (filters.grade == null) {
+    filters.grade = appConfigStore.defaultGrade
+  }
+  if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
+  if (reviewConfig.grade == null) reviewConfig.grade = appConfigStore.defaultGrade
+  if (printForm.grade == null) printForm.grade = appConfigStore.defaultGrade
+  if (importForm.grade == null) importForm.grade = appConfigStore.defaultGrade
+  if (importForm.semester == null) importForm.semester = appConfigStore.defaultSemester
   fetchWords()
   fetchTags()
 })
@@ -1391,6 +1561,18 @@ onMounted(() => {
   font-weight: bold;
   color: #409eff;
   font-size: 16px;
+}
+
+.word-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-cell .word-english {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phonetic {
@@ -1517,25 +1699,111 @@ onMounted(() => {
 }
 
 .dictation .chinese {
-  font-size: 72px;
   font-weight: bold;
   color: #303133;
-  margin-bottom: 30px;
-  letter-spacing: 8px;
+  margin-bottom: 16px;
+  letter-spacing: 4px;
+  line-height: 1.45;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  padding: 0 12px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dictation .audio-row {
+  margin-bottom: 12px;
 }
 
 .dictation .hint-box {
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .dictation .hint {
-  font-size: 28px;
+  font-size: 24px;
   color: #606266;
   background: #f5f7fa;
-  padding: 12px 32px;
+  padding: 10px 28px;
   border-radius: 8px;
   display: inline-block;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+}
+
+.letter-input {
+  outline: none;
+  cursor: text;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  min-height: 80px;
+  width: 100%;
+}
+
+.letter-cells {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 4px;
+}
+
+.letter-cell {
+  width: 42px;
+  height: 52px;
+  border-bottom: 3px solid #c0c4cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: #303133;
+  text-transform: lowercase;
+  box-sizing: border-box;
+  background: #fafafa;
+  border-radius: 6px 6px 0 0;
+}
+
+.letter-cell.fixed {
+  border-bottom-color: transparent;
+  background: transparent;
+  color: #909399;
+  font-size: 24px;
+  min-width: 20px;
+  width: auto;
+  padding: 0 4px;
+}
+
+.letter-cell.active {
+  border-bottom-color: #409eff;
+  box-shadow: 0 2px 0 #409eff;
+  background: #ecf5ff;
+}
+
+.letter-cell.filled {
+  background: #fff;
+}
+
+.letter-cell.correct {
+  border-bottom-color: #67c23a;
+  color: #67c23a;
+  background: #f0f9eb;
+}
+
+.letter-cell.wrong {
+  border-bottom-color: #f56c6c;
+  color: #f56c6c;
+  background: #fef0f0;
+}
+
+.letter-hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
 }
 
 .dictation .answer-input {
@@ -1729,10 +1997,9 @@ onMounted(() => {
 }
 
 .audio-btn-table {
-  font-size: 14px;
-  padding: 4px;
-  margin-left: 4px;
-  vertical-align: middle;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-left: 0;
 }
 
 .question-actions {

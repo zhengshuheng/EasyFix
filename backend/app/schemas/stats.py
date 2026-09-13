@@ -15,6 +15,7 @@ class SubjectStats(BaseModel):
 class GradeStats(BaseModel):
     grade: int
     question_count: int
+    word_count: int = 0
     difficulty_distribution: dict = {}
 
 
@@ -30,6 +31,7 @@ class WordStats(BaseModel):
     total_reviews: int = 0
     accuracy: float = 0.0
     to_review_count: int = 0
+    grade_distribution: dict = {}  # 按年级聚合，不区分学期 {grade: count}
 
 
 class AccuracyCurvePoint(BaseModel):

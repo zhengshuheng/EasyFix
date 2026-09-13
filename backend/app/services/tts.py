@@ -1,9 +1,10 @@
 """
-TTS 服务 - 优先使用 Free Dictionary API，fallback 到 mimo-V2.5-tts
+TTS 服务 - 优先使用有道词典发音，其次 Free Dictionary API，最后 mimo-V2.5-tts
 """
 import os
 import base64
 import requests
+from urllib.parse import quote
 
 
 class TTSService:
@@ -45,7 +46,7 @@ class TTSService:
         """
         try:
             resp = requests.get(
-                f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+                f"https://api.dictionaryapi.dev/api/v2/entries/en/{quote(word)}",
                 timeout=10
             )
             if resp.status_code != 200:
@@ -73,11 +74,35 @@ class TTSService:
         except Exception:
             return None
 
+    def _get_youdao_audio(self, word: str):
+        """
+        从有道词典下载美式发音音频（国内稳定，无需 API Key）
+
+        Args:
+            word: 英文单词
+
+        Returns:
+            bytes: 音频内容 或 None
+        """
+        try:
+            url = f"https://dict.youdao.com/dictvoice?type=1&audio={quote(word)}"
+            resp = requests.get(
+                url,
+                timeout=10,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            ctype = resp.headers.get("content-type", "")
+            if resp.status_code == 200 and ctype.startswith("audio") and len(resp.content) > 500:
+                return resp.content
+            return None
+        except Exception:
+            return None
+
     def generate_word_audio(self, word: str) -> str:
         """
         生成单词音频，返回本地文件路径
 
-        优先从 Free Dictionary API 下载，失败则用 mimo TTS 生成
+        优先有道词典，其次 Free Dictionary API，最后用 mimo TTS 生成
 
         Args:
             word: 英文单词
@@ -89,7 +114,18 @@ class TTSService:
         if os.path.exists(cache_path):
             return cache_path
 
-        # 方案1: Free Dictionary API 下载 MP3
+        # 方案1: 有道词典下载 MP3（国内稳定）
+        try:
+            audio_bytes = self._get_youdao_audio(word)
+            if audio_bytes:
+                mp3_path = os.path.join(self.audio_dir, f"{word.lower()}.mp3")
+                with open(mp3_path, "wb") as f:
+                    f.write(audio_bytes)
+                return mp3_path
+        except Exception:
+            pass
+
+        # 方案2: Free Dictionary API 下载 MP3
         info = self.get_word_info(word)
         if info and info["audio_url"]:
             try:
@@ -103,7 +139,7 @@ class TTSService:
             except Exception:
                 pass
 
-        # 方案2: mimo TTS fallback
+        # 方案3: mimo TTS fallback
         try:
             client = self._get_mimo_client()
             completion = client.chat.completions.create(

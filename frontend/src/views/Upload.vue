@@ -154,10 +154,13 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
+import { useAppConfigStore } from '@/stores/appConfig'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadApi, questionApi } from '@/api/question'
+
+const appConfigStore = useAppConfigStore()
 
 // 年级选项
 const gradeOptions = [
@@ -364,7 +367,10 @@ const continueAdd = () => {
   submittedQuestion.value = null
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await appConfigStore.load()
+  if (form.grade == null) form.grade = appConfigStore.defaultGrade
+  if (form.semester == null) form.semester = appConfigStore.defaultSemester
   loadMetaData()
   if (form.subject_id) {
     fetchKnowledgePoints()

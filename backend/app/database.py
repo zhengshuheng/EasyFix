@@ -10,6 +10,8 @@ if settings.DB_TYPE == "sqlite":
     connect_args = {"check_same_thread": False}
 elif settings.DB_TYPE == "mysql":
     connect_args = {"charset": "utf8mb4", "init_command": "SET NAMES utf8mb4"}
+elif settings.DB_TYPE in ("postgres", "postgresql"):
+    connect_args = {"connect_timeout": 10}
 
 engine = create_engine(
     settings.DATABASE_URL,
