@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local env / secrets
+backend/.env
+*.pem
+
+# DB dumps / local sqlite
+backend/easyfix.db
+*.sqlite3
+
+# Logs
+*.log
+backend/server*.log
+frontend/dev*.log
+frontend/dev.err.log
+frontend/dev.out.log
+
+# Uploads generated at runtime
+backend/uploads/
+
+# Node
+frontend/node_modules/
+
+# 前端构建产物（由源码构建生成，不入库）
+frontend/dist/
+
+# 根目录 sqlite 占位文件
+/easyfix.db
+
+# Editor / agent local
+.agents/
+.codex/
+.mimocode/
+.playwright-mcp/
+.claude/settings.local.json
+.claude/**/__pycache__/
+report/
+*_TODO.md
+
+# OS
+Thumbs.db
+.DS_Store

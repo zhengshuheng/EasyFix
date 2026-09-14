@@ -1,0 +1,75 @@
+from pydantic import BaseModel
+from typing import List, Dict
+
+
+class SubjectStats(BaseModel):
+    subject_id: int
+    subject_name: str
+    question_count: int
+    error_type_counts: dict = {}
+    difficulty_distribution: dict = {}
+    knowledge_point_counts: dict = {}
+    practice_count: int = 0
+
+
+class GradeStats(BaseModel):
+    grade: int
+    question_count: int
+    word_count: int = 0
+    difficulty_distribution: dict = {}
+
+
+class SemesterStats(BaseModel):
+    semester: int
+    question_count: int
+    difficulty_distribution: dict = {}
+
+
+class WordStats(BaseModel):
+    total_words: int = 0
+    reviewed_words: int = 0
+    total_reviews: int = 0
+    accuracy: float = 0.0
+    to_review_count: int = 0
+    grade_distribution: dict = {}  # 按年级聚合，不区分学期 {grade: count}
+
+
+class AccuracyCurvePoint(BaseModel):
+    date: str
+    accuracy: float
+
+
+class StatsResponse(BaseModel):
+    total_questions: int
+    total_subjects: int
+    total_error_books: int
+    active_days: int = 0
+    to_review_questions: int = 0  # 待复习错题数
+    difficulty_distribution: dict = {}
+    error_type_distribution: dict = {}
+    by_subject: List[SubjectStats] = []
+    by_grade: List[GradeStats] = []
+    by_semester: List[SemesterStats] = []
+    word_stats: WordStats = WordStats()
+    word_accuracy_curve: List[AccuracyCurvePoint] = []
+    question_accuracy_curve: List[AccuracyCurvePoint] = []
+
+
+class TodayStats(BaseModel):
+    today_word_review_count: int = 0      # 今日复习单词数（去重）
+    today_question_review_count: int = 0   # 今日复习错题数（去重）
+    today_word_accuracy: float = 0.0       # 今日单词正确率 %
+    today_question_accuracy: float = 0.0   # 今日错题正确率 %
+
+
+class LearningOverview(BaseModel):
+    # 昨日数据
+    yesterday_word_review_count: int = 0
+    yesterday_question_review_count: int = 0
+    yesterday_word_accuracy: float = 0.0
+    yesterday_question_accuracy: float = 0.0
+    # 今日数据
+    today_word_review_count: int = 0
+    today_question_review_count: int = 0
+    today_word_accuracy: float = 0.0
+    today_question_accuracy: float = 0.0
