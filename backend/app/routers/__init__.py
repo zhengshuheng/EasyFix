@@ -13,6 +13,8 @@ from app.routers.learning_report import router as learning_report_router
 from app.routers.motivation import router as motivation_router
 from app.routers.error_type import router as error_type_router
 from app.routers.reading import router as reading_router
+from app.routers.auth import router as auth_router
+from app.routers.users import router as users_router
 
 __all__ = [
     "question_router",
@@ -30,4 +32,6 @@ __all__ = [
     "motivation_router",
     "error_type_router",
     "reading_router",
+    "auth_router",
+    "users_router",
 ]
