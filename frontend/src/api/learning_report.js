@@ -1,9 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: '/api',
-  timeout: 180000, // 报告生成可能需要更长时间
-})
+import api from './http'
 
 export const learningReportApi = {
   /**

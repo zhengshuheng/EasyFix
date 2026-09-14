@@ -13,9 +13,18 @@
             <el-menu-item index="/stats">统计</el-menu-item>
             <el-menu-item index="/learning-reports">学习分析</el-menu-item>
             <el-menu-item index="/motivation">激励中心</el-menu-item>
-            <el-menu-item index="/management">管理</el-menu-item>
-            <el-menu-item index="/settings">配置</el-menu-item>
+            <el-menu-item v-if="authStore.isAdmin" index="/management">管理</el-menu-item>
+            <el-menu-item v-if="authStore.isAdmin" index="/settings">配置</el-menu-item>
           </el-menu>
+          <div v-if="authStore.isLoggedIn" class="header-user">
+            <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'success'" effect="dark">
+              {{ authStore.isAdmin ? '家长' : '小孩' }}
+            </el-tag>
+            <span class="user-name">{{ authStore.displayName }}</span>
+            <el-button link type="primary" size="small" class="logout-btn" @click="handleLogout">
+              退出
+            </el-button>
+          </div>
         </div>
       </el-header>
       <el-main>
@@ -28,13 +37,20 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useAuthStore } from '@/stores/auth'
 
 const appConfigStore = useAppConfigStore()
+const authStore = useAuthStore()
 
 onMounted(() => {
   // 预加载默认年级等应用配置，供各页面搜索使用
   appConfigStore.load()
 })
+
+function handleLogout() {
+  authStore.logout()
+  window.location.href = '/login'
+}
 </script>
 
 <style>
@@ -148,6 +164,27 @@ onMounted(() => {
   white-space: nowrap;
   flex-shrink: 0;
   transition: all 0.3s ease;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.user-name {
+  color: #fff;
+  font-size: 14px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  color: #fff !important;
 }
 
 .header-content .el-menu-item:hover {
