@@ -40,6 +40,12 @@ const routes = [
     meta: { adminOnly: true },
   },
   {
+    path: '/user-manage',
+    name: 'UserManage',
+    component: () => import('@/views/UserManage.vue'),
+    meta: { adminOnly: true },
+  },
+  {
     path: '/upload',
     name: 'Upload',
     component: () => import('@/views/Upload.vue'),

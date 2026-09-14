@@ -14,6 +14,7 @@
             <el-menu-item index="/learning-reports">学习分析</el-menu-item>
             <el-menu-item index="/motivation">激励中心</el-menu-item>
             <el-menu-item v-if="authStore.isAdmin" index="/management">管理</el-menu-item>
+            <el-menu-item v-if="authStore.isAdmin" index="/user-manage">账号</el-menu-item>
             <el-menu-item v-if="authStore.isAdmin" index="/settings">配置</el-menu-item>
           </el-menu>
           <div v-if="authStore.isLoggedIn" class="header-user">
