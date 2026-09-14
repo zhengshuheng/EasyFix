@@ -2,6 +2,10 @@ import api from './http'
 
 // 用户管理 API（家长专属）
 export const usersApi = {
+  /** 公开的小孩列表（选择页用） */
+  listKids() {
+    return api.get('/users/kids')
+  },
   list() {
     return api.get('/users')
   },

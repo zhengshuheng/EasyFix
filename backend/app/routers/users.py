@@ -49,6 +49,29 @@ def _count_by_role(db: Session, role: str) -> int:
     return db.query(User).filter_by(role=role).count()
 
 
+@router.get("/kids")
+def list_kids(db: Session = Depends(get_db)):
+    """公开的小孩列表（选择页用，无需登录；不含家长/敏感信息）"""
+    kids = (
+        db.query(User)
+        .filter_by(role="child")
+        .order_by(User.id)
+        .all()
+    )
+    return {
+        "kids": [
+            {
+                "id": k.id,
+                "username": k.username,
+                "display_name": k.display_name or k.username,
+                "avatar": k.avatar,
+                "enabled": k.enabled,
+            }
+            for k in kids
+        ]
+    }
+
+
 @router.get("")
 def list_users(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     """用户列表（家长可见）"""

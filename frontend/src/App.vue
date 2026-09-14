@@ -5,7 +5,7 @@
         <div class="header-content">
           <h1>EasyFix</h1>
           <el-menu mode="horizontal" :router="true" :default-active="$route.path">
-            <el-menu-item index="/">首页</el-menu-item>
+            <el-menu-item index="/home">首页</el-menu-item>
             <el-menu-item index="/questions">错题</el-menu-item>
             <el-menu-item index="/words">单词</el-menu-item>
             <el-menu-item index="/practice-sets">练习</el-menu-item>
@@ -13,20 +13,30 @@
             <el-menu-item index="/stats">统计</el-menu-item>
             <el-menu-item index="/learning-reports">学习分析</el-menu-item>
             <el-menu-item index="/motivation">激励中心</el-menu-item>
-            <el-menu-item v-if="authStore.isAdmin" index="/management">管理</el-menu-item>
-            <el-menu-item v-if="authStore.isAdmin" index="/user-manage">账号</el-menu-item>
-            <el-menu-item v-if="authStore.isAdmin" index="/settings">配置</el-menu-item>
+            <el-menu-item v-if="isAdminSession" index="/management">管理</el-menu-item>
+            <el-menu-item v-if="isAdminSession" index="/user-manage">账号</el-menu-item>
+            <el-menu-item v-if="isAdminSession" index="/settings">配置</el-menu-item>
+            <el-menu-item index="/" @click.prevent="switchKid">切换小孩</el-menu-item>
           </el-menu>
-          <div v-if="authStore.isLoggedIn" class="header-user">
-            <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'success'" effect="dark">
-              {{ authStore.isAdmin ? '家长' : '小孩' }}
-            </el-tag>
-            <span class="user-name">{{ authStore.displayName }}</span>
-            <el-button link type="primary" size="small" class="logout-btn" @click="handleLogout">
-              退出
-            </el-button>
+          <div class="header-user">
+            <template v-if="isAdminSession">
+              <el-tag size="small" type="danger" effect="dark">家长</el-tag>
+              <span class="user-name">{{ authStore.displayName }}</span>
+              <el-button link type="primary" size="small" class="logout-btn" @click="handleLogout">
+                退出管理
+              </el-button>
+            </template>
+            <template v-else>
+              <el-tag size="small" type="success" effect="dark">小孩</el-tag>
+              <span class="user-name">{{ kidStore.kidName }}</span>
+              <el-button link type="warning" size="small" class="logout-btn" @click="parentLockVisible = true">
+                🔒 家长中心
+              </el-button>
+            </template>
           </div>
         </div>
+
+        <ParentLockDialog v-model="parentLockVisible" @success="goParentCenter" />
       </el-header>
       <el-main>
         <router-view />
@@ -36,21 +46,44 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useAuthStore } from '@/stores/auth'
+import { useKidStore } from '@/stores/kid'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
 
+const router = useRouter()
 const appConfigStore = useAppConfigStore()
 const authStore = useAuthStore()
+const kidStore = useKidStore()
+
+const parentLockVisible = ref(false)
+// 家长会话：已通过家长密码验证（存在家长 token）
+const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
 
 onMounted(() => {
-  // 预加载默认年级等应用配置，供各页面搜索使用
-  appConfigStore.load()
+  // 家长会话时预加载默认年级等应用配置（config 接口需家长权限）
+  if (isAdminSession.value) {
+    appConfigStore.load()
+  }
 })
 
+function goParentCenter() {
+  router.push('/user-manage')
+}
+
+function switchKid() {
+  kidStore.clear()
+  localStorage.removeItem('easyfix_token')
+  localStorage.removeItem('easyfix_user')
+  router.push('/')
+}
+
 function handleLogout() {
-  authStore.logout()
-  window.location.href = '/login'
+  localStorage.removeItem('easyfix_token')
+  localStorage.removeItem('easyfix_user')
+  router.push('/')
 }
 </script>
 

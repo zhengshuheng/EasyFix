@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useKidStore } from '@/stores/kid'
 
 const routes = [
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    path: '/',
+    name: 'SelectKid',
+    component: () => import('@/views/SelectKid.vue'),
   },
   {
-    path: '/',
+    path: '/home',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
   },
@@ -43,12 +43,6 @@ const routes = [
     path: '/user-manage',
     name: 'UserManage',
     component: () => import('@/views/UserManage.vue'),
-    meta: { adminOnly: true },
-  },
-  {
-    path: '/upload',
-    name: 'Upload',
-    component: () => import('@/views/Upload.vue'),
     meta: { adminOnly: true },
   },
   {
@@ -93,16 +87,16 @@ const router = createRouter({
   routes,
 })
 
-// 登录守卫：未登录一律跳转登录页；家长专属页面仅 admin 可进
+// 守卫：
+// - 除首页（选小孩）外，学习页面必须已选择小孩
+// - 家长专属页必须已通过家长密码验证（存在 easyfix_token）
 router.beforeEach((to) => {
-  const auth = useAuthStore()
-  if (to.path === '/login') {
-    return auth.isLoggedIn ? '/' : true
+  const kidStore = useKidStore()
+  if (to.path === '/') return true
+  if (to.meta?.adminOnly) {
+    return localStorage.getItem('easyfix_token') ? true : '/'
   }
-  if (!auth.isLoggedIn) {
-    return { path: '/login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
-  }
-  if (to.meta?.adminOnly && !auth.isAdmin) {
+  if (!kidStore.isKidSelected) {
     return '/'
   }
   return true

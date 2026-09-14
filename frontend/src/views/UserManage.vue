@@ -5,12 +5,15 @@
         <div class="card-header">
           <span>账号管理</span>
           <div>
+            <el-button link type="primary" size="small" @click="$router.push('/management')">题库管理</el-button>
+            <el-button link type="primary" size="small" @click="$router.push('/settings')">系统配置</el-button>
             <el-tag size="small" type="info" class="limit-tag">家长最多 2 个</el-tag>
             <el-tag size="small" type="info">小孩最多 5 个</el-tag>
             <el-button type="primary" size="small" style="margin-left: 12px" @click="openCreate('child')">
               添加小孩
             </el-button>
             <el-button type="warning" size="small" @click="openCreate('admin')">添加家长</el-button>
+            <el-button size="small" class="back-btn" @click="backToKid">返回小孩端</el-button>
           </div>
         </div>
       </template>
@@ -116,11 +119,26 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usersApi } from '@/api/users'
 import { useAuthStore } from '@/stores/auth'
+import { useKidStore } from '@/stores/kid'
 
+const router = useRouter()
 const authStore = useAuthStore()
+const kidStore = useKidStore()
+
+function backToKid() {
+  // 退出家长会话，回到小孩端（保留当前小孩身份）
+  localStorage.removeItem('easyfix_token')
+  localStorage.removeItem('easyfix_user')
+  if (kidStore.isKidSelected) {
+    router.push('/home')
+  } else {
+    router.push('/')
+  }
+}
 const users = ref([])
 const loading = ref(false)
 const saving = ref(false)
