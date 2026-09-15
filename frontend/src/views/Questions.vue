@@ -15,7 +15,7 @@
 
       <!-- 筛选条件 -->
       <div class="filters">
-        <el-select v-model="filters.subject_id" placeholder="选择学科" clearable @change="fetchQuestions" style="width: 195px">
+        <el-select v-if="subjectStore.isAll" v-model="filters.subject_id" placeholder="选择学科" clearable @change="fetchQuestions" style="width: 195px">
           <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
         </el-select>
         <el-select v-model="filters.difficulty" placeholder="难度" multiple clearable @change="fetchQuestions" style="width: 150px">
@@ -463,10 +463,12 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useSubjectStore } from '@/stores/subject'
 import axios from 'axios'
 
 const route = useRoute()
 const appConfigStore = useAppConfigStore()
+const subjectStore = useSubjectStore()
 
 // 年级选项：一年级到六年级，初一/初二/初三，高一/高二/高三
 const gradeOptions = [
@@ -587,7 +589,8 @@ const fetchQuestions = async () => {
       skip: (pagination.page - 1) * pagination.limit,
       limit: pagination.limit,
     }
-    if (filters.subject_id) params.subject_id = filters.subject_id
+    if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
+    else if (filters.subject_id) params.subject_id = filters.subject_id
     if (filters.difficulty && filters.difficulty.length) params.difficulty = filters.difficulty.join(',')
     if (filters.tag_ids && filters.tag_ids.length) params.tag_ids = filters.tag_ids.join(',')
     if (filters.knowledge_point) params.knowledge_point = filters.knowledge_point
@@ -1085,6 +1088,10 @@ onMounted(async () => {
     filters.grade = appConfigStore.defaultGrade
   }
   if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
+  // 学习空间指定学科时：加载该学科筛选选项
+  if (subjectStore.activeSubjectId !== null) {
+    fetchFilterOptions(subjectStore.activeSubjectId)
+  }
   fetchQuestions()
   fetchSubjects()
   fetchTags()
