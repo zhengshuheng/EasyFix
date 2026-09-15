@@ -28,6 +28,19 @@ settings = get_settings()
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
+# 轻量迁移：为旧库补充新增列（SQLite 支持 ALTER TABLE ADD COLUMN）
+def _ensure_column(table: str, column: str, ddl: str):
+    try:
+        with engine.connect() as conn:
+            cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+            if column not in cols:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+                print(f"[migrate] {table} 增加列 {column}")
+    except Exception as e:
+        print(f"[migrate] 跳过 {table}.{column}: {e}")
+
+_ensure_column("practice_set_question", "student_answer", "student_answer TEXT")
+
 # 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:
     init_base_data(db)

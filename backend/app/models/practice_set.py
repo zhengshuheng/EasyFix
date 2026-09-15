@@ -40,6 +40,7 @@ class PracticeSetQuestion(Base):
     similar_question_id = Column(Integer, ForeignKey("similar_question.id"), nullable=True)  # 相似题ID，可为null
     is_correct = Column(Boolean, nullable=True)  # 批改是否正确
     display_order = Column(Integer, default=0)  # 显示顺序
+    student_answer = Column(Text, nullable=True)  # 学生作答（做题环节提交）
 
     # Relationships
     practice_set = relationship("PracticeSet", back_populates="practice_set_questions")

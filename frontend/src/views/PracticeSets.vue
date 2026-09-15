@@ -104,6 +104,7 @@
         <el-table-column label="操作" width="420" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
+            <el-button type="warning" size="default" @click="openStudentDo(row)">去做题</el-button>
             <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
             <el-button v-else type="info" size="default" disabled>无PDF</el-button>
             <el-button type="success" size="default" @click="markReviewed(row)" :disabled="row.reviewed">批改</el-button>
@@ -191,13 +192,11 @@
               <span class="answer-label">答案：</span>
               <span class="answer-badge">{{ question.original_answer || '-' }}</span>
             </div>
-            <div v-if="question.original_question_text" class="question-student-answer">
-              <el-input
-                v-model="aiAnswers[question.question_id]"
-                placeholder="输入学生作答（AI 批改用）"
-                size="small"
-                clearable
-              />
+            <div class="question-student-answer-readonly">
+              <span class="student-answer-label">学生作答：</span>
+              <span :class="question.student_answer ? 'student-answer-value' : 'student-answer-empty'">
+                {{ question.student_answer || '未作答（AI 批改将判为错误）' }}
+              </span>
             </div>
             <div
               v-if="aiComments[question.question_id]"
@@ -241,6 +240,45 @@
             >提交批改结果</el-button>
           </div>
         </div>
+      </template>
+    </el-dialog>
+
+    <!-- 做题弹窗（学生做题） -->
+    <el-dialog v-model="studentDoDialogVisible" title="学生做题" width="760px" destroy-on-close>
+      <div class="do-tip">
+        请逐题作答，完成后点「提交作答」。提交后家长可在「批改」中查看并确认结果。
+      </div>
+      <div class="do-question-list">
+        <div
+          v-for="(question, index) in currentPsQuestions"
+          :key="question.question_id"
+          class="do-question-row"
+        >
+          <div class="do-question-header">
+            <span class="do-question-number">{{ index + 1 }}.</span>
+            <span class="do-question-text">
+              <template v-if="question.original_question_text">{{ question.original_question_text }}</template>
+              <template v-else-if="question.original_image">
+                <el-image
+                  :src="'/uploads/' + question.original_image"
+                  fit="contain"
+                  style="max-width: 120px; max-height: 120px; cursor: pointer;"
+                  @click="previewImage(question.original_image)"
+                />
+              </template>
+              <template v-else><span class="text-gray-400">无题目内容</span></template>
+            </span>
+          </div>
+          <el-input
+            v-model="studentAnswers[question.question_id]"
+            placeholder="请输入你的作答"
+            size="default"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="studentDoDialogVisible = false">返回</el-button>
+        <el-button type="warning" :loading="studentDoSubmitting" @click="submitStudentAnswers">提交作答</el-button>
       </template>
     </el-dialog>
 
@@ -756,9 +794,13 @@ const gradingStep = ref('overall') // 'overall' | 'detail' | 'upload'
 const gradingCurrentIndex = ref(0)
 const gradingResults = ref({}) // { questionId: true/false }
 const currentPsQuestions = ref([])
-const aiAnswers = ref({}) // { questionId: 学生作答 }
 const aiComments = ref({}) // { questionId: { is_correct, comment } }
 const aiGradingLoading = ref(false)
+// 做题（学生）状态
+const studentDoDialogVisible = ref(false)
+const studentAnswers = ref({}) // { questionId: 学生作答 }
+const studentDoSubmitting = ref(false)
+const currentDoPsId = ref(null)
 
 // 计算属性
 const gradedCount = computed(() => Object.keys(gradingResults.value).length)
@@ -833,7 +875,6 @@ const initGrading = async (ps) => {
     const { data } = await questionApi.getPracticeSet(ps.id)
     currentPsQuestions.value = data.questions || []
     gradingResults.value = {}
-    aiAnswers.value = {}
     aiComments.value = {}
     gradingStep.value = 'list' // 直接进入列表视图
   } catch (error) {
@@ -842,35 +883,64 @@ const initGrading = async (ps) => {
   }
 }
 
+// ============ 做题（学生） ============
+const openStudentDo = async (ps) => {
+  studentDoDialogVisible.value = true
+  currentDoPsId.value = ps.id
+  try {
+    const { data } = await questionApi.getPracticeSet(ps.id)
+    currentPsQuestions.value = data.questions || []
+    studentAnswers.value = {}
+    // 预填已保存的作答（重新做题可修改）
+    currentPsQuestions.value.forEach(q => {
+      if (q.student_answer) studentAnswers.value[q.question_id] = q.student_answer
+    })
+  } catch (error) {
+    ElMessage.error('获取练习集详情失败')
+    studentDoDialogVisible.value = false
+  }
+}
+
+const submitStudentAnswers = async () => {
+  const answers = currentPsQuestions.value
+    .map(q => ({
+      question_id: q.question_id,
+      answer: (studentAnswers.value[q.question_id] || '').trim()
+    }))
+    .filter(a => a.answer)
+
+  if (answers.length === 0) {
+    ElMessage.warning('请至少完成一道题再提交')
+    return
+  }
+
+  studentDoSubmitting.value = true
+  try {
+    const { data } = await questionApi.submitAnswersPracticeSet(currentDoPsId.value, answers)
+    ElMessage.success(`作答已保存（${data.saved}/${data.total} 题）`)
+    studentDoDialogVisible.value = false
+    fetchPracticeSets()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '提交失败，请重试')
+  } finally {
+    studentDoSubmitting.value = false
+  }
+}
+
 const runAIGrading = async () => {
   const ps = currentReviewPs.value
   if (!ps) return
 
-  // 收集每题学生作答（仅文本题）
-  const answers = currentPsQuestions.value
-    .filter(q => q.original_question_text)
-    .map(q => ({
-      question_id: q.question_id,
-      answer: (aiAnswers.value[q.question_id] || '').trim()
-    }))
-
-  const answeredCount = answers.filter(a => a.answer).length
-  if (answeredCount === 0) {
-    ElMessage.warning('请先在题目下方输入学生作答，再点击 AI 批改')
+  // 未保存任何学生作答时提示先做题
+  const hasAnswers = currentPsQuestions.value.some(q => q.student_answer)
+  if (!hasAnswers) {
+    ElMessage.warning('学生还没有提交作答，请先在列表点「去做题」完成作答')
     return
-  }
-  if (answers.some(a => !a.answer)) {
-    const skip = await ElMessageBox.confirm(
-      '有题目未填写学生作答，未作答的题将按"错误"处理。继续？',
-      '提示',
-      { confirmButtonText: '继续批改', cancelButtonText: '取消', type: 'warning' }
-    ).catch(() => false)
-    if (!skip) return
   }
 
   aiGradingLoading.value = true
   try {
-    const { data } = await questionApi.aiGradePracticeSet(ps.id, answers)
+    const { data } = await questionApi.aiGradePracticeSet(ps.id)
     // 回填 AI 批改结果（家长仍可手动修正）
     ;(data.results || []).forEach(r => {
       if (r.question_id) {
@@ -2045,9 +2115,26 @@ onMounted(() => {
   word-break: break-word;
 }
 
-.question-student-answer {
+.question-student-answer-readonly {
   margin-top: 8px;
-  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.student-answer-label {
+  color: #909399;
+}
+
+.student-answer-value {
+  color: #303133;
+  background: #f5f7fa;
+  padding: 2px 8px;
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+.student-answer-empty {
+  color: #e6a23c;
 }
 
 .ai-comment {
@@ -2084,6 +2171,50 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* 做题弹窗 */
+.do-tip {
+  font-size: 13px;
+  color: #e6a23c;
+  background: #fdf6ec;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.do-question-list {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.do-question-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.do-question-row:last-child {
+  border-bottom: none;
+}
+
+.do-question-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.do-question-number {
+  color: #e6a23c;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.do-question-text {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .question-actions {

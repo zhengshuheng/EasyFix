@@ -697,6 +697,7 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "original_question_text": question.parsed_question or question.original_text or "",
                 "original_answer": question.answer or "",
                 "original_image": question.original_image or None,
+                "student_answer": psq.student_answer or "",
             })
 
     return {
@@ -873,24 +874,59 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"PDF生成失败: {str(e)}")
 
 
-class AIGradeAnswerItem(BaseModel):
-    """AI批改：单题学生作答"""
+class SubmitAnswersItem(BaseModel):
+    """做题提交：单题作答"""
     question_id: int
     answer: str
 
 
-class AIGradeRequest(BaseModel):
-    """AI批改请求"""
-    answers: List[AIGradeAnswerItem]
+class SubmitAnswersRequest(BaseModel):
+    """做题提交请求"""
+    answers: List[SubmitAnswersItem]
+
+
+@router.post("/{practice_set_id}/submit-answers")
+def submit_practice_answers(
+    practice_set_id: int,
+    data: SubmitAnswersRequest,
+    db: Session = Depends(get_db)
+):
+    """学生做题提交：保存每道题的学生作答（供家长批改）"""
+    ps = db.query(PracticeSet).filter(
+        PracticeSet.id == practice_set_id,
+        PracticeSet.deleted == False
+    ).first()
+
+    if not ps:
+        raise HTTPException(status_code=404, detail="练习集不存在")
+
+    answer_map = {a.question_id: a.answer for a in data.answers}
+    if not answer_map:
+        raise HTTPException(status_code=400, detail="作答内容为空")
+
+    ps_questions = db.query(PracticeSetQuestion).filter(
+        PracticeSetQuestion.practice_set_id == practice_set_id
+    ).all()
+
+    if not ps_questions:
+        raise HTTPException(status_code=400, detail="练习集没有题目")
+
+    saved = 0
+    for psq in ps_questions:
+        if psq.question_id in answer_map:
+            psq.student_answer = answer_map[psq.question_id].strip() or None
+            saved += 1
+
+    db.commit()
+    return {"message": "作答已保存", "saved": saved, "total": len(ps_questions)}
 
 
 @router.post("/{practice_set_id}/ai-grade")
 def ai_grade_practice_set(
     practice_set_id: int,
-    data: AIGradeRequest,
     db: Session = Depends(get_db)
 ):
-    """大模型一键批改：LLM 逐题判断学生作答对错并给出错因（图片题自动跳过，提示人工批改）"""
+    """大模型一键批改：读取学生已提交的作答，LLM 逐题判断对错并给出错因（图片题自动跳过，提示人工批改）"""
     ps = db.query(PracticeSet).filter(
         PracticeSet.id == practice_set_id,
         PracticeSet.deleted == False
@@ -905,8 +941,6 @@ def ai_grade_practice_set(
 
     if not ps_questions:
         raise HTTPException(status_code=400, detail="练习集没有题目")
-
-    answer_map = {a.question_id: a.answer for a in data.answers}
 
     items = []
     unsupported = []
@@ -937,7 +971,7 @@ def ai_grade_practice_set(
             "question_id": qid,
             "question": question_text,
             "answer": answer,
-            "student_answer": answer_map.get(qid, "") or "（未作答）",
+            "student_answer": (psq.student_answer or "").strip() or "（未作答）",
         })
 
     if not items:
