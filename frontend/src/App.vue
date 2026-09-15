@@ -10,7 +10,7 @@
             <el-menu-item index="/home" @click="navTo('/home')">首页</el-menu-item>
             <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
             <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
-            <el-sub-menu index="/english">
+            <el-sub-menu v-if="showEnglishMenu" index="/english">
               <template #title>英语</template>
               <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
               <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
@@ -25,6 +25,31 @@
           </el-menu>
 
           <div v-if="!isSelectPage" class="header-user">
+            <!-- 学科切换：学习空间 = 小孩 + 学科（null = 全部/汇总） -->
+            <el-dropdown v-if="kidStore.isKidSelected" trigger="click" @command="handleSubjectCommand">
+              <span class="subject-chip">
+                <el-icon class="subject-icon"><Collection /></el-icon>
+                <span class="subject-name">{{ subjectStore.isAll ? '全部学科' : subjectStore.activeSubject?.name }}</span>
+                <el-icon class="arrow"><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="subject:" :class="{ active: subjectStore.isAll }">
+                    全部（汇总）
+                    <el-icon v-if="subjectStore.isAll"><Check /></el-icon>
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    v-for="s in subjectStore.subjects"
+                    :key="s.id"
+                    :command="'subject:' + s.id"
+                    :class="{ active: s.id === subjectStore.activeSubjectId }"
+                  >
+                    {{ s.name }}
+                    <el-icon v-if="s.id === subjectStore.activeSubjectId"><Check /></el-icon>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <!-- 小孩会话：当前小孩 + 下拉切换 -->
             <el-dropdown v-if="kidStore.isKidSelected" trigger="click" @command="handleKidCommand">
               <span class="user-chip">
@@ -68,6 +93,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useAuthStore } from '@/stores/auth'
 import { useKidStore } from '@/stores/kid'
+import { useSubjectStore } from '@/stores/subject'
 import { usersApi } from '@/api/users'
 import ParentLockDialog from '@/components/ParentLockDialog.vue'
 
@@ -76,6 +102,7 @@ const router = useRouter()
 const appConfigStore = useAppConfigStore()
 const authStore = useAuthStore()
 const kidStore = useKidStore()
+const subjectStore = useSubjectStore()
 
 const parentLockVisible = ref(false)
 const kids = ref([])
@@ -88,6 +115,8 @@ const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
 const activeMenu = computed(() =>
   route.path.startsWith('/parent-center') ? '/parent-center' : route.path
 )
+// 学科控制菜单：「英语▾（单词/阅读）」仅在 全部 或 英语学科 空间显示
+const showEnglishMenu = computed(() => subjectStore.isAll || subjectStore.isEnglish)
 
 function navTo(path) {
   if (route.path !== path) router.push(path)
@@ -116,11 +145,19 @@ async function loadKids() {
 
 onMounted(() => {
   loadKids()
+  subjectStore.loadSubjects()
   // 家长会话时预加载默认年级等应用配置（config 接口需家长权限）
   if (isAdminSession.value) {
     appConfigStore.load()
   }
 })
+
+// 学科切换：更新学习空间学科；阶段A仅联动菜单并回首页（阶段B起按学科过滤数据）
+function handleSubjectCommand(cmd) {
+  const raw = cmd.startsWith('subject:') ? cmd.slice('subject:'.length) : ''
+  subjectStore.select(raw === '' ? null : Number(raw))
+  if (route.path !== '/home') router.push('/home')
+}
 
 // 小孩会话下拉
 function handleKidCommand(cmd) {
@@ -136,6 +173,7 @@ function handleKidCommand(cmd) {
     const k = kids.value.find((x) => x.id === Number(cmd.split(':')[1]))
     if (k) {
       kidStore.select(k)
+      subjectStore.reset() // 切换小孩 = 新学习空间，学科回到「全部」
       // 若当前在选择页则进入首页；否则原地切换
       if (route.path === '/') router.push('/home')
       else loadKids()
@@ -149,6 +187,7 @@ function goParentCenter() {
 
 function switchKid() {
   kidStore.clear()
+  subjectStore.reset()
   localStorage.removeItem('easyfix_token')
   localStorage.removeItem('easyfix_user')
   router.push('/')
@@ -321,6 +360,34 @@ function switchKid() {
 
 .user-chip:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.subject-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 20px;
+  transition: background 0.2s ease;
+}
+
+.subject-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.subject-icon {
+  font-size: 14px;
+}
+
+.subject-name {
+  color: #fff;
+  font-size: 14px;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mini-avatar {
