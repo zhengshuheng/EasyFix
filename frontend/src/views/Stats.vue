@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="stats-page">
     <!-- 顶部总览卡片 -->
     <el-row :gutter="16" class="overview-cards">
@@ -103,6 +103,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { statsApi } from '@/api/question'
 import { wordApi } from '@/api/word'
+import { useSubjectStore } from '@/stores/subject'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -329,11 +330,15 @@ const accColor = (acc) => {
 
 // ========== 数据加载 ==========
 const loadAll = async () => {
+  // 学习空间指定学科时，只加载当前学科分析
+  const subjectParams = {}
+  const activeSubjectId = useSubjectStore().activeSubjectId
+  if (activeSubjectId !== null) subjectParams.subject_id = activeSubjectId
   try {
     const [summaryRes, kpRes, wordRes] = await Promise.all([
-      statsApi.getSummary(),
-      statsApi.getKnowledgePoints(),
-      wordApi.getStats(),
+      statsApi.getSummary(subjectParams),
+      statsApi.getKnowledgePoints(subjectParams),
+      wordApi.getStats(subjectParams),
     ])
     stats.value = summaryRes.data
     kpStats.value = kpRes.data
@@ -352,7 +357,7 @@ const loadAll = async () => {
   // Load question trend from analysis API
   try {
     const { default: analysisApi } = await import('@/api/learning_analysis')
-    const { data } = await analysisApi.getFullStats()
+    const { data } = await analysisApi.getFullStats(subjectParams)
     questionTrend.value = data?.question_stats?.accuracy_trend || []
   } catch (e) {
     console.error('加载分析数据失败:', e)

@@ -400,8 +400,30 @@ def generate_audio(grade: Optional[int] = None, db: Session = Depends(get_db)):
 
 
 @router.get("/stats/summary", response_model=WordStatsResponse)
-def get_stats(db: Session = Depends(get_db)):
-    """获取单词统计"""
+def get_stats(
+    subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
+    db: Session = Depends(get_db),
+):
+    """获取单词统计（单词属于英语学科；指定其他学科时返回全零）"""
+    # 学科过滤：仅英语学科有单词数据
+    if subject_id is not None:
+        from app.models.subject import Subject
+        sub = db.query(Subject).filter(Subject.id == subject_id).first()
+        sub_name = (sub.name or "").lower() if sub else ""
+        if "英语" not in sub_name and "english" not in sub_name:
+            return {
+                "total_words": 0,
+                "total_reviews": 0,
+                "total_correct": 0,
+                "accuracy": 0,
+                "mastered_words": 0,
+                "learning_words": 0,
+                "new_words": 0,
+                "grade_distribution": {},
+                "review_today": 0,
+                "due_words": 0,
+                "to_review_count": 0,
+            }
     # 总单词数
     total_words = db.query(Word).filter(Word.deleted == False).count()
 

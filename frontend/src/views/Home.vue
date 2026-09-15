@@ -352,6 +352,7 @@ import { ElMessage } from 'element-plus'
 import { statsApi, statsOverviewApi } from '@/api/question'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useKidStore } from '@/stores/kid'
+import { useSubjectStore } from '@/stores/subject'
 import { usersApi } from '@/api/users'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
@@ -455,6 +456,8 @@ const onGradeChange = (g) => {
 const loadAllStats = async () => {
   const params = {}
   if (selectedGrade.value) params.grade = selectedGrade.value
+  const activeSubjectId = useSubjectStore().activeSubjectId
+  if (activeSubjectId !== null) params.subject_id = activeSubjectId
   try {
     const { data } = await statsApi.getSummary(params)
     stats.value = data

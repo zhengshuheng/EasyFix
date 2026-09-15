@@ -4,13 +4,34 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, Integer
 from app.models import Question, Subject, Word, WordReviewLog, PracticeSet, PracticeSetQuestion, KnowledgePoint
 from app.models.tag import Tag
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import Counter
 
 class LearningAnalysisService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, subject_id: Optional[int] = None):
         self.db = db
+        self.subject_id = subject_id
+        self._subject = db.query(Subject).filter(Subject.id == subject_id).first() if subject_id else None
+
+    def _is_english(self) -> bool:
+        """单词数据无学科字段：仅英语学科保留单词统计，其他学科置空"""
+        if self._subject is None:
+            return True
+        name = (self._subject.name or "").lower()
+        return "英语" in name or "english" in name
+
+    def _q(self, query):
+        """Question 查询按当前学科过滤"""
+        if self.subject_id:
+            query = query.filter(Question.subject_id == self.subject_id)
+        return query
+
+    def _ps(self, query):
+        """PracticeSet 查询按当前学科过滤"""
+        if self.subject_id:
+            query = query.filter(PracticeSet.subject_id == self.subject_id)
+        return query
 
     def get_full_stats(self) -> Dict[str, Any]:
         """获取完整学习统计数据"""
@@ -25,15 +46,17 @@ class LearningAnalysisService:
         """获取错题统计，使用数据库聚合避免加载所有记录"""
         try:
             # 使用数据库聚合计算总数
-            total = self.db.query(func.count(Question.id)).filter(Question.deleted == False).scalar() or 0
+            total = self._q(self.db.query(func.count(Question.id)).filter(Question.deleted == False)).scalar() or 0
 
             # 难度分布 - 使用数据库分组聚合
             difficulty_results = (
-                self.db.query(
-                    Question.difficulty,
-                    func.count(Question.id)
+                self._q(
+                    self.db.query(
+                        Question.difficulty,
+                        func.count(Question.id)
+                    )
+                    .filter(Question.deleted == False, Question.difficulty.isnot(None))
                 )
-                .filter(Question.deleted == False, Question.difficulty.isnot(None))
                 .group_by(Question.difficulty)
                 .all()
             )
@@ -42,8 +65,10 @@ class LearningAnalysisService:
             # 错误类型分布 - 使用数据库分组聚合
             # 注意：错误类型存储为逗号分隔的字符串，需要在应用层拆分
             error_type_results = (
-                self.db.query(Question.error_type)
-                .filter(Question.deleted == False, Question.error_type.isnot(None))
+                self._q(
+                    self.db.query(Question.error_type)
+                    .filter(Question.deleted == False, Question.error_type.isnot(None))
+                )
                 .all()
             )
             error_types = Counter()
@@ -56,11 +81,13 @@ class LearningAnalysisService:
 
             # 知识点错误排行 - 使用数据库分组聚合
             kp_results = (
-                self.db.query(
-                    Question.knowledge_point,
-                    func.count(Question.id)
+                self._q(
+                    self.db.query(
+                        Question.knowledge_point,
+                        func.count(Question.id)
+                    )
+                    .filter(Question.deleted == False, Question.knowledge_point.isnot(None))
                 )
-                .filter(Question.deleted == False, Question.knowledge_point.isnot(None))
                 .group_by(Question.knowledge_point)
                 .order_by(func.count(Question.id).desc())
                 .limit(10)
@@ -70,18 +97,24 @@ class LearningAnalysisService:
 
             # 复习效果 - 使用数据库聚合
             not_reviewed = (
-                self.db.query(func.count(Question.id))
-                .filter(Question.deleted == False, (Question.review_count == 0) | (Question.review_count.is_(None)))
+                self._q(
+                    self.db.query(func.count(Question.id))
+                    .filter(Question.deleted == False, (Question.review_count == 0) | (Question.review_count.is_(None)))
+                )
                 .scalar() or 0
             )
             reviewed_once = (
-                self.db.query(func.count(Question.id))
-                .filter(Question.deleted == False, Question.review_count == 1)
+                self._q(
+                    self.db.query(func.count(Question.id))
+                    .filter(Question.deleted == False, Question.review_count == 1)
+                )
                 .scalar() or 0
             )
             reviewed_multiple = (
-                self.db.query(func.count(Question.id))
-                .filter(Question.deleted == False, Question.review_count > 1)
+                self._q(
+                    self.db.query(func.count(Question.id))
+                    .filter(Question.deleted == False, Question.review_count > 1)
+                )
                 .scalar() or 0
             )
 
@@ -119,17 +152,19 @@ class LearningAnalysisService:
         """获取错题正确率趋势"""
         try:
             logs = (
-                self.db.query(
-                    func.date(PracticeSet.created_at).label('date'),
-                    func.sum(func.cast(PracticeSetQuestion.is_correct, Integer)).label('correct'),
-                    func.count(PracticeSetQuestion.id).label('total')
-                )
-                .join(PracticeSet, PracticeSet.id == PracticeSetQuestion.practice_set_id)
-                .filter(
-                    PracticeSet.deleted == False,
-                    PracticeSet.source_type == 'question',
-                    PracticeSet.reviewed == True,
-                    PracticeSetQuestion.is_correct.isnot(None)
+                self._ps(
+                    self.db.query(
+                        func.date(PracticeSet.created_at).label('date'),
+                        func.sum(func.cast(PracticeSetQuestion.is_correct, Integer)).label('correct'),
+                        func.count(PracticeSetQuestion.id).label('total')
+                    )
+                    .join(PracticeSet, PracticeSet.id == PracticeSetQuestion.practice_set_id)
+                    .filter(
+                        PracticeSet.deleted == False,
+                        PracticeSet.source_type == 'question',
+                        PracticeSet.reviewed == True,
+                        PracticeSetQuestion.is_correct.isnot(None)
+                    )
                 )
                 .group_by(func.date(PracticeSet.created_at))
                 .order_by(func.date(PracticeSet.created_at))
@@ -153,6 +188,15 @@ class LearningAnalysisService:
 
     def _get_word_stats(self) -> Dict[str, Any]:
         """获取单词统计，使用数据库聚合避免加载所有记录"""
+        if not self._is_english():
+            # 非英语学科无单词数据
+            return {
+                "total": 0,
+                "mastery_distribution": {"unmastered": 0, "learning": 0, "mastered": 0},
+                "low_accuracy_words": [],
+                "memory_curve_status": {"due_review": 0, "on_track": 0},
+                "frequency_trend": [],
+            }
         try:
             # 使用数据库聚合计算总数
             total = self.db.query(func.count(Word.id)).filter(Word.deleted == False).scalar() or 0
@@ -235,6 +279,8 @@ class LearningAnalysisService:
 
     def _get_word_frequency_trend(self) -> List[Dict]:
         """获取单词复习频率趋势"""
+        if not self._is_english():
+            return []
         try:
             logs = (
                 self.db.query(
@@ -258,7 +304,7 @@ class LearningAnalysisService:
         try:
             # 使用数据库聚合计算总数
             total_practices = (
-                self.db.query(func.count(PracticeSet.id))
+                self._ps(self.db.query(func.count(PracticeSet.id)))
                 .filter(PracticeSet.deleted == False)
                 .scalar() or 0
             )
@@ -266,11 +312,13 @@ class LearningAnalysisService:
             # 频率热力图（按星期）- 使用数据库分组聚合
             # 使用 func.extract('dow', ...) 获取星期几，0=周日, 1=周一, ..., 6=周六
             weekday_results = (
-                self.db.query(
-                    func.extract('dow', PracticeSet.created_at).label('dow'),
-                    func.count(PracticeSet.id)
+                self._ps(
+                    self.db.query(
+                        func.extract('dow', PracticeSet.created_at).label('dow'),
+                        func.count(PracticeSet.id)
+                    )
+                    .filter(PracticeSet.deleted == False)
                 )
-                .filter(PracticeSet.deleted == False)
                 .group_by(func.extract('dow', PracticeSet.created_at))
                 .all()
             )
@@ -299,6 +347,8 @@ class LearningAnalysisService:
 
     def _get_practice_accuracy_trend(self) -> List[Dict]:
         """获取练习正确率趋势"""
+        if not self._is_english():
+            return []
         try:
             from app.models import WordReview
             sessions = (
@@ -342,8 +392,10 @@ class LearningAnalysisService:
                 .all()
             )
 
-            # 构建节点
+            # 构建节点（指定学科时只保留该学科知识点）
             for kp in kp_error_results:
+                if self.subject_id is not None and kp.subject_id != self.subject_id:
+                    continue
                 nodes.append({
                     "id": str(kp.id),
                     "name": kp.name,

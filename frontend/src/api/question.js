@@ -174,8 +174,8 @@ export const statsApi = {
   getTodayStats() {
     return api.get('/stats/today')
   },
-  getKnowledgePoints() {
-    return api.get('/stats/knowledge-points')
+  getKnowledgePoints(params) {
+    return api.get('/stats/knowledge-points', { params })
   },
 }
 

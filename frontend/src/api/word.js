@@ -28,8 +28,8 @@ export const wordApi = {
   },
 
   // 获取单词统计
-  getStats() {
-    return api.get('/words/stats/summary')
+  getStats(params) {
+    return api.get('/words/stats/summary', { params })
   },
 
   // 开始复习

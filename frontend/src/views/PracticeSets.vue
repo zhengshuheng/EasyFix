@@ -23,7 +23,7 @@
 
       <!-- 筛选条件 -->
       <div class="filters">
-        <el-select v-model="filters.subject_id" placeholder="选择学科" clearable @change="fetchPracticeSets" style="width: 130px">
+        <el-select v-if="subjectStore.isAll" v-model="filters.subject_id" placeholder="选择学科" clearable @change="fetchPracticeSets" style="width: 130px">
           <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
         </el-select>
         <el-select v-model="filters.reviewed" placeholder="复习状态" clearable @change="fetchPracticeSets" style="width: 120px">
@@ -668,7 +668,7 @@
         <el-tab-pane label="错题组卷" name="pool">
           <el-form :model="generateForm" label-width="70px">
             <el-form-item label="学科" required>
-              <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%">
+              <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll">
                 <el-option
                   v-for="subject in subjects"
                   :key="subject.id"
@@ -693,7 +693,7 @@
         <el-tab-pane label="AI 出题" name="ai">
           <el-form :model="aiGenerateForm" label-width="70px">
             <el-form-item label="学科" required>
-              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%">
+              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll">
                 <el-option
                   v-for="subject in subjects"
                   :key="subject.id"
@@ -758,7 +758,9 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { questionApi } from '@/api/question'
+import { useSubjectStore } from '@/stores/subject'
 
+const subjectStore = useSubjectStore()
 const practiceSets = ref([])
 const subjects = ref([])
 const total = ref(0)
@@ -800,10 +802,12 @@ const gradeOptions = [
 ]
 
 const showGenerateDialog = () => {
-  generateForm.subject_id = null
+  // 学习空间指定学科时，生成练习默认该学科且不可切换
+  const defaultSubjectId = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
+  generateForm.subject_id = defaultSubjectId
   generateForm.grade = null
   generateForm.count = 5
-  aiGenerateForm.subject_id = null
+  aiGenerateForm.subject_id = defaultSubjectId
   aiGenerateForm.grade = null
   aiGenerateForm.knowledge_mode = 'auto'
   aiGenerateForm.knowledge_text = ''
@@ -906,7 +910,7 @@ const fetchPracticeSets = async () => {
     const params = {
       skip: (pagination.page - 1) * pagination.limit,
       limit: pagination.limit,
-      subject_id: filters.subject_id,
+      subject_id: subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : filters.subject_id,
       reviewed: filters.reviewed,
     }
     if (filters.date_range && filters.date_range.length === 2) {
@@ -1066,7 +1070,9 @@ const openSelectPracticeSet = async (mode) => {
   selectPsDialogVisible.value = true
   selectPsLoading.value = true
   try {
-    const { data } = await questionApi.listPracticeSets({ limit: 500 })
+    const params = { limit: 500 }
+    if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
+    const { data } = await questionApi.listPracticeSets(params)
     let items = data.items || []
     if (mode === 'do') {
       // 做题只针对错题练习/阅读理解卷，单词复习卷走独立流程
