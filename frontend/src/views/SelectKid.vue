@@ -145,7 +145,7 @@ async function handleCreate() {
 }
 
 function goParentCenter() {
-  router.push('/user-manage')
+  router.push('/parent-center')
 }
 
 onMounted(load)

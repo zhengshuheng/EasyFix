@@ -15,9 +15,7 @@
             <el-menu-item index="/stats">统计</el-menu-item>
             <el-menu-item index="/learning-reports">学习分析</el-menu-item>
             <el-menu-item index="/motivation">激励中心</el-menu-item>
-            <el-menu-item v-if="isAdminSession" index="/management">管理</el-menu-item>
-            <el-menu-item v-if="isAdminSession" index="/user-manage">账号</el-menu-item>
-            <el-menu-item v-if="isAdminSession" index="/settings">配置</el-menu-item>
+            <el-menu-item index="/parent-center" @click.prevent="openParentCenter">家长中心</el-menu-item>
           </el-menu>
 
           <div v-if="!isSelectPage" class="header-user">
@@ -30,9 +28,7 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="user-manage">账号管理</el-dropdown-item>
-                  <el-dropdown-item command="management">题库管理</el-dropdown-item>
-                  <el-dropdown-item command="settings">系统配置</el-dropdown-item>
+                  <el-dropdown-item command="parent-center">家长中心</el-dropdown-item>
                   <el-dropdown-item divided command="logout">退出管理</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -153,7 +149,16 @@ function handleAdminCommand(cmd) {
 }
 
 function goParentCenter() {
-  router.push('/user-manage')
+  router.push('/parent-center')
+}
+
+// 顶部"家长中心"菜单：家长直接进，小孩弹密码验证
+function openParentCenter() {
+  if (isAdminSession.value) {
+    router.push('/parent-center')
+  } else {
+    parentLockVisible.value = true
+  }
 }
 
 function switchKid() {

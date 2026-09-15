@@ -28,23 +28,32 @@ const routes = [
     component: () => import('@/views/Stats.vue'),
   },
   {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('@/views/Settings.vue'),
+    path: '/parent-center',
+    component: () => import('@/views/ParentCenter.vue'),
     meta: { adminOnly: true },
+    redirect: '/parent-center/users',
+    children: [
+      {
+        path: 'users',
+        name: 'UserManage',
+        component: () => import('@/views/UserManage.vue'),
+      },
+      {
+        path: 'management',
+        name: 'Management',
+        component: () => import('@/views/Management.vue'),
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/views/Settings.vue'),
+      },
+    ],
   },
-  {
-    path: '/management',
-    name: 'Management',
-    component: () => import('@/views/Management.vue'),
-    meta: { adminOnly: true },
-  },
-  {
-    path: '/user-manage',
-    name: 'UserManage',
-    component: () => import('@/views/UserManage.vue'),
-    meta: { adminOnly: true },
-  },
+  // 旧独立家长页面路径重定向到家长中心
+  { path: '/user-manage', redirect: '/parent-center/users' },
+  { path: '/management', redirect: '/parent-center/management' },
+  { path: '/settings', redirect: '/parent-center/settings' },
   {
     path: '/practice-sets',
     name: 'PracticeSets',
