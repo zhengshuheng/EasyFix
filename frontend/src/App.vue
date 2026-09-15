@@ -9,9 +9,12 @@
           <el-menu v-if="!isSelectPage" mode="horizontal" :default-active="activeMenu">
             <el-menu-item index="/home" @click="navTo('/home')">首页</el-menu-item>
             <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
-            <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
             <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
-            <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+            <el-sub-menu index="/english">
+              <template #title>英语</template>
+              <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
+              <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
             <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习分析</el-menu-item>
             <el-menu-item index="/motivation" @click="navTo('/motivation')">激励中心</el-menu-item>
@@ -195,6 +198,13 @@ function switchKid() {
     flex-shrink: 0;
   }
 
+  .header-content .el-sub-menu .el-sub-menu__title {
+    font-size: 11px;
+    padding: 0 8px;
+    height: 32px;
+    line-height: 32px;
+  }
+
   .el-main {
     padding: 10px;
   }
@@ -209,6 +219,13 @@ function switchKid() {
   .header-content .el-menu-item {
     font-size: 10px;
     padding: 0 4px;
+    height: 28px;
+    line-height: 28px;
+  }
+
+  .header-content .el-sub-menu .el-sub-menu__title {
+    font-size: 10px;
+    padding: 0 5px;
     height: 28px;
     line-height: 28px;
   }
