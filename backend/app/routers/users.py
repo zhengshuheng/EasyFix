@@ -5,6 +5,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
+from app.models.subject import Subject
+from app.models.error_book import ErrorBook
 from app.utils.auth import hash_password, require_admin
 
 router = APIRouter(prefix="/api/users", tags=["用户管理"])
@@ -122,7 +124,27 @@ def create_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # 小孩创建成功后：自动为每个学科补建错题本（该学科已有错题本则跳过）
+    if data.role == "child":
+        _ensure_default_error_books(db)
+
     return {"message": "创建成功", "user": user_dict(user)}
+
+
+def _ensure_default_error_books(db: Session):
+    """为所有未删除学科自动创建错题本（每学科一条，已有则跳过），无需家长手动添加"""
+    subjects = db.query(Subject).filter(Subject.deleted == False).all()
+    for s in subjects:
+        exists = (
+            db.query(ErrorBook)
+            .filter(ErrorBook.subject_id == s.id, ErrorBook.deleted == False)
+            .first()
+        )
+        if exists:
+            continue
+        db.add(ErrorBook(name=f"小学{s.name}错题本" if s.id <= 3 else f"{s.name}错题本", subject_id=s.id))
+    db.commit()
 
 
 @router.put("/{user_id}")

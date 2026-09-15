@@ -134,5 +134,9 @@ def delete_error_type(et_id: int, db: Session = Depends(get_db)):
     if not et:
         raise HTTPException(status_code=404, detail="错误类型不存在")
 
+    # 系统内置错误类型保护（内置 1-6：计算错误/审题不清/概念错误/完全不会/背诵拼写/语法）
+    if et.id <= 6:
+        raise HTTPException(status_code=403, detail="系统内置错误类型，不允许删除")
+
     et.deleted = True
     db.commit()

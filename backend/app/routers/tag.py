@@ -50,6 +50,10 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db)):
     if not tag:
         raise HTTPException(status_code=404, detail="标签不存在")
 
+    # 系统内置标签保护
+    if tag.name in ("重点", "粗心", "重复错误", "薄弱"):
+        raise HTTPException(status_code=403, detail="系统内置标签，不允许删除")
+
     # 软删除：设置deleted标志为True
     tag.deleted = True
     db.commit()

@@ -7,6 +7,9 @@ from app.models import Subject
 
 router = APIRouter(prefix="/api/subjects", tags=["学科"])
 
+# 系统内置学科：不允许删除
+BUILTIN_SUBJECTS = ("数学", "英语", "语文")
+
 
 class SubjectResponse(BaseModel):
     id: int
@@ -47,6 +50,10 @@ def delete_subject(subject_id: int, db: Session = Depends(get_db)):
     subject = db.query(Subject).filter(Subject.id == subject_id, Subject.deleted == False).first()
     if not subject:
         raise HTTPException(status_code=404, detail="学科不存在")
+
+    # 系统内置学科保护
+    if subject.name in BUILTIN_SUBJECTS:
+        raise HTTPException(status_code=403, detail="系统内置学科，不允许删除")
 
     # 软删除：设置deleted标志为True
     subject.deleted = True

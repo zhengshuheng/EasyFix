@@ -7,7 +7,7 @@
         </div>
       </template>
 
-      <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" tab-position="left" class="mgmt-tabs">
         <!-- 系统配置 -->
         <el-tab-pane label="系统配置" name="system">
           <div class="tab-content system-config">
@@ -48,10 +48,15 @@
             </div>
             <el-table :data="subjects" stripe style="width: 100%; margin-top: 15px">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="学科名称" />
+              <el-table-column prop="name" label="学科名称">
+                <template #default="{ row }">
+                  {{ row.name }}
+                  <el-tag v-if="isBuiltinSubject(row)" size="small" type="info" style="margin-left: 6px">系统内置</el-tag>
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="120">
                 <template #default="{ row }">
-                  <el-button link type="danger" size="small" @click="deleteSubject(row)">删除</el-button>
+                  <el-button link type="danger" size="small" :disabled="isBuiltinSubject(row)" @click="deleteSubject(row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -69,7 +74,12 @@
             </div>
             <el-table :data="tags" stripe style="width: 100%; margin-top: 15px">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="标签名称" />
+              <el-table-column prop="name" label="标签名称">
+                <template #default="{ row }">
+                  {{ row.name }}
+                  <el-tag v-if="isBuiltinTag(row)" size="small" type="info" style="margin-left: 6px">系统内置</el-tag>
+                </template>
+              </el-table-column>
               <el-table-column prop="color" label="颜色" width="120">
                 <template #default="{ row }">
                   <el-tag :style="{ backgroundColor: row.color, color: '#fff' }">{{ row.color || '默认' }}</el-tag>
@@ -77,7 +87,7 @@
               </el-table-column>
               <el-table-column label="操作" width="120">
                 <template #default="{ row }">
-                  <el-button link type="danger" size="small" @click="deleteTag(row)">删除</el-button>
+                  <el-button link type="danger" size="small" :disabled="isBuiltinTag(row)" @click="deleteTag(row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -95,12 +105,17 @@
             </div>
             <el-table :data="errorTypes" stripe style="width: 100%; margin-top: 15px">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="类型名称" />
+              <el-table-column prop="name" label="类型名称">
+                <template #default="{ row }">
+                  {{ row.name }}
+                  <el-tag v-if="isBuiltinErrorType(row)" size="small" type="info" style="margin-left: 6px">系统内置</el-tag>
+                </template>
+              </el-table-column>
               <el-table-column prop="subject_name" label="学科" width="120" />
               <el-table-column label="操作" width="180">
                 <template #default="{ row }">
                   <el-button type="primary" size="default" @click="editErrorType(row)">编辑</el-button>
-                  <el-button type="danger" size="default" @click="deleteErrorType(row)">删除</el-button>
+                  <el-button type="danger" size="default" :disabled="isBuiltinErrorType(row)" @click="deleteErrorType(row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -155,6 +170,7 @@
         <!-- 错题本管理 -->
         <el-tab-pane label="错题本管理" name="errorBooks">
           <div class="tab-content">
+            <el-alert type="info" :closable="false" style="margin-bottom: 10px" title="添加小孩账号时，系统会自动为每个学科创建错题本，通常无需手动添加；如有需要，也可在此为特定学科补充错题本。" />
             <div class="action-bar">
               <el-button type="primary" @click="showErrorBookDialog = true">
                 <el-icon><Plus /></el-icon>
@@ -691,8 +707,19 @@ const createSubject = async () => {
   }
 }
 
+// 系统内置：学科/标签/错误类型不允许删除
+const BUILTIN_SUBJECTS = ['数学', '英语', '语文']
+const BUILTIN_TAGS = ['重点', '粗心', '重复错误', '薄弱']
+const isBuiltinSubject = (row) => BUILTIN_SUBJECTS.includes(row.name)
+const isBuiltinTag = (row) => BUILTIN_TAGS.includes(row.name)
+const isBuiltinErrorType = (row) => row.id <= 6 // 错误类型 1-6 为系统内置
+
 // 删除学科
 const deleteSubject = async (row) => {
+  if (isBuiltinSubject(row)) {
+    ElMessage.warning('系统内置学科，不允许删除')
+    return
+  }
   try {
     await ElMessageBox.confirm('确定要删除该学科吗？', '删除确认', { type: 'warning' })
     await questionApi.deleteSubject(row.id)
@@ -733,6 +760,10 @@ const createTag = async () => {
 
 // 删除标签
 const deleteTag = async (row) => {
+  if (isBuiltinTag(row)) {
+    ElMessage.warning('系统内置标签，不允许删除')
+    return
+  }
   try {
     await ElMessageBox.confirm('确定要删除该标签吗？', '删除确认', { type: 'warning' })
     await questionApi.deleteTag(row.id)
@@ -809,6 +840,10 @@ const saveErrorType = async () => {
 
 // 删除错误类型
 const deleteErrorType = async (row) => {
+  if (isBuiltinErrorType(row)) {
+    ElMessage.warning('系统内置错误类型，不允许删除')
+    return
+  }
   try {
     await ElMessageBox.confirm('确定要删除该错误类型吗？', '删除确认', { type: 'warning' })
     await questionApi.deleteErrorType(row.id)
@@ -1285,6 +1320,34 @@ onMounted(() => {
   font-size: 18px;
   font-weight: bold;
   color: #409eff;
+}
+
+/* 左侧子菜单：题库管理各 tab 竖排 */
+.mgmt-tabs {
+  display: flex;
+}
+
+.mgmt-tabs :deep(.el-tabs__header) {
+  width: 150px;
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.mgmt-tabs :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+.mgmt-tabs :deep(.el-tabs__item) {
+  height: 42px;
+  line-height: 42px;
+  text-align: left;
+  padding-left: 18px;
+}
+
+.mgmt-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  padding: 0 0 0 18px;
+  overflow: visible;
 }
 
 /* 禁用卡片的hover效果 */
