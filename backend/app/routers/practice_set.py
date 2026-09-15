@@ -68,6 +68,7 @@ class PracticeSetQuestionResponse(BaseModel):
     original_question_text: Optional[str] = None
     original_answer: Optional[str] = None
     original_image: Optional[str] = None
+    student_answer: Optional[str] = None  # 学生作答（做题环节提交）
     # 阅读理解额外字段
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -99,6 +100,7 @@ class PracticeSetResponse(BaseModel):
     questions: List[PracticeSetQuestionResponse] = []
     word_review_stats: Optional[dict] = None  # 单词复习统计
     pdf_url: Optional[str] = None  # PDF下载URL
+    student_answered_count: Optional[int] = 0  # 学生已作答题数
 
     class Config:
         from_attributes = True

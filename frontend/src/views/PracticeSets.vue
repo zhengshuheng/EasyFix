@@ -284,8 +284,8 @@
               <span>{{ ps.subject_name || '未分类' }}</span>
               <span>{{ ps.source_type === 'word' ? '单词复习' : (ps.source_type === 'reading' ? '阅读理解' : '错题练习') }}</span>
               <span>{{ ps.total_questions }} 题</span>
-              <span v-if="selectPsMode === 'grade'" :class="ps.student_answered_count > 0 ? 'meta-answered' : 'meta-empty'">
-                已作答 {{ ps.student_answered_count || 0 }}/{{ ps.total_questions }}
+              <span :class="ps.student_answered_count > 0 ? 'meta-answered' : 'meta-empty'">
+                {{ ps.student_answered_count > 0 ? `已作答 ${ps.student_answered_count}/${ps.total_questions}` : '未作答' }}
               </span>
             </div>
           </div>
