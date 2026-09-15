@@ -17,15 +17,18 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// 响应拦截：401 未登录/过期时清理家长会话并回到选择页
+// 响应拦截：
+// - 带 token 请求返回 401 → token 失效，清家长会话并回选择页
+// - 未带 token 的 401（如小孩会话访问家长接口）→ 不跳转，由调用方处理
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response && err.response.status === 401) {
+    const reqHadToken = !!err.config?.headers?.Authorization
+    if (err.response && err.response.status === 401 && reqHadToken) {
       localStorage.removeItem('easyfix_token')
       localStorage.removeItem('easyfix_user')
       if (window.location.pathname !== '/') {
-        ElMessage.warning('登录已过期，请重新进入')
+        ElMessage.warning('家长登录已过期，请重新验证')
         window.location.href = '/'
       }
     }

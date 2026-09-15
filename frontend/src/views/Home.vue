@@ -659,13 +659,15 @@ const dualAccuracyCurveOption = computed(() => {
 })
 
 onMounted(async () => {
-  // 默认使用管理配置中的年级（当前为六年级）
-  try {
-    await appConfigStore.load()
-    selectedGrade.value = appConfigStore.defaultGrade || 6
-  } catch {
-    selectedGrade.value = 6
+  // 默认使用管理配置中的年级（当前为六年级）；配置接口仅家长会话可读
+  if (localStorage.getItem('easyfix_token')) {
+    try {
+      await appConfigStore.load()
+    } catch {
+      // 忽略：配置读取失败使用默认年级
+    }
   }
+  selectedGrade.value = appConfigStore.defaultGrade || 6
   await loadAllStats()
 })
 </script>
