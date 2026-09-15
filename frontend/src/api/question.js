@@ -129,6 +129,9 @@ export const questionApi = {
   generateFromQuestions(params) {
     return api.post('/practice-sets/generate-from-questions', params)
   },
+  aiGradePracticeSet(id, answers) {
+    return api.post(`/practice-sets/${id}/ai-grade`, { answers })
+  },
 }
 
 // 学习概览API

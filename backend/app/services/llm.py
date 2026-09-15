@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from typing import Optional
+from typing import Optional, List
 import anthropic
 from app.config import get_settings
 
@@ -680,6 +680,118 @@ class LLMService:
             raise Exception(f"API速率限制，请稍后再试: {str(e)}")
         except Exception as e:
             raise Exception(f"LLM调用失败: {str(e)}")
+
+    def grade_answers(
+        self,
+        questions: List[dict],
+        subject: str = "",
+    ) -> dict:
+        """
+        大模型一键批改
+
+        Args:
+            questions: [{"question_id": int, "question": str, "answer": str, "student_answer": str}]
+            subject: 学科名
+
+        Returns:
+            dict: {"results": [{"question_id": int, "is_correct": bool, "comment": str}]}
+        """
+        # 重新加载配置
+        self._config = load_llm_config()
+        self._init_client()
+
+        api_key = self._get_config("api_key", settings.ANTHROPIC_API_KEY)
+        if not api_key:
+            return {"error": "LLM API Key not configured. Please set it in Settings.", "results": []}
+
+        if not questions:
+            return {"error": "没有可批改的题目", "results": []}
+
+        model = self._get_config("model", "claude-sonnet-4-20250514")
+        prompt = self._build_grading_prompt(questions, subject)
+
+        try:
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
+                model=model,
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=60,
+                # 禁用思考块，避免MiniMax返回纯思考内容
+                thinking={"type": "disabled"},
+            )
+
+            # 获取文本内容（跳过ThinkingBlock，只取TextBlock）
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+
+            if not content:
+                return {"error": "LLM返回内容为空或仅包含思考过程", "results": []}
+
+            return self._parse_grading_response(content, questions)
+        except anthropic.RateLimitError as e:
+            return {"error": f"API速率限制，请稍后再试: {str(e)}", "results": []}
+        except Exception as e:
+            return {"error": f"LLM调用失败: {str(e)}", "results": []}
+
+    def _build_grading_prompt(self, questions: List[dict], subject: str) -> str:
+        lines = []
+        for i, q in enumerate(questions, start=1):
+            lines.append(
+                f"{i}. 题目：{q.get('question', '')}\n"
+                f"   标准答案：{q.get('answer', '')}\n"
+                f"   学生作答：{q.get('student_answer', '')}"
+            )
+        subject_info = f"学科：{subject}" if subject else "全科"
+        return f"""你是一位耐心的{subject_info}老师，请逐题批改以下练习（共{len(questions)}题）。
+批改规则：
+- 数值/含义等价即算对（如 0.21 与 21/100 等价，书写形式不同但含义相同算对）
+- 学生作答为空算错
+- 学生作答与标准答案含义不同但有道理时，按实际对错判断，不要过于苛刻
+
+对每道题给出判断和简要评语（答对：简述"回答正确，xxx"；答错：说明错因并给出正确答案）。
+
+请严格按以下JSON数组格式返回，只返回数组本身，不要包含多余文字：
+[
+  {{"question_id": 1, "is_correct": true, "comment": "回答正确"}},
+  {{"question_id": 2, "is_correct": false, "comment": "错因：xxx，正确答案是 xxx"}}
+]
+
+题目：
+{chr(10).join(lines)}
+"""
+
+    def _parse_grading_response(self, content: str, questions: List[dict]) -> dict:
+        """解析批改结果"""
+        import json
+        import re
+
+        text = content.strip()
+        # 去掉 ```json ``` 代码块
+        json_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.DOTALL)
+        if json_match:
+            text = json_match.group(1)
+        else:
+            start = text.find("[")
+            end = text.rfind("]")
+            if start != -1 and end != -1:
+                text = text[start : end + 1]
+        try:
+            data = json.loads(text)
+            results = []
+            for item in data:
+                qid = item.get("question_id")
+                is_correct = bool(item.get("is_correct"))
+                comment = item.get("comment", "")
+                results.append(
+                    {"question_id": qid, "is_correct": is_correct, "comment": comment}
+                )
+            return {"results": results}
+        except Exception:
+            return {"error": "批改结果解析失败，请重试", "results": []}
 
 
 # 全局单例

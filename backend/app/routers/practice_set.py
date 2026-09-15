@@ -873,6 +873,86 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"PDF生成失败: {str(e)}")
 
 
+class AIGradeAnswerItem(BaseModel):
+    """AI批改：单题学生作答"""
+    question_id: int
+    answer: str
+
+
+class AIGradeRequest(BaseModel):
+    """AI批改请求"""
+    answers: List[AIGradeAnswerItem]
+
+
+@router.post("/{practice_set_id}/ai-grade")
+def ai_grade_practice_set(
+    practice_set_id: int,
+    data: AIGradeRequest,
+    db: Session = Depends(get_db)
+):
+    """大模型一键批改：LLM 逐题判断学生作答对错并给出错因（图片题自动跳过，提示人工批改）"""
+    ps = db.query(PracticeSet).filter(
+        PracticeSet.id == practice_set_id,
+        PracticeSet.deleted == False
+    ).first()
+
+    if not ps:
+        raise HTTPException(status_code=404, detail="练习集不存在")
+
+    ps_questions = db.query(PracticeSetQuestion).filter(
+        PracticeSetQuestion.practice_set_id == practice_set_id
+    ).order_by(PracticeSetQuestion.display_order).all()
+
+    if not ps_questions:
+        raise HTTPException(status_code=400, detail="练习集没有题目")
+
+    answer_map = {a.question_id: a.answer for a in data.answers}
+
+    items = []
+    unsupported = []
+    for psq in ps_questions:
+        qid = psq.question_id
+        question_text = ""
+        answer = ""
+        is_image_only = False
+
+        if ps.question_type == "similar" and psq.similar_question_id:
+            similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
+            if similar:
+                question_text = similar.similar_text or ""
+                answer = similar.similar_answer or ""
+        else:
+            question = db.query(Question).filter(Question.id == qid).first()
+            if question:
+                question_text = question.parsed_question or question.original_text or ""
+                answer = question.answer or ""
+                if not question_text and question.original_image:
+                    is_image_only = True
+
+        if not question_text or is_image_only:
+            unsupported.append({"question_id": qid, "reason": "图片题暂不支持AI批改，请人工批改"})
+            continue
+
+        items.append({
+            "question_id": qid,
+            "question": question_text,
+            "answer": answer,
+            "student_answer": answer_map.get(qid, "") or "（未作答）",
+        })
+
+    if not items:
+        return {"results": [], "unsupported": unsupported, "message": "本练习集暂无可AI批改的题目"}
+
+    from app.services.llm import llm_service
+    subject = db.query(Subject).filter(Subject.id == ps.subject_id).first()
+    result = llm_service.grade_answers(items, subject=subject.name if subject else "")
+
+    if result.get("error"):
+        raise HTTPException(status_code=502, detail=result["error"])
+
+    return {"results": result.get("results", []), "unsupported": unsupported}
+
+
 @router.post("/{practice_set_id}/mark-reviewed")
 def mark_reviewed(
     practice_set_id: int,

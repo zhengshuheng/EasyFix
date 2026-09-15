@@ -138,6 +138,15 @@
           </div>
         </div>
         <div class="grading-header-right">
+          <el-button
+            type="primary"
+            plain
+            :loading="aiGradingLoading"
+            @click="runAIGrading"
+          >
+            <el-icon style="margin-right: 4px"><MagicStick /></el-icon>
+            AI 一键批改
+          </el-button>
           <div class="accuracy-display">
             <span class="accuracy-value">{{ getGradingAccuracy() }}%</span>
             <span class="accuracy-label">正确率</span>
@@ -181,6 +190,26 @@
             <div class="question-answer">
               <span class="answer-label">答案：</span>
               <span class="answer-badge">{{ question.original_answer || '-' }}</span>
+            </div>
+            <div v-if="question.original_question_text" class="question-student-answer">
+              <el-input
+                v-model="aiAnswers[question.question_id]"
+                placeholder="输入学生作答（AI 批改用）"
+                size="small"
+                clearable
+              />
+            </div>
+            <div
+              v-if="aiComments[question.question_id]"
+              :class="['ai-comment', aiComments[question.question_id].is_correct ? 'ai-comment-correct' : 'ai-comment-wrong']"
+            >
+              <el-icon style="margin-right: 4px">
+                <component :is="aiComments[question.question_id].is_correct ? 'CircleCheck' : 'CircleClose'" />
+              </el-icon>
+              {{ aiComments[question.question_id].comment }}
+            </div>
+            <div v-else-if="!question.original_question_text && question.original_image" class="ai-unsupported">
+              图片题暂不支持 AI 批改，请人工批改
             </div>
           </div>
           <div class="question-actions">
@@ -727,6 +756,9 @@ const gradingStep = ref('overall') // 'overall' | 'detail' | 'upload'
 const gradingCurrentIndex = ref(0)
 const gradingResults = ref({}) // { questionId: true/false }
 const currentPsQuestions = ref([])
+const aiAnswers = ref({}) // { questionId: 学生作答 }
+const aiComments = ref({}) // { questionId: { is_correct, comment } }
+const aiGradingLoading = ref(false)
 
 // 计算属性
 const gradedCount = computed(() => Object.keys(gradingResults.value).length)
@@ -801,10 +833,59 @@ const initGrading = async (ps) => {
     const { data } = await questionApi.getPracticeSet(ps.id)
     currentPsQuestions.value = data.questions || []
     gradingResults.value = {}
+    aiAnswers.value = {}
+    aiComments.value = {}
     gradingStep.value = 'list' // 直接进入列表视图
   } catch (error) {
     ElMessage.error('获取练习集详情失败')
     gradingDialogVisible.value = false
+  }
+}
+
+const runAIGrading = async () => {
+  const ps = currentReviewPs.value
+  if (!ps) return
+
+  // 收集每题学生作答（仅文本题）
+  const answers = currentPsQuestions.value
+    .filter(q => q.original_question_text)
+    .map(q => ({
+      question_id: q.question_id,
+      answer: (aiAnswers.value[q.question_id] || '').trim()
+    }))
+
+  const answeredCount = answers.filter(a => a.answer).length
+  if (answeredCount === 0) {
+    ElMessage.warning('请先在题目下方输入学生作答，再点击 AI 批改')
+    return
+  }
+  if (answers.some(a => !a.answer)) {
+    const skip = await ElMessageBox.confirm(
+      '有题目未填写学生作答，未作答的题将按"错误"处理。继续？',
+      '提示',
+      { confirmButtonText: '继续批改', cancelButtonText: '取消', type: 'warning' }
+    ).catch(() => false)
+    if (!skip) return
+  }
+
+  aiGradingLoading.value = true
+  try {
+    const { data } = await questionApi.aiGradePracticeSet(ps.id, answers)
+    // 回填 AI 批改结果（家长仍可手动修正）
+    ;(data.results || []).forEach(r => {
+      if (r.question_id) {
+        gradingResults.value[r.question_id] = r.is_correct
+        aiComments.value[r.question_id] = { is_correct: r.is_correct, comment: r.comment || '' }
+      }
+    })
+    if (data.unsupported && data.unsupported.length) {
+      ElMessage.warning(`有 ${data.unsupported.length} 道图片题已跳过，请人工批改`)
+    }
+    ElMessage.success(`AI 批改完成，共批改 ${(data.results || []).length} 题`)
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || 'AI 批改失败，请检查 LLM 配置后重试')
+  } finally {
+    aiGradingLoading.value = false
   }
 }
 
@@ -1962,6 +2043,47 @@ onMounted(() => {
   display: inline-block;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.question-student-answer {
+  margin-top: 8px;
+  max-width: 420px;
+}
+
+.ai-comment {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.ai-comment-correct {
+  background: #f0f9eb;
+  color: #529b2e;
+}
+
+.ai-comment-wrong {
+  background: #fef0f0;
+  color: #c45656;
+}
+
+.ai-unsupported {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #e6a23c;
+  background: #fdf6ec;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.grading-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .question-actions {
