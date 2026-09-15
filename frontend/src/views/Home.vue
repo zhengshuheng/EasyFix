@@ -740,7 +740,7 @@ onMounted(async () => {
 .home {
   min-height: 100vh;
   background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
-  padding: 32px;
+  padding: 18px 28px 28px;
   max-width: 1600px;
   margin: 0 auto;
 }
