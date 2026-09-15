@@ -138,15 +138,44 @@ const overviewCards = computed(() => {
 })
 
 // ========== 知识点雷达图 ==========
-const mathKPNames = ['方程与代数', '小数运算', '立体几何', '数的认识', '平面几何']
-
 const kpRadarOption = computed(() => {
   const data = kpStats.value
   if (!data.length) return {}
   const indicator = data.map(d => ({ name: d.name, max: 100 }))
+  // 指定学科时单系列；全部时按学科分组（动态，不依赖硬编码名单）
+  let seriesData
+  if (subjectStore.isAll) {
+    const groups = new Map()
+    data.forEach(d => {
+      if (!groups.has(d.subject_id)) groups.set(d.subject_id, [])
+      groups.get(d.subject_id).push(d)
+    })
+    const colors = ['#f56c6c', '#409eff', '#67c23a', '#e6a23c', '#9a60b4', '#73c0de']
+    seriesData = [...groups.entries()].map(([sid, items], i) => {
+      const names = items.map(d => d.name)
+      return {
+        name: items[0].subject_name || '未分类',
+        value: data.map(d => names.includes(d.name) ? d.accuracy : 0),
+        lineStyle: { color: colors[i % colors.length], width: 2 },
+        areaStyle: { color: colors[i % colors.length] + '26' },
+        itemStyle: { color: colors[i % colors.length] },
+        symbol: 'circle', symbolSize: 6,
+      }
+    })
+  } else {
+    const subjectName = subjectStore.activeSubject?.name || '当前学科'
+    seriesData = [{
+      name: subjectName,
+      value: data.map(d => d.accuracy),
+      lineStyle: { color: '#409eff', width: 2 },
+      areaStyle: { color: 'rgba(64,158,255,0.15)' },
+      itemStyle: { color: '#409eff' },
+      symbol: 'circle', symbolSize: 6,
+    }]
+  }
   return {
     tooltip: { trigger: 'item' },
-    legend: { data: ['数学', '英语'], bottom: 0 },
+    legend: { data: seriesData.map(s => s.name), bottom: 0 },
     radar: {
       indicator,
       shape: 'polygon',
@@ -155,24 +184,7 @@ const kpRadarOption = computed(() => {
     },
     series: [{
       type: 'radar',
-      data: [
-        {
-          name: '数学',
-          value: data.map(d => mathKPNames.includes(d.name) ? d.accuracy : 0),
-          lineStyle: { color: '#f56c6c', width: 2 },
-          areaStyle: { color: 'rgba(245,108,108,0.15)' },
-          itemStyle: { color: '#f56c6c' },
-          symbol: 'circle', symbolSize: 6,
-        },
-        {
-          name: '英语',
-          value: data.map(d => !mathKPNames.includes(d.name) ? d.accuracy : 0),
-          lineStyle: { color: '#409eff', width: 2 },
-          areaStyle: { color: 'rgba(64,158,255,0.15)' },
-          itemStyle: { color: '#409eff' },
-          symbol: 'circle', symbolSize: 6,
-        },
-      ]
+      data: seriesData,
     }]
   }
 })

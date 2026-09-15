@@ -64,7 +64,7 @@
         <div class="stat-foot">点击查看详情 <span class="arrow">→</span></div>
       </div>
 
-      <div class="stat-card tone-violet" @click="$router.push('/questions')">
+      <div v-if="subjectStore.isAll" class="stat-card tone-violet" @click="$router.push('/questions')">
         <div class="stat-top">
           <span class="stat-label">学科数量</span>
           <div class="stat-icon">
@@ -92,7 +92,7 @@
         <div class="stat-value">{{ stats.active_days || 0 }}</div>
       </div>
 
-      <div class="stat-card tone-emerald" @click="$router.push('/words')">
+      <div v-if="showWordStats" class="stat-card tone-emerald" @click="$router.push('/words')">
         <div class="stat-top">
           <span class="stat-label">待复习(单词)</span>
           <div class="stat-icon">
@@ -118,7 +118,7 @@
         <div class="stat-value">{{ stats.to_review_questions || 0 }}</div>
       </div>
 
-      <div class="stat-card tone-rose" @click="$router.push('/words')">
+      <div v-if="showWordStats" class="stat-card tone-rose" @click="$router.push('/words')">
         <div class="stat-top">
           <span class="stat-label">复习次数</span>
           <div class="stat-icon">
@@ -132,7 +132,7 @@
         <div class="stat-value">{{ stats.word_stats?.total_reviews || 0 }}</div>
       </div>
 
-      <div class="stat-card tone-fuchsia" @click="$router.push('/words')">
+      <div v-if="showWordStats" class="stat-card tone-fuchsia" @click="$router.push('/words')">
         <div class="stat-top">
           <span class="stat-label">单词总数</span>
           <div class="stat-icon">
@@ -145,7 +145,7 @@
         <div class="stat-value">{{ stats.word_stats?.total_words || 0 }}</div>
       </div>
 
-      <div class="stat-card tone-cyan" @click="$router.push('/words')">
+      <div v-if="showWordStats" class="stat-card tone-cyan" @click="$router.push('/words')">
         <div class="stat-top">
           <span class="stat-label">已复习单词</span>
           <div class="stat-icon">
@@ -157,7 +157,7 @@
         <div class="stat-value">{{ stats.word_stats?.reviewed_words || 0 }}</div>
       </div>
 
-      <div class="stat-card tone-lime" @click="$router.push('/words')">
+      <div v-if="showWordStats" class="stat-card tone-lime" @click="$router.push('/words')">
         <div class="stat-top">
           <span class="stat-label">单词正确率</span>
           <div class="stat-icon">
@@ -202,7 +202,7 @@
               <span class="title-dot dot-slate"></span>昨日
             </div>
             <div class="overview-list">
-              <div class="overview-item">
+              <div v-if="showWordStats" class="overview-item">
                 <span class="ov-dot dot-emerald"></span>
                 <span>{{ learningOverview.yesterday_word_review_count }} 复习单词</span>
               </div>
@@ -210,7 +210,7 @@
                 <span class="ov-dot dot-blue"></span>
                 <span>{{ learningOverview.yesterday_question_review_count }} 复习错题</span>
               </div>
-              <div class="overview-item">
+              <div v-if="showWordStats" class="overview-item">
                 <span class="ov-dot dot-emerald-light"></span>
                 <span>{{ learningOverview.yesterday_word_accuracy }}% 单词正确率</span>
               </div>
@@ -225,7 +225,7 @@
               <span class="title-dot dot-indigo"></span>今日
             </div>
             <div class="overview-list">
-              <div class="overview-item">
+              <div v-if="showWordStats" class="overview-item">
                 <span class="ov-dot dot-emerald"></span>
                 <span>{{ learningOverview.today_word_review_count }} 复习单词</span>
               </div>
@@ -233,7 +233,7 @@
                 <span class="ov-dot dot-blue"></span>
                 <span>{{ learningOverview.today_question_review_count }} 复习错题</span>
               </div>
-              <div class="overview-item">
+              <div v-if="showWordStats" class="overview-item">
                 <span class="ov-dot dot-emerald-light"></span>
                 <span>{{ learningOverview.today_word_accuracy }}% 单词正确率</span>
               </div>
@@ -250,7 +250,7 @@
       <article class="panel">
         <div class="panel-head">
           <h2 class="panel-title">错误类型分布</h2>
-          <el-select v-model="selectedSubject" placeholder="选择学科" size="small" class="subject-select">
+          <el-select v-if="subjectStore.isAll" v-model="selectedSubject" placeholder="选择学科" size="small" class="subject-select">
             <el-option
               v-for="subject in stats.by_subject"
               :key="subject.subject_id"
@@ -366,6 +366,10 @@ use([CanvasRenderer, PieChart, BarChart, LineChart, RadarChart, TitleComponent, 
 const router = useRouter()
 const appConfigStore = useAppConfigStore()
 const kidStore = useKidStore()
+const subjectStore = useSubjectStore()
+
+// 单词指标只在「全部」或「英语」空间展示（数学等学科无单词数据）
+const showWordStats = computed(() => subjectStore.isAll || subjectStore.isEnglish)
 
 const kids = ref([])
 const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
@@ -524,7 +528,9 @@ const getTopErrorTypes = (errorTypeCounts) => {
 }
 
 const hasAccuracyCurve = computed(() => {
-  return stats.value.word_accuracy_curve && stats.value.word_accuracy_curve.length > 0
+  const word = stats.value.word_accuracy_curve || []
+  const question = stats.value.question_accuracy_curve || []
+  return word.length > 0 || question.length > 0
 })
 
 const filteredErrorTypeData = computed(() => {
@@ -660,7 +666,7 @@ const dualAccuracyCurveOption = computed(() => {
       }
     },
     legend: {
-      data: ['单词正确率', '错题正确率'],
+      data: showWordStats.value ? ['单词正确率', '错题正确率'] : ['错题正确率'],
       bottom: 0,
       textStyle: { color: '#64748b' }
     },
@@ -680,7 +686,7 @@ const dualAccuracyCurveOption = computed(() => {
       splitLine: { lineStyle: { color: '#eef2f7' } }
     },
     series: [
-      {
+      ...(showWordStats.value ? [{
         name: '单词正确率',
         type: 'line',
         smooth: true,
@@ -699,7 +705,7 @@ const dualAccuracyCurveOption = computed(() => {
           }
         },
         data: allDates.map(date => wordMap.get(date) ?? null)
-      },
+      }] : []),
       {
         name: '错题正确率',
         type: 'line',

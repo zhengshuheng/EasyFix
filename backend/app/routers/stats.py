@@ -504,13 +504,16 @@ def get_knowledge_point_stats(
             func.sum(Question.correct_count).label('total_correct'),
             func.sum(Question.review_count).label('total_reviews'),
             func.sum(Question.error_count).label('total_errors'),
+            Question.subject_id,
+            Subject.name.label('subject_name'),
         )
+        .outerjoin(Subject, Subject.id == Question.subject_id)
         .filter(
             Question.deleted == False,
             Question.knowledge_point.isnot(None),
             Question.knowledge_point != '',
         )
-        .group_by(Question.knowledge_point)
+        .group_by(Question.knowledge_point, Question.subject_id, Subject.name)
         .all()
     )
     if subject_id is not None:
@@ -522,14 +525,17 @@ def get_knowledge_point_stats(
                 func.sum(Question.correct_count).label('total_correct'),
                 func.sum(Question.review_count).label('total_reviews'),
                 func.sum(Question.error_count).label('total_errors'),
+                Question.subject_id,
+                Subject.name.label('subject_name'),
             )
+            .outerjoin(Subject, Subject.id == Question.subject_id)
             .filter(
                 Question.deleted == False,
                 Question.knowledge_point.isnot(None),
                 Question.knowledge_point != '',
                 Question.subject_id == subject_id,
             )
-            .group_by(Question.knowledge_point)
+            .group_by(Question.knowledge_point, Question.subject_id, Subject.name)
             .all()
         )
     data = []
@@ -539,6 +545,8 @@ def get_knowledge_point_stats(
         accuracy = round(correct / reviews * 100, 1) if reviews > 0 else 0
         data.append({
             "name": r.knowledge_point,
+            "subject_id": r.subject_id,
+            "subject_name": r.subject_name or '未分类',
             "total": int(r.total or 0),
             "reviewed": int(r.reviewed or 0),
             "accuracy": accuracy,
