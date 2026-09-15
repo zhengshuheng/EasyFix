@@ -34,7 +34,7 @@
           @change="fetchWords"
           style="width: 180px"
         />
-        <el-select v-model="filters.grade" placeholder="年级" clearable @change="fetchWords" style="width: 120px">
+        <el-select v-if="subjectStore.isAllGrade" v-model="filters.grade" placeholder="年级" clearable @change="fetchWords" style="width: 120px">
           <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
         </el-select>
         <el-select v-model="filters.semester" placeholder="学期" clearable @change="fetchWords" style="width: 100px">
@@ -238,7 +238,7 @@
         <el-form-item label="复习数量">
           <el-input-number v-model="reviewConfig.count" :min="10" :max="50" />
         </el-form-item>
-        <el-form-item label="年级筛选">
+        <el-form-item v-if="subjectStore.isAllGrade" label="年级筛选">
           <el-select v-model="reviewConfig.grade" placeholder="全部" clearable style="width: 100%">
             <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
           </el-select>
@@ -404,7 +404,7 @@
         <el-form-item label="单词数量">
           <el-input-number v-model="printForm.count" :min="5" :max="100" />
         </el-form-item>
-        <el-form-item label="年级筛选">
+        <el-form-item v-if="subjectStore.isAllGrade" label="年级筛选">
           <el-select v-model="printForm.grade" placeholder="全部" clearable style="width: 100%">
             <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
           </el-select>
@@ -543,9 +543,11 @@ import { wordApi } from '@/api/word'
 import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useSubjectStore } from '@/stores/subject'
 
 const route = useRoute()
 const appConfigStore = useAppConfigStore()
+const subjectStore = useSubjectStore()
 const words = ref({ total: 0, items: [] })
 const allTags = ref([])
 const filters = reactive({
@@ -1522,17 +1524,19 @@ const importWords = async () => {
 
 onMounted(async () => {
   await appConfigStore.load()
-  // 首页年级维度跳转：/words?grade=6
+  // 首页年级维度跳转：/words?grade=6；学习空间指定年级优先
   const routeGrade = Number(route.query.grade)
-  if (routeGrade) {
+  if (subjectStore.activeGrade !== null) {
+    filters.grade = subjectStore.activeGrade
+  } else if (routeGrade) {
     filters.grade = routeGrade
   } else if (filters.grade == null) {
     filters.grade = appConfigStore.defaultGrade
   }
   if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
-  if (reviewConfig.grade == null) reviewConfig.grade = appConfigStore.defaultGrade
-  if (printForm.grade == null) printForm.grade = appConfigStore.defaultGrade
-  if (importForm.grade == null) importForm.grade = appConfigStore.defaultGrade
+  if (reviewConfig.grade == null) reviewConfig.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
+  if (printForm.grade == null) printForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
+  if (importForm.grade == null) importForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
   if (importForm.semester == null) importForm.semester = appConfigStore.defaultSemester
   fetchWords()
   fetchTags()

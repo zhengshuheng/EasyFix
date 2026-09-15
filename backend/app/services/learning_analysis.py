@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 from collections import Counter
 
 class LearningAnalysisService:
-    def __init__(self, db: Session, subject_id: Optional[int] = None):
+    def __init__(self, db: Session, subject_id: Optional[int] = None, grade: Optional[int] = None):
         self.db = db
         self.subject_id = subject_id
+        self.grade = grade
         self._subject = db.query(Subject).filter(Subject.id == subject_id).first() if subject_id else None
 
     def _is_english(self) -> bool:
@@ -22,13 +23,21 @@ class LearningAnalysisService:
         return "英语" in name or "english" in name
 
     def _q(self, query):
-        """Question 查询按当前学科过滤"""
+        """Question 查询按当前学科/年级过滤"""
         if self.subject_id:
             query = query.filter(Question.subject_id == self.subject_id)
+        if self.grade:
+            query = query.filter(Question.grade == self.grade)
+        return query
+
+    def _w(self, query):
+        """Word 查询按当前年级过滤（单词仅英语学科有）"""
+        if self.grade:
+            query = query.filter(Word.grade == self.grade)
         return query
 
     def _ps(self, query):
-        """PracticeSet 查询按当前学科过滤"""
+        """PracticeSet 查询按当前学科过滤（练习集无年级字段）"""
         if self.subject_id:
             query = query.filter(PracticeSet.subject_id == self.subject_id)
         return query
@@ -159,17 +168,21 @@ class LearningAnalysisService:
                         func.count(PracticeSetQuestion.id).label('total')
                     )
                     .join(PracticeSet, PracticeSet.id == PracticeSetQuestion.practice_set_id)
+                    .join(Question, Question.id == PracticeSetQuestion.question_id)
                     .filter(
                         PracticeSet.deleted == False,
                         PracticeSet.source_type == 'question',
                         PracticeSet.reviewed == True,
-                        PracticeSetQuestion.is_correct.isnot(None)
+                        PracticeSetQuestion.is_correct.isnot(None),
+                        Question.deleted == False,
                     )
                 )
                 .group_by(func.date(PracticeSet.created_at))
                 .order_by(func.date(PracticeSet.created_at))
-                .all()
             )
+            if self.grade:
+                logs = logs.filter(Question.grade == self.grade)
+            logs = logs.all()
 
             cumulative_correct = 0
             cumulative_total = 0
@@ -199,32 +212,40 @@ class LearningAnalysisService:
             }
         try:
             # 使用数据库聚合计算总数
-            total = self.db.query(func.count(Word.id)).filter(Word.deleted == False).scalar() or 0
+            total = self._w(self.db.query(func.count(Word.id)).filter(Word.deleted == False)).scalar() or 0
 
             # 掌握分布 - 使用数据库聚合
             unmastered = (
-                self.db.query(func.count(Word.id))
-                .filter(Word.deleted == False, (Word.review_count == 0) | (Word.review_count.is_(None)))
+                self._w(
+                    self.db.query(func.count(Word.id))
+                    .filter(Word.deleted == False, (Word.review_count == 0) | (Word.review_count.is_(None)))
+                )
                 .scalar() or 0
             )
             learning = (
-                self.db.query(func.count(Word.id))
-                .filter(Word.deleted == False, Word.review_count > 0, Word.review_count <= 3)
+                self._w(
+                    self.db.query(func.count(Word.id))
+                    .filter(Word.deleted == False, Word.review_count > 0, Word.review_count <= 3)
+                )
                 .scalar() or 0
             )
             mastered = (
-                self.db.query(func.count(Word.id))
-                .filter(Word.deleted == False, Word.review_count > 3)
+                self._w(
+                    self.db.query(func.count(Word.id))
+                    .filter(Word.deleted == False, Word.review_count > 3)
+                )
                 .scalar() or 0
             )
 
             # 低准确率单词 - 使用数据库查询过滤
             low_acc_query = (
-                self.db.query(Word.english, Word.correct_count, Word.review_count)
-                .filter(
-                    Word.deleted == False,
-                    Word.review_count > 0,
-                    Word.correct_count.isnot(None)
+                self._w(
+                    self.db.query(Word.english, Word.correct_count, Word.review_count)
+                    .filter(
+                        Word.deleted == False,
+                        Word.review_count > 0,
+                        Word.correct_count.isnot(None)
+                    )
                 )
                 .all()
             )
@@ -237,8 +258,10 @@ class LearningAnalysisService:
             # 记忆曲线状态 - 使用数据库聚合
             now = datetime.now()
             due_review = (
-                self.db.query(func.count(Word.id))
-                .filter(Word.deleted == False, Word.next_review_at.isnot(None), Word.next_review_at <= now)
+                self._w(
+                    self.db.query(func.count(Word.id))
+                    .filter(Word.deleted == False, Word.next_review_at.isnot(None), Word.next_review_at <= now)
+                )
                 .scalar() or 0
             )
             on_track = total - due_review
@@ -287,11 +310,12 @@ class LearningAnalysisService:
                     func.date(WordReviewLog.reviewed_at).label('date'),
                     func.count(WordReviewLog.id).label('count')
                 )
-                .filter(WordReviewLog.deleted == False)
-                .group_by(func.date(WordReviewLog.reviewed_at))
-                .order_by(func.date(WordReviewLog.reviewed_at))
-                .all()
+                .join(Word, Word.id == WordReviewLog.word_id)
+                .filter(WordReviewLog.deleted == False, Word.deleted == False)
             )
+            if self.grade:
+                logs = logs.filter(Word.grade == self.grade)
+            logs = logs.group_by(func.date(WordReviewLog.reviewed_at)).order_by(func.date(WordReviewLog.reviewed_at)).all()
             return [
                 {"date": log.date.strftime('%Y-%m-%d') if hasattr(log.date, 'strftime') else str(log.date), "count": log.count}
                 for log in logs

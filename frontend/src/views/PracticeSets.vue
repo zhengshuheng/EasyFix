@@ -678,7 +678,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="年级">
-              <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%">
+              <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade">
                 <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
               </el-select>
             </el-form-item>
@@ -703,7 +703,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="年级">
-              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%">
+              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade">
                 <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
               </el-select>
             </el-form-item>
@@ -802,13 +802,13 @@ const gradeOptions = [
 ]
 
 const showGenerateDialog = () => {
-  // 学习空间指定学科时，生成练习默认该学科且不可切换
+  // 学习空间指定学科/年级时，生成练习默认该空间且不可切换
   const defaultSubjectId = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
   generateForm.subject_id = defaultSubjectId
-  generateForm.grade = null
+  generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
   generateForm.count = 5
   aiGenerateForm.subject_id = defaultSubjectId
-  aiGenerateForm.grade = null
+  aiGenerateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
   aiGenerateForm.knowledge_mode = 'auto'
   aiGenerateForm.knowledge_text = ''
   aiGenerateForm.count = 5
@@ -913,6 +913,7 @@ const fetchPracticeSets = async () => {
       subject_id: subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : filters.subject_id,
       reviewed: filters.reviewed,
     }
+    if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
     if (filters.date_range && filters.date_range.length === 2) {
       params.start_date = filters.date_range[0]
       params.end_date = filters.date_range[1]
@@ -1072,6 +1073,7 @@ const openSelectPracticeSet = async (mode) => {
   try {
     const params = { limit: 500 }
     if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
+    if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
     const { data } = await questionApi.listPracticeSets(params)
     let items = data.items || []
     if (mode === 'do') {

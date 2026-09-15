@@ -127,23 +127,30 @@ def list_questions(
 
 
 @router.get("/filter-options/{subject_id}")
-def get_filter_options(subject_id: int, db: Session = Depends(get_db)):
-    """获取指定学科的错误类型和知识点列表（去重）"""
+def get_filter_options(
+    subject_id: int,
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
+    db: Session = Depends(get_db),
+):
+    """获取指定学科的错误类型和知识点列表（去重；可按年级过滤）"""
     # 获取该学科下所有去重的错误类型
-    error_types = db.query(Question.error_type).filter(
+    error_q = db.query(Question.error_type).filter(
         Question.deleted == False,
         Question.subject_id == subject_id,
         Question.error_type.isnot(None),
         Question.error_type != ''
-    ).distinct().all()
-
-    # 获取该学科下所有去重的知识点
-    knowledge_points = db.query(Question.knowledge_point).filter(
+    )
+    kp_q = db.query(Question.knowledge_point).filter(
         Question.deleted == False,
         Question.subject_id == subject_id,
         Question.knowledge_point.isnot(None),
         Question.knowledge_point != ''
-    ).distinct().all()
+    )
+    if grade is not None:
+        error_q = error_q.filter(Question.grade == grade)
+        kp_q = kp_q.filter(Question.grade == grade)
+    error_types = error_q.distinct().all()
+    knowledge_points = kp_q.distinct().all()
 
     # 拆分合并的错误类型（如 "计算错误,审题不清" 拆分为 ["计算错误", "审题不清"]）
     split_error_types = set()

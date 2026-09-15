@@ -1,7 +1,7 @@
 """
 练习集路由 - 管理练习集的创建、打印、复习等功能
 """
-from fastapi import APIRouter, Depends, HTTPException, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, Form, Body, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional, Union
@@ -594,6 +594,7 @@ def list_practice_sets(
     skip: int = 0,
     limit: int = 20,
     subject_id: Optional[int] = None,
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（练习集内题目年级）"),
     reviewed: Optional[bool] = None,
     source_type: Optional[str] = None,
     start_date: Optional[str] = None,
@@ -605,6 +606,18 @@ def list_practice_sets(
 
     if subject_id:
         query = query.filter(PracticeSet.subject_id == subject_id)
+    if grade is not None:
+        # 练习集无年级字段：按练习集内题目年级过滤
+        query = query.filter(
+            db.query(PracticeSetQuestion.id)
+            .join(Question, Question.id == PracticeSetQuestion.question_id)
+            .filter(
+                PracticeSetQuestion.practice_set_id == PracticeSet.id,
+                Question.deleted == False,
+                Question.grade == grade,
+            )
+            .exists()
+        )
     if reviewed is not None:
         query = query.filter(PracticeSet.reviewed == reviewed)
     if source_type:

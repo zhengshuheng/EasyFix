@@ -342,10 +342,11 @@ const accColor = (acc) => {
 
 // ========== 数据加载 ==========
 const loadAll = async () => {
-  // 学习空间指定学科时，只加载当前学科分析
+  // 学习空间指定学科/年级时，只加载当前空间分析
   const subjectParams = {}
   const activeSubjectId = useSubjectStore().activeSubjectId
   if (activeSubjectId !== null) subjectParams.subject_id = activeSubjectId
+  if (useSubjectStore().activeGrade !== null) subjectParams.grade = useSubjectStore().activeGrade
   try {
     const [summaryRes, kpRes, wordRes] = await Promise.all([
       statsApi.getSummary(subjectParams),

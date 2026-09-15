@@ -34,7 +34,7 @@
         >
           <el-option v-for="kp in filterOptions.knowledge_points" :key="kp" :label="kp" :value="kp" />
         </el-select>
-        <el-select v-model="filters.grade" placeholder="年级" clearable @change="fetchQuestions" style="width: 150px">
+        <el-select v-if="subjectStore.isAllGrade" v-model="filters.grade" placeholder="年级" clearable @change="fetchQuestions" style="width: 150px">
           <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
         </el-select>
         <el-select v-model="filters.error_type" placeholder="错误类型" multiple clearable @change="fetchQuestions" style="width: 330px">
@@ -78,7 +78,7 @@
         <el-tag v-if="filters.subject_id" size="small" closable @close="removeFilter('subject_id')">
           {{ subjects.find(s => s.id === filters.subject_id)?.name }}
         </el-tag>
-        <el-tag v-if="filters.grade" size="small" closable @close="removeFilter('grade')">
+        <el-tag v-if="filters.grade" size="small" :closable="subjectStore.isAllGrade" @close="removeFilter('grade')">
           {{ getGradeLabel(filters.grade) }}
         </el-tag>
         <el-tag v-if="filters.semester" size="small" closable @close="removeFilter('semester')">
@@ -522,7 +522,7 @@ const filterOptions = reactive({
   knowledge_points: [],
 })
 
-// 获取筛选选项（按学科）
+// 获取筛选选项（按学科 + 空间年级）
 const fetchFilterOptions = async (subjectId) => {
   if (!subjectId) {
     filterOptions.error_types = []
@@ -530,7 +530,7 @@ const fetchFilterOptions = async (subjectId) => {
     return
   }
   try {
-    const { data } = await questionApi.getFilterOptions(subjectId)
+    const { data } = await questionApi.getFilterOptions(subjectId, { grade: subjectStore.activeGrade ?? undefined })
     filterOptions.error_types = data.error_types || []
     filterOptions.knowledge_points = data.knowledge_points || []
   } catch (error) {
@@ -1082,7 +1082,10 @@ onMounted(async () => {
   await appConfigStore.load()
   // 首页年级维度跳转：/questions?grade=6
   const routeGrade = Number(route.query.grade)
-  if (routeGrade) {
+  // 学习空间指定年级优先，其次路由参数，最后管理配置默认年级
+  if (subjectStore.activeGrade !== null) {
+    filters.grade = subjectStore.activeGrade
+  } else if (routeGrade) {
     filters.grade = routeGrade
   } else if (filters.grade == null) {
     filters.grade = appConfigStore.defaultGrade

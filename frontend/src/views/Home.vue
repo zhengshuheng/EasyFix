@@ -8,7 +8,7 @@
           <span class="hero-kid-avatar" :style="{ background: avatarColor(kidStore.activeKid) }">
             {{ kidStore.kidName.slice(0, 1) || '?' }}
           </span>
-          <span>{{ kidStore.kidName }} 的学习空间</span>
+          <span>{{ spaceTitle }}</span>
         </h1>
         <p class="hero-sub">保持节奏，每天进步一点点</p>
       </div>
@@ -172,10 +172,17 @@
       </div>
     </section>
 
-    <!-- Global Grade Switcher -->
-    <section class="grade-switch-bar">
+    <!-- Global Grade Switcher（学习空间年级，与顶栏联动；指定年级后隐藏） -->
+    <section v-if="subjectStore.isAllGrade" class="grade-switch-bar">
       <div class="grade-switch-label">年级</div>
       <div class="grade-switch-chips">
+        <button
+          class="grade-switch-chip"
+          :class="{ active: selectedGrade === null }"
+          @click="onGradeChange(null)"
+        >
+          全部
+        </button>
         <button
           v-for="g in gradeOptions"
           :key="g.value"
@@ -186,7 +193,7 @@
           {{ g.label }}
         </button>
       </div>
-      <div class="grade-switch-note">不区分上下学期 · 切换后整页数据联动</div>
+      <div class="grade-switch-note">不区分上下学期 · 切换后整页数据联动（与顶部空间选择一致）</div>
     </section>
 
     <!-- Content Grid -->
@@ -371,6 +378,16 @@ const subjectStore = useSubjectStore()
 // 单词指标只在「全部」或「英语」空间展示（数学等学科无单词数据）
 const showWordStats = computed(() => subjectStore.isAll || subjectStore.isEnglish)
 
+// 空间标题：指定学科时带学科名（如"小明 的六年级数学学习空间"）
+const spaceTitle = computed(() => {
+  const sub = subjectStore.isAll ? '' : subjectStore.activeSubject?.name || ''
+  if (subjectStore.isAllGrade) {
+    return sub ? `${kidStore.kidName} 的${sub}学习空间` : `${kidStore.kidName} 的学习空间`
+  }
+  const grade = subjectStore.activeGradeName
+  return sub ? `${kidStore.kidName} 的${grade}${sub}学习空间` : `${kidStore.kidName} 的${grade}学习空间`
+})
+
 const kids = ref([])
 const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
 
@@ -448,20 +465,22 @@ const gradeOptions = [
 
 const getGradeLabel = (g) => gradeLabelMap[g] || `${g}年级`
 
-// 全局年级：默认六年级（与管理配置一致），切换后整页联动
-const selectedGrade = ref(null)
+// 全局年级（学习空间年级）：与顶栏/其他页面联动，null = 全部年级
+const selectedGrade = computed({
+  get: () => subjectStore.activeGrade,
+  set: (v) => subjectStore.setGrade(v),
+})
 
 const onGradeChange = (g) => {
-  if (selectedGrade.value === g) return
-  selectedGrade.value = g
+  if (subjectStore.activeGrade === g) return
+  subjectStore.setGrade(g)
   loadAllStats()
 }
 
 const loadAllStats = async () => {
   const params = {}
-  if (selectedGrade.value) params.grade = selectedGrade.value
-  const activeSubjectId = useSubjectStore().activeSubjectId
-  if (activeSubjectId !== null) params.subject_id = activeSubjectId
+  if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
+  if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
   try {
     const { data } = await statsApi.getSummary(params)
     stats.value = data
@@ -740,7 +759,7 @@ onMounted(async () => {
       // 忽略：配置读取失败使用默认年级
     }
   }
-  selectedGrade.value = appConfigStore.defaultGrade || 6
+  selectedGrade.value = subjectStore.activeGrade ?? (appConfigStore.defaultGrade || 6)
   await loadAllStats()
 })
 </script>

@@ -32,6 +32,9 @@ frontend/dist/
 # 根目录 sqlite 占位文件
 /easyfix.db
 
+# LLM 配置含 API Key，不入库（如已有历史提交需另行吊销密钥）
+backend/config/llm.json
+
 # Editor / agent local
 .agents/
 .codex/

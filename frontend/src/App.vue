@@ -3,28 +3,30 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <h1>EasyFix</h1>
+          <h1 class="logo" @click="navTo('/home')">EasyFix</h1>
 
-          <!-- 选择页隐藏导航，其余页面显示 -->
+          <!-- 选择页隐藏导航，其余页面显示。
+               全部学科：学科(tab页入口) 平铺；指定学科：该学科功能项直接作为一级菜单 -->
           <el-menu v-if="!isSelectPage" mode="horizontal" :default-active="activeMenu">
             <el-menu-item index="/home" @click="navTo('/home')">首页</el-menu-item>
-            <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
-            <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
-            <!-- 全部空间：英语模块收进子菜单；英语学科空间：单词/阅读直接平铺 -->
-            <el-sub-menu v-if="subjectStore.isAll" index="/english">
-              <template #title>英语</template>
-              <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
-              <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
-            </el-sub-menu>
-            <template v-else-if="subjectStore.isEnglish">
-              <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
-              <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+            <template v-if="subjectStore.isAll">
+              <el-menu-item
+                v-for="s in subjectStore.subjects"
+                :key="s.id"
+                :index="'/space/' + s.id"
+                @click="openSubjectSpace(s.id)"
+              >{{ s.name }}</el-menu-item>
             </template>
-            <el-sub-menu index="/data">
-              <template #title>数据</template>
-              <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
-              <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习分析</el-menu-item>
-            </el-sub-menu>
+            <template v-else>
+              <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
+              <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
+              <template v-if="subjectStore.isEnglish">
+                <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
+                <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+                <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习报告</el-menu-item>
+              </template>
+            </template>
+            <el-menu-item index="/stats" @click="navTo('/stats')">学习分析</el-menu-item>
             <el-menu-item index="/motivation" @click="navTo('/motivation')">激励中心</el-menu-item>
             <el-menu-item index="/parent-center" @click="openParentCenter">家长中心</el-menu-item>
           </el-menu>
@@ -51,6 +53,31 @@
                   >
                     {{ s.name }}
                     <el-icon v-if="s.id === subjectStore.activeSubjectId"><Check /></el-icon>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <!-- 年级切换：学习空间 = 小孩 + 学科 + 年级（null = 全部年级） -->
+            <el-dropdown v-if="kidStore.isKidSelected" trigger="click" @command="handleGradeCommand">
+              <span class="subject-chip grade-chip">
+                <el-icon class="subject-icon"><Histogram /></el-icon>
+                <span class="subject-name">{{ subjectStore.activeGradeName }}</span>
+                <el-icon class="arrow"><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="grade:" :class="{ active: subjectStore.isAllGrade }">
+                    全部年级
+                    <el-icon v-if="subjectStore.isAllGrade"><Check /></el-icon>
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    v-for="g in gradeOptions"
+                    :key="g.value"
+                    :command="'grade:' + g.value"
+                    :class="{ active: g.value === subjectStore.activeGrade }"
+                  >
+                    {{ g.label }}
+                    <el-icon v-if="g.value === subjectStore.activeGrade"><Check /></el-icon>
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -109,6 +136,22 @@ const authStore = useAuthStore()
 const kidStore = useKidStore()
 const subjectStore = useSubjectStore()
 
+// 年级选项（学习空间年级切换）
+const gradeOptions = [
+  { label: '一年级', value: 1 },
+  { label: '二年级', value: 2 },
+  { label: '三年级', value: 3 },
+  { label: '四年级', value: 4 },
+  { label: '五年级', value: 5 },
+  { label: '六年级', value: 6 },
+  { label: '初一', value: 7 },
+  { label: '初二', value: 8 },
+  { label: '初三', value: 9 },
+  { label: '高一', value: 10 },
+  { label: '高二', value: 11 },
+  { label: '高三', value: 12 },
+]
+
 const parentLockVisible = ref(false)
 const kids = ref([])
 
@@ -122,6 +165,13 @@ const activeMenu = computed(() =>
 )
 
 function navTo(path) {
+  if (route.path !== path) router.push(path)
+}
+
+// 学科一级菜单：切换空间学科并进入学科空间页（内部 tab：错题/练习/单词/阅读/学习报告）
+function openSubjectSpace(id) {
+  subjectStore.select(id)
+  const path = '/space/' + id
   if (route.path !== path) router.push(path)
 }
 
@@ -162,6 +212,13 @@ function handleSubjectCommand(cmd) {
   if (route.path !== '/home') router.push('/home')
 }
 
+// 年级切换：更新学习空间年级并回首页
+function handleGradeCommand(cmd) {
+  const raw = cmd.startsWith('grade:') ? cmd.slice('grade:'.length) : ''
+  subjectStore.setGrade(raw === '' ? null : Number(raw))
+  if (route.path !== '/home') router.push('/home')
+}
+
 // 小孩会话下拉
 function handleKidCommand(cmd) {
   if (cmd === 'parent') {
@@ -176,7 +233,7 @@ function handleKidCommand(cmd) {
     const k = kids.value.find((x) => x.id === Number(cmd.split(':')[1]))
     if (k) {
       kidStore.select(k)
-      subjectStore.reset() // 切换小孩 = 新学习空间，学科回到「全部」
+      // 切换小孩保持当前学科/年级空间（不重置为全部）
       // 若当前在选择页则进入首页；否则原地切换
       if (route.path === '/') router.push('/home')
       else loadKids()
@@ -298,6 +355,8 @@ function switchKid() {
   font-size: 18px;
   white-space: nowrap;
   flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
 }
 
 .header-content .el-menu {

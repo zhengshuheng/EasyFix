@@ -82,7 +82,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="年级">
-          <el-select v-model="generateForm.grade" placeholder="选择年级（可选）" clearable style="width: 100%">
+          <el-select v-model="generateForm.grade" placeholder="选择年级（可选）" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade">
             <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
           </el-select>
         </el-form-item>
@@ -348,9 +348,10 @@ const fetchReports = async () => {
       skip: (pagination.page - 1) * pagination.limit,
       limit: pagination.limit,
     }
-    // 学习空间指定学科时：只加载当前学科报告
+    // 学习空间指定学科/年级时：只加载当前空间报告
     if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
     else if (filters.subject_id) params.subject_id = filters.subject_id
+    if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
 
     const { data } = await learningReportApi.list(params)
     reports.value = data
@@ -370,9 +371,9 @@ const fetchSubjects = async () => {
 
 const showGenerateDialog = () => {
   generateForm.title = ''
-  // 学习空间指定学科时：默认当前学科且不可切换
+  // 学习空间指定学科/年级时：默认当前空间且不可切换
   generateForm.subject_id = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
-  generateForm.grade = null
+  generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
   generateForm.time_range_days = null
   generateDialogVisible.value = true
 }

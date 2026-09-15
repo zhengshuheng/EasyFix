@@ -18,7 +18,7 @@
             <el-select v-model="filters.topic" placeholder="话题" clearable size="small" @change="fetchReadings" style="width: 110px">
               <el-option v-for="t in topics" :key="t" :label="t" :value="t" />
             </el-select>
-            <el-select v-model="filters.grade" placeholder="年级" clearable size="small" @change="fetchReadings" style="width: 90px">
+            <el-select v-if="subjectStore.isAllGrade" v-model="filters.grade" placeholder="年级" clearable size="small" @change="fetchReadings" style="width: 90px">
               <el-option v-for="g in 12" :key="g" :label="g + '年级'" :value="g" />
             </el-select>
             <el-select v-model="filters.difficulty" placeholder="难度" clearable size="small" @change="fetchReadings" style="width: 90px">
@@ -113,7 +113,7 @@
     <el-dialog v-model="showGenerateDialog" title="生成英语短文" width="450px">
       <el-form :model="generateForm" label-width="80px">
         <el-form-item label="年级">
-          <el-select v-model="generateForm.grade" style="width: 100%">
+          <el-select v-model="generateForm.grade" style="width: 100%" :disabled="!subjectStore.isAllGrade">
             <el-option v-for="g in 12" :key="g" :label="g + '年级'" :value="g" />
           </el-select>
         </el-form-item>
@@ -139,6 +139,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useSubjectStore } from '@/stores/subject'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -152,6 +153,7 @@ const showGenerateDialog = ref(false)
 const generating = ref(false)
 
 const appConfigStore = useAppConfigStore()
+const subjectStore = useSubjectStore()
 const filters = reactive({
   topic: '',
   grade: null,
@@ -263,9 +265,14 @@ async function createPracticeSet() {
 
 onMounted(async () => {
   await appConfigStore.load()
-  if (filters.grade == null) filters.grade = appConfigStore.defaultGrade
-  if (generateForm.grade == null && appConfigStore.defaultGrade != null) {
-    generateForm.grade = appConfigStore.defaultGrade
+  // 学习空间指定年级优先，其次管理配置默认年级
+  if (subjectStore.activeGrade !== null) {
+    filters.grade = subjectStore.activeGrade
+  } else if (filters.grade == null) {
+    filters.grade = appConfigStore.defaultGrade
+  }
+  if (generateForm.grade == null) {
+    generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
   }
   fetchTopics()
   fetchReadings()

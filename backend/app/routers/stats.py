@@ -493,9 +493,19 @@ def get_learning_overview(
 @router.get("/knowledge-points")
 def get_knowledge_point_stats(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
 ):
     """获取知识点掌握统计"""
+    base_filters = [
+        Question.deleted == False,
+        Question.knowledge_point.isnot(None),
+        Question.knowledge_point != '',
+    ]
+    if subject_id is not None:
+        base_filters.append(Question.subject_id == subject_id)
+    if grade is not None:
+        base_filters.append(Question.grade == grade)
     results = (
         db.query(
             Question.knowledge_point,
@@ -508,36 +518,10 @@ def get_knowledge_point_stats(
             Subject.name.label('subject_name'),
         )
         .outerjoin(Subject, Subject.id == Question.subject_id)
-        .filter(
-            Question.deleted == False,
-            Question.knowledge_point.isnot(None),
-            Question.knowledge_point != '',
-        )
+        .filter(*base_filters)
         .group_by(Question.knowledge_point, Question.subject_id, Subject.name)
         .all()
     )
-    if subject_id is not None:
-        results = (
-            db.query(
-                Question.knowledge_point,
-                func.count(Question.id).label('total'),
-                func.sum(func.cast(Question.review_count > 0, Integer)).label('reviewed'),
-                func.sum(Question.correct_count).label('total_correct'),
-                func.sum(Question.review_count).label('total_reviews'),
-                func.sum(Question.error_count).label('total_errors'),
-                Question.subject_id,
-                Subject.name.label('subject_name'),
-            )
-            .outerjoin(Subject, Subject.id == Question.subject_id)
-            .filter(
-                Question.deleted == False,
-                Question.knowledge_point.isnot(None),
-                Question.knowledge_point != '',
-                Question.subject_id == subject_id,
-            )
-            .group_by(Question.knowledge_point, Question.subject_id, Subject.name)
-            .all()
-        )
     data = []
     for r in results:
         reviews = int(r.total_reviews or 0)
@@ -562,10 +546,11 @@ from app.services.learning_analysis import LearningAnalysisService
 @router.get("/analysis/full")
 def get_full_analysis(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
 ):
     """获取完整学习分析数据"""
-    service = LearningAnalysisService(db, subject_id=subject_id)
+    service = LearningAnalysisService(db, subject_id=subject_id, grade=grade)
     return service.get_full_stats()
 
 

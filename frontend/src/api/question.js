@@ -123,8 +123,8 @@ export const questionApi = {
   batchDownloadPracticeSetsPdf(ids) {
     return api.post('/practice-sets/batch-download-pdf', { ids })
   },
-  getFilterOptions(subjectId) {
-    return api.get(`/questions/filter-options/${subjectId}`)
+  getFilterOptions(subjectId, params = {}) {
+    return api.get(`/questions/filter-options/${subjectId}`, { params })
   },
   generateFromQuestions(params) {
     return api.post('/practice-sets/generate-from-questions', params)

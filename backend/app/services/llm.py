@@ -30,17 +30,39 @@ class LLMService:
         self._config = load_llm_config()
         self._init_client()
 
+    def _is_openai_compat(self) -> bool:
+        """判断当前配置是否走 OpenAI 兼容协议（DeepSeek/DashScope/Moonshot/GLM 等）"""
+        provider = (self._config.get("provider") or "").strip().lower()
+        base_url = (self._config.get("base_url") or "").strip().lower()
+        if provider == "anthropic" or provider == "minimax":
+            # 这两个服务商走 Anthropic Messages 协议
+            return False
+        if provider:
+            # 显式配置了 provider 且不是 anthropic/minimax → 按 OpenAI 兼容处理
+            return True
+        return any(k in base_url for k in (
+            "deepseek", "openai", "dashscope", "moonshot", "zhipu",
+            "glm", "ollama", "siliconflow", "kimi",
+        ))
+
     def _init_client(self):
-        if self._client is None:
-            api_key = self._config.get("api_key") or settings.ANTHROPIC_API_KEY
-            base_url = self._config.get("base_url")
-            if base_url:
-                self._client = anthropic.Anthropic(
-                    api_key=api_key,
-                    base_url=base_url,
-                )
-            else:
-                self._client = anthropic.Anthropic(api_key=api_key)
+        # 每次调用都重建 client，确保 Settings 中修改的 base_url/api_key 立即生效
+        api_key = self._config.get("api_key") or settings.ANTHROPIC_API_KEY
+        base_url = self._config.get("base_url")
+        self._openai_compat = self._is_openai_compat()
+        if self._openai_compat:
+            import openai
+            self._client = openai.OpenAI(
+                api_key=api_key,
+                base_url=base_url or "https://api.openai.com/v1",
+            )
+        elif base_url:
+            self._client = anthropic.Anthropic(
+                api_key=api_key,
+                base_url=base_url,
+            )
+        else:
+            self._client = anthropic.Anthropic(api_key=api_key)
 
     def _get_config(self, key: str, default: str = "") -> str:
         """获取配置，优先从config文件"""
@@ -408,13 +430,28 @@ class LLMService:
                 print(f"API速率限制，等待 {wait_time} 秒后重试 (尝试 {attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
             except Exception as e:
-                raise e
+                import openai
+                if isinstance(e, openai.RateLimitError):
+                    if attempt == max_retries - 1:
+                        raise e
+                    wait_time = (2 ** attempt) * 2
+                    print(f"API速率限制，等待 {wait_time} 秒后重试 (尝试 {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                raise
 
     def _call_messages_create(self, **kwargs):
         """
         调用 messages.create，兼容不支持 thinking 参数的模型/服务商。
         部分 OpenAI 兼容接口（如 DeepSeek 等）不接收 thinking 参数，降级重试。
+        异常时附加当前 LLM 配置信息（model/base_url/key掩码），便于排查。
         """
+        if self._openai_compat:
+            try:
+                return self._call_openai_compat(**kwargs)
+            except Exception as e:
+                raise Exception(self._format_llm_error(e, kwargs)) from e
+
         try:
             return self._client.messages.create(**kwargs)
         except TypeError as e:
@@ -422,6 +459,59 @@ class LLMService:
                 kwargs.pop("thinking", None)
                 return self._client.messages.create(**kwargs)
             raise
+        except anthropic.RateLimitError:
+            raise
+        except Exception as e:
+            raise Exception(self._format_llm_error(e, kwargs)) from e
+
+    def _call_openai_compat(self, **kwargs):
+        """OpenAI 兼容协议（DeepSeek 等）：转换 anthropic 参数为 chat.completions 格式，
+        并将响应归一化为 {content: [{type:'text', text: ...}]}，下游无需改动。"""
+        from types import SimpleNamespace
+
+        params: dict = {}
+        for key in ("model", "max_tokens", "temperature", "timeout"):
+            if key in kwargs:
+                params[key] = kwargs[key]
+
+        messages: list = []
+        if kwargs.get("system"):
+            messages.append({"role": "system", "content": kwargs["system"]})
+        for m in kwargs.get("messages", []):
+            content = m.get("content")
+            if isinstance(content, list):
+                # anthropic 内容块列表 → 拼接纯文本
+                parts = []
+                for b in content:
+                    if isinstance(b, dict):
+                        parts.append(b.get("text", ""))
+                    else:
+                        parts.append(getattr(b, "text", str(b)))
+                content = "\n".join(parts)
+            messages.append({"role": m.get("role", "user"), "content": content})
+        params["messages"] = messages
+
+        response = self._client.chat.completions.create(**params)
+        text = ""
+        if response.choices:
+            text = response.choices[0].message.content or ""
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
+
+    def _format_llm_error(self, e: Exception, kwargs: dict) -> str:
+        """格式化 LLM 错误：附带当前配置（model/base_url/key掩码），401 附排查提示"""
+        model = kwargs.get("model") or self._config.get("model") or "未配置"
+        base_url = self._config.get("base_url") or "https://api.anthropic.com（默认）"
+        api_key = self._config.get("api_key") or settings.ANTHROPIC_API_KEY or ""
+        if len(api_key) > 8:
+            masked = f"{api_key[:4]}****{api_key[-4:]}"
+        else:
+            masked = "未配置或过短"
+
+        msg = str(e)
+        if "401" in msg or "invalid_key" in msg or "Invalid API Key" in msg:
+            msg += "｜排查：① 复制 API Key 时是否带入多余空格/换行 ② Key 是否与 base_url 对应的是同一服务商（不同服务商 Key 不通用）③ Key 是否过期或未开通模型访问权限"
+
+        return f"{msg}（当前LLM配置：model={model}，base_url={base_url}，api_key={masked}）"
 
     def generate_reading_passage(self, grade: int, topic: str, difficulty: int) -> dict:
         """

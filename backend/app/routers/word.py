@@ -402,9 +402,10 @@ def generate_audio(grade: Optional[int] = None, db: Session = Depends(get_db)):
 @router.get("/stats/summary", response_model=WordStatsResponse)
 def get_stats(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
+    grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
 ):
-    """获取单词统计（单词属于英语学科；指定其他学科时返回全零）"""
+    """获取单词统计（单词属于英语学科；指定其他学科时返回全零；可按年级过滤）"""
     # 学科过滤：仅英语学科有单词数据
     if subject_id is not None:
         from app.models.subject import Subject
@@ -424,65 +425,84 @@ def get_stats(
                 "due_words": 0,
                 "to_review_count": 0,
             }
-    # 总单词数
-    total_words = db.query(Word).filter(Word.deleted == False).count()
 
-    # 总复习次数 = 练习场次数（排除已删除练习集）
+    def _wq(q):
+        """Word 查询按年级过滤"""
+        if grade is not None:
+            q = q.filter(Word.grade == grade)
+        return q
+
+    def _lq(q):
+        """WordReviewLog 查询按年级过滤（join Word）"""
+        if grade is not None:
+            q = q.join(Word, Word.id == WordReviewLog.word_id).filter(Word.deleted == False, Word.grade == grade)
+        return q
+
+    # 总单词数
+    total_words = _wq(db.query(Word).filter(Word.deleted == False)).count()
+
+    # 总复习次数 = 练习场次数（排除已删除练习集）；指定年级时按该年级单词的复习日志数近似
     from app.models.practice_set import WordReviewSession, PracticeSet
-    total_reviews = (
-        db.query(func.count(WordReviewSession.id))
-        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
-        .filter(
-            (WordReviewSession.practice_set_id.is_(None))
-            | (PracticeSet.deleted == False)
+    if grade is not None:
+        total_reviews = (
+            _lq(db.query(func.count(WordReviewLog.id)).filter(WordReviewLog.deleted == False))
+            .scalar() or 0
         )
-        .scalar() or 0
-    )
-    total_correct = db.query(WordReviewLog).filter(WordReviewLog.deleted == False, WordReviewLog.is_correct == True).count()
-    total_logs = db.query(WordReviewLog).filter(WordReviewLog.deleted == False).count()
+    else:
+        total_reviews = (
+            db.query(func.count(WordReviewSession.id))
+            .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
+            .filter(
+                (WordReviewSession.practice_set_id.is_(None))
+                | (PracticeSet.deleted == False)
+            )
+            .scalar() or 0
+        )
+    total_correct = _lq(db.query(WordReviewLog).filter(WordReviewLog.deleted == False, WordReviewLog.is_correct == True)).count()
+    total_logs = _lq(db.query(WordReviewLog).filter(WordReviewLog.deleted == False)).count()
 
     # 正确率
     accuracy = (total_correct / total_logs * 100) if total_logs > 0 else 0
 
     # 各状态单词数
-    mastered_words = db.query(Word).filter(
+    mastered_words = _wq(db.query(Word).filter(
         Word.deleted == False,
         Word.review_count >= 5,
         Word.correct_count / Word.review_count >= 0.9
-    ).count()
+    )).count()
 
-    new_words = db.query(Word).filter(
+    new_words = _wq(db.query(Word).filter(
         Word.deleted == False,
         Word.review_count == 0
-    ).count()
+    )).count()
 
     learning_words = total_words - mastered_words - new_words
 
     # 今日复习数
     today = datetime.now().date()
-    review_today = db.query(WordReviewLog).filter(
+    review_today = _lq(db.query(WordReviewLog).filter(
         WordReviewLog.deleted == False,
         func.date(WordReviewLog.reviewed_at) == today
-    ).count()
+    )).count()
 
     # 待复习数（超过预定复习时间）
     now = datetime.now()
-    due_words = db.query(Word).filter(
+    due_words = _wq(db.query(Word).filter(
         Word.deleted == False,
         Word.next_review_at != None,
         Word.next_review_at <= now
-    ).count()
+    )).count()
 
     # 待复习数量 = 未复习 + 曲线到期
-    unreviewed_count = db.query(Word).filter(Word.deleted == False, Word.review_count == 0).count()
+    unreviewed_count = _wq(db.query(Word).filter(Word.deleted == False, Word.review_count == 0)).count()
     to_review_count = unreviewed_count + due_words
 
     # 年级分布
     grade_dist = {}
-    words_by_grade = db.query(Word.grade, func.count(Word.id)).filter(
+    words_by_grade = _wq(db.query(Word.grade, func.count(Word.id)).filter(
         Word.deleted == False,
         Word.grade != None
-    ).group_by(Word.grade).all()
+    )).group_by(Word.grade).all()
     for grade, count in words_by_grade:
         grade_dist[str(grade)] = count
 
