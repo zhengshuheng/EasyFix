@@ -72,7 +72,7 @@
         style="width: 100%"
       >
         <el-table-column type="selection" width="40" />
-        <el-table-column prop="name" label="名称" width="260">
+        <el-table-column prop="name" label="名称" min-width="300">
           <template #default="{ row }">
             <div class="ps-name-cell">
               <span class="ps-name" :title="row.name">{{ row.name }}</span>
@@ -106,7 +106,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="160">
+        <el-table-column prop="created_at" label="创建时间" min-width="150">
           <template #default="{ row }">
             {{ formatDate(row.created_at) }}
           </template>
