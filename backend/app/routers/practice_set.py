@@ -273,6 +273,136 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     }
 
 
+class GenerateAIRequest(BaseModel):
+    """AI结合知识点出题请求"""
+    subject_id: int
+    grade: Optional[int] = None  # 年级 1-6
+    knowledge_points: List[str] = []  # 手动指定知识点；为空则自动统计薄弱知识点
+    count: int = 5  # 题数
+    difficulty: Optional[int] = None  # 难度 1-5
+
+
+@router.post("/generate-ai", response_model=PracticeSetResponse, status_code=201)
+def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get_db)):
+    """AI结合知识点出题：自动统计薄弱知识点（或手动指定）→ LLM 生成 → 入库 → 组卷 → PDF"""
+    import random
+
+    subject = db.query(Subject).filter(Subject.id == data.subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="学科不存在")
+
+    if data.count < 1 or data.count > 20:
+        raise HTTPException(status_code=400, detail="题数需在 1-20 之间")
+    if data.difficulty is not None and (data.difficulty < 1 or data.difficulty > 5):
+        raise HTTPException(status_code=400, detail="难度需在 1-5 之间")
+
+    # 1. 确定知识点：手动指定 > 自动统计薄弱知识点
+    knowledge_points = [kp.strip() for kp in data.knowledge_points if kp and kp.strip()]
+    if not knowledge_points:
+        rows = db.query(
+            Question.knowledge_point,
+            func.sum(Question.error_count).label("total_error"),
+        ).filter(
+            Question.subject_id == data.subject_id,
+            Question.deleted == False,
+            Question.knowledge_point.isnot(None),
+            Question.knowledge_point != "",
+        ).group_by(Question.knowledge_point).order_by(func.sum(Question.error_count).desc()).limit(3).all()
+        knowledge_points = [r[0] for r in rows]
+
+    if not knowledge_points:
+        raise HTTPException(
+            status_code=400,
+            detail="当前学科还没有错题知识点数据，请手动输入知识点（如：分数加减法、乘法分配律）",
+        )
+
+    # 2. LLM 出题
+    from app.services.llm import llm_service
+    result = llm_service.generate_questions_by_knowledge(
+        knowledge_points=knowledge_points,
+        subject=subject.name,
+        grade=data.grade,
+        count=data.count,
+        difficulty=data.difficulty,
+    )
+    if result.get("error"):
+        raise HTTPException(status_code=502, detail=result["error"])
+    ai_questions = result.get("questions", [])
+    if not ai_questions:
+        raise HTTPException(status_code=502, detail="AI 没有生成可用题目")
+
+    # 3. 题目入库（Question 表，后续抽题/复习可复用）
+    new_questions = []
+    for item in ai_questions:
+        q = Question(
+            subject_id=data.subject_id,
+            grade=data.grade,
+            original_text=item["question"],
+            parsed_question=item["question"],
+            answer=item["answer"],
+            analysis=item.get("explanation", ""),
+            knowledge_point=item.get("knowledge_point") or knowledge_points[0],
+            difficulty=data.difficulty or 3,
+            error_type="",
+        )
+        db.add(q)
+        new_questions.append(q)
+    db.flush()
+
+    # 4. 创建练习集
+    practice_set = PracticeSet(
+        name=f"AI练习_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        subject_id=data.subject_id,
+        source_type="question",
+        question_type="original",
+        total_questions=len(new_questions),
+    )
+    db.add(practice_set)
+    db.flush()
+
+    for idx, question in enumerate(new_questions):
+        db.add(PracticeSetQuestion(
+            practice_set_id=practice_set.id,
+            question_id=question.id,
+            display_order=idx,
+        ))
+
+    # 5. 生成 PDF
+    pdf_url = None
+    try:
+        questions_data = [{
+            "question_text": q.parsed_question or q.original_text or "",
+            "difficulty": q.difficulty or 3,
+            "id": q.id,
+            "knowledge_point": q.knowledge_point or "",
+            "error_type": q.error_type or "",
+        } for q in new_questions]
+        pdf_path = generate_practice_set_pdf(practice_set.name, questions_data)
+        practice_set.pdf_path = pdf_path
+        pdf_url = f"/uploads/{pdf_path}"
+    except Exception as e:
+        print(f"AI出题 PDF生成失败: {e}")
+
+    db.commit()
+    db.refresh(practice_set)
+
+    return {
+        "id": practice_set.id,
+        "name": practice_set.name,
+        "subject_id": practice_set.subject_id,
+        "subject_name": subject.name,
+        "source_type": "question",
+        "question_type": "original",
+        "total_questions": len(new_questions),
+        "reviewed": False,
+        "review_count": 0,
+        "pdf_path": practice_set.pdf_path,
+        "created_at": practice_set.created_at,
+        "questions": [],
+        "pdf_url": pdf_url,
+    }
+
+
 @router.post("/generate-from-reading", response_model=PracticeSetResponse, status_code=201)
 def generate_practice_from_reading(data: GenerateFromReadingRequest, db: Session = Depends(get_db)):
     """

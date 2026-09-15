@@ -662,34 +662,92 @@
       </el-tabs>
     </el-dialog>
 
-    <!-- 出题弹窗：从错题池生成练习集（自动生成PDF） -->
-    <el-dialog v-model="generateDialogVisible" title="出题" width="420px">
-      <el-form :model="generateForm" label-width="70px">
-        <el-form-item label="学科" required>
-          <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%">
-            <el-option
-              v-for="subject in subjects"
-              :key="subject.id"
-              :label="subject.name"
-              :value="subject.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="年级">
-          <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%">
-            <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="数量">
-          <el-input-number v-model="generateForm.count" :min="1" :max="99" />
-        </el-form-item>
-        <el-form-item>
-          <span style="color: #909399; font-size: 12px">优先选择未复习、低正确率的题目，生成后自动打印 PDF</span>
-        </el-form-item>
-      </el-form>
+    <!-- 出题弹窗：错题组卷 / AI 出题（自动生成PDF） -->
+    <el-dialog v-model="generateDialogVisible" title="出题" width="480px">
+      <el-tabs v-model="generateTab">
+        <el-tab-pane label="错题组卷" name="pool">
+          <el-form :model="generateForm" label-width="70px">
+            <el-form-item label="学科" required>
+              <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%">
+                <el-option
+                  v-for="subject in subjects"
+                  :key="subject.id"
+                  :label="subject.name"
+                  :value="subject.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="年级">
+              <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%">
+                <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="数量">
+              <el-input-number v-model="generateForm.count" :min="1" :max="99" />
+            </el-form-item>
+            <el-form-item>
+              <span style="color: #909399; font-size: 12px">优先选择未复习、低正确率的题目，生成后自动打印 PDF</span>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="AI 出题" name="ai">
+          <el-form :model="aiGenerateForm" label-width="70px">
+            <el-form-item label="学科" required>
+              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%">
+                <el-option
+                  v-for="subject in subjects"
+                  :key="subject.id"
+                  :label="subject.name"
+                  :value="subject.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="年级">
+              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%">
+                <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="知识点">
+              <el-radio-group v-model="aiGenerateForm.knowledge_mode">
+                <el-radio value="auto">自动（按错题薄弱点）</el-radio>
+                <el-radio value="manual">手动输入</el-radio>
+              </el-radio-group>
+              <el-input
+                v-if="aiGenerateForm.knowledge_mode === 'manual'"
+                v-model="aiGenerateForm.knowledge_text"
+                placeholder="多个知识点用逗号分隔，如：分数加减法,乘法分配律"
+                style="margin-top: 8px"
+              />
+              <div v-else style="color: #909399; font-size: 12px; margin-top: 8px; line-height: 1.6">
+                自动统计当前学科错误最多的知识点出题（需有错题记录，否则请手动输入）
+              </div>
+            </el-form-item>
+            <el-form-item label="数量">
+              <el-select v-model="aiGenerateForm.count" style="width: 100%">
+                <el-option v-for="n in [3, 5, 10, 15, 20]" :key="n" :label="`${n} 题`" :value="n" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="难度">
+              <el-select v-model="aiGenerateForm.difficulty" placeholder="中等（默认）" clearable style="width: 100%">
+                <el-option label="简单" :value="1" />
+                <el-option label="基础" :value="2" />
+                <el-option label="中等" :value="3" />
+                <el-option label="偏难" :value="4" />
+                <el-option label="困难" :value="5" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
       <template #footer>
         <el-button @click="generateDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="generatePractice" :loading="generating">生成并打印</el-button>
+        <el-button
+          type="primary"
+          :loading="generating"
+          @click="generateTab === 'ai' ? generateAiPractice() : generatePractice()"
+        >
+          {{ generateTab === 'ai' ? 'AI 生成' : '生成并打印' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -718,10 +776,19 @@ const pagination = reactive({
 // 出题（生成练习）相关
 const generateDialogVisible = ref(false)
 const generating = ref(false)
+const generateTab = ref('pool') // pool=错题组卷 ai=AI出题
 const generateForm = reactive({
   subject_id: null,
   grade: null,
   count: 5,
+})
+const aiGenerateForm = reactive({
+  subject_id: null,
+  grade: null,
+  knowledge_mode: 'auto', // auto=按错题薄弱点 manual=手动输入
+  knowledge_text: '',
+  count: 5,
+  difficulty: null,
 })
 const gradeOptions = [
   { value: 1, label: '一年级' },
@@ -736,6 +803,13 @@ const showGenerateDialog = () => {
   generateForm.subject_id = null
   generateForm.grade = null
   generateForm.count = 5
+  aiGenerateForm.subject_id = null
+  aiGenerateForm.grade = null
+  aiGenerateForm.knowledge_mode = 'auto'
+  aiGenerateForm.knowledge_text = ''
+  aiGenerateForm.count = 5
+  aiGenerateForm.difficulty = null
+  generateTab.value = 'pool'
   generateDialogVisible.value = true
 }
 
@@ -759,6 +833,44 @@ const generatePractice = async () => {
     }
   } catch (error) {
     ElMessage.error('生成失败')
+  } finally {
+    generating.value = false
+  }
+}
+
+const generateAiPractice = async () => {
+  if (!aiGenerateForm.subject_id) {
+    ElMessage.warning('请选择学科')
+    return
+  }
+  let knowledge_points = []
+  if (aiGenerateForm.knowledge_mode === 'manual') {
+    knowledge_points = aiGenerateForm.knowledge_text
+      .split(/[,，、;；]/)
+      .map(s => s.trim())
+      .filter(Boolean)
+    if (knowledge_points.length === 0) {
+      ElMessage.warning('请输入知识点（多个用逗号分隔）')
+      return
+    }
+  }
+  generating.value = true
+  try {
+    const { data } = await questionApi.generateAiPracticeSet({
+      subject_id: aiGenerateForm.subject_id,
+      grade: aiGenerateForm.grade,
+      knowledge_points,
+      count: aiGenerateForm.count,
+      difficulty: aiGenerateForm.difficulty,
+    })
+    ElMessage.success(`AI 已生成 ${data.total_questions} 道题，练习集已创建`)
+    generateDialogVisible.value = false
+    await fetchPracticeSets()
+    if (data.id) {
+      showDetail(data)
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || 'AI 出题失败，请检查 LLM 配置后重试')
   } finally {
     generating.value = false
   }

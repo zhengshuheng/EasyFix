@@ -129,6 +129,9 @@ export const questionApi = {
   generateFromQuestions(params) {
     return api.post('/practice-sets/generate-from-questions', params)
   },
+  generateAiPracticeSet(params) {
+    return api.post('/practice-sets/generate-ai', params)
+  },
   aiGradePracticeSet(id) {
     return api.post(`/practice-sets/${id}/ai-grade`)
   },

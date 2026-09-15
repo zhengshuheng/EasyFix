@@ -793,6 +793,137 @@ class LLMService:
         except Exception:
             return {"error": "批改结果解析失败，请重试", "results": []}
 
+    def generate_questions_by_knowledge(
+        self,
+        knowledge_points: List[str],
+        subject: str,
+        grade: int = None,
+        count: int = 5,
+        difficulty: int = None,
+    ) -> dict:
+        """
+        AI 结合知识点出题
+
+        Args:
+            knowledge_points: 知识点列表（如 ["分数加减法", "乘法分配律"]）
+            subject: 学科名
+            grade: 年级（1-6）
+            count: 题目总数
+            difficulty: 难度（1-5）
+
+        Returns:
+            dict: {"questions": [{"question", "answer", "explanation", "knowledge_point"}]}
+        """
+        # 重新加载配置
+        self._config = load_llm_config()
+        self._init_client()
+
+        api_key = self._get_config("api_key", settings.ANTHROPIC_API_KEY)
+        if not api_key:
+            return {"error": "LLM API Key not configured. Please set it in Settings.", "questions": []}
+
+        if not knowledge_points:
+            return {"error": "缺少知识点", "questions": []}
+
+        model = self._get_config("model", "claude-sonnet-4-20250514")
+        prompt = self._build_question_gen_prompt(knowledge_points, subject, grade, count, difficulty)
+
+        try:
+            response = self._retry_on_rate_limit(
+                self._client.messages.create,
+                model=model,
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=90,
+                # 禁用思考块，避免MiniMax返回纯思考内容
+                thinking={"type": "disabled"},
+            )
+
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+
+            if not content:
+                return {"error": "LLM返回内容为空或仅包含思考过程", "questions": []}
+
+            return self._parse_question_gen_response(content)
+        except anthropic.RateLimitError as e:
+            return {"error": f"API速率限制，请稍后再试: {str(e)}", "questions": []}
+        except Exception as e:
+            return {"error": f"LLM调用失败: {str(e)}", "questions": []}
+
+    def _build_question_gen_prompt(
+        self,
+        knowledge_points: List[str],
+        subject: str,
+        grade: int,
+        count: int,
+        difficulty: int,
+    ) -> str:
+        grade_info = f"小学{grade}年级" if grade else "小学"
+        diff_desc = {
+            1: "非常基础，直接套用公式/法则即可",
+            2: "基础，略有变化",
+            3: "中等，需要两步思考",
+            4: "偏难，需要综合运用",
+            5: "困难，需要灵活综合运用",
+        }
+        diff_info = f"难度：{diff_desc.get(difficulty, '中等')}（满分5，当前{difficulty}）" if difficulty else "难度：中等偏基础，适合日常练习"
+
+        kp_text = "、".join(knowledge_points)
+        # 每个知识点大致题数，平均分配后补余
+        per = max(1, count // len(knowledge_points))
+
+        return f"""你是一位经验丰富的{grade_info}{subject}老师，请围绕以下知识点出一套练习题：
+知识点：{kp_text}
+
+出题要求：
+- 共 {count} 道题，围绕知识点出题，每个知识点至少 {per} 道
+- {diff_info}
+- 题干要表述清晰完整，适合{grade_info}学生作答
+- 计算题答案必须准确，可自行验算
+- 每道题必须给出：题目、正确答案、简要解析、所属知识点
+
+请严格按以下JSON数组格式返回，只返回数组本身，不要包含多余文字：
+[
+  {{"question": "题目内容", "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点"}}
+]
+"""
+
+    def _parse_question_gen_response(self, content: str) -> dict:
+        """解析AI出题结果"""
+        import json
+        import re
+
+        text = content.strip()
+        json_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.DOTALL)
+        if json_match:
+            text = json_match.group(1)
+        else:
+            start = text.find("[")
+            end = text.rfind("]")
+            if start != -1 and end != -1:
+                text = text[start : end + 1]
+        try:
+            data = json.loads(text)
+            questions = []
+            for item in data:
+                q = {
+                    "question": str(item.get("question", "")).strip(),
+                    "answer": str(item.get("answer", "")).strip(),
+                    "explanation": str(item.get("explanation", "")).strip(),
+                    "knowledge_point": str(item.get("knowledge_point", "")).strip(),
+                }
+                if q["question"] and q["answer"]:
+                    questions.append(q)
+            if not questions:
+                return {"error": "AI生成的题目为空或格式不正确", "questions": []}
+            return {"questions": questions}
+        except Exception:
+            return {"error": "出题结果解析失败，请重试", "questions": []}
+
 
 # 全局单例
 llm_service = LLMService()
