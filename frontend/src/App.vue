@@ -102,13 +102,9 @@ function navTo(path) {
   if (route.path !== path) router.push(path)
 }
 
-// 顶部"家长中心"菜单：家长直接进，小孩弹密码验证，输完直达家长中心
+// 顶部"家长中心"菜单：每次点击都弹密码验证（防止小孩误入），验证后直达家长中心
 function openParentCenter() {
-  if (isAdminSession.value) {
-    router.push('/parent-center')
-  } else {
-    parentLockVisible.value = true
-  }
+  parentLockVisible.value = true
 }
 
 const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
@@ -160,6 +156,11 @@ function handleKidCommand(cmd) {
 function handleAdminCommand(cmd) {
   if (cmd === 'logout') {
     handleLogout()
+    return
+  }
+  if (cmd === 'parent-center') {
+    // 统一走密码验证入口
+    parentLockVisible.value = true
     return
   }
   router.push('/' + cmd)
