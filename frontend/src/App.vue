@@ -6,16 +6,16 @@
           <h1>EasyFix</h1>
 
           <!-- 选择页隐藏导航，其余页面显示 -->
-          <el-menu v-if="!isSelectPage" mode="horizontal" :router="true" :default-active="$route.path">
-            <el-menu-item index="/home">首页</el-menu-item>
-            <el-menu-item index="/questions">错题</el-menu-item>
-            <el-menu-item index="/words">单词</el-menu-item>
-            <el-menu-item index="/practice-sets">练习</el-menu-item>
-            <el-menu-item index="/reading">阅读</el-menu-item>
-            <el-menu-item index="/stats">统计</el-menu-item>
-            <el-menu-item index="/learning-reports">学习分析</el-menu-item>
-            <el-menu-item index="/motivation">激励中心</el-menu-item>
-            <el-menu-item index="/parent-center" @click.prevent="openParentCenter">家长中心</el-menu-item>
+          <el-menu v-if="!isSelectPage" mode="horizontal" :default-active="activeMenu">
+            <el-menu-item index="/home" @click="navTo('/home')">首页</el-menu-item>
+            <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
+            <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
+            <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
+            <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+            <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
+            <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习分析</el-menu-item>
+            <el-menu-item index="/motivation" @click="navTo('/motivation')">激励中心</el-menu-item>
+            <el-menu-item index="/parent-center" @click="openParentCenter">家长中心</el-menu-item>
           </el-menu>
 
           <div v-if="!isSelectPage" class="header-user">
@@ -93,6 +93,23 @@ const kids = ref([])
 const isSelectPage = computed(() => route.path === '/')
 // 家长会话：已通过家长密码验证（存在家长 token）
 const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
+// 顶部菜单高亮：家长中心子路由统一高亮"家长中心"
+const activeMenu = computed(() =>
+  route.path.startsWith('/parent-center') ? '/parent-center' : route.path
+)
+
+function navTo(path) {
+  if (route.path !== path) router.push(path)
+}
+
+// 顶部"家长中心"菜单：家长直接进，小孩弹密码验证，输完直达家长中心
+function openParentCenter() {
+  if (isAdminSession.value) {
+    router.push('/parent-center')
+  } else {
+    parentLockVisible.value = true
+  }
+}
 
 const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
 
@@ -150,15 +167,6 @@ function handleAdminCommand(cmd) {
 
 function goParentCenter() {
   router.push('/parent-center')
-}
-
-// 顶部"家长中心"菜单：家长直接进，小孩弹密码验证
-function openParentCenter() {
-  if (isAdminSession.value) {
-    router.push('/parent-center')
-  } else {
-    parentLockVisible.value = true
-  }
 }
 
 function switchKid() {
