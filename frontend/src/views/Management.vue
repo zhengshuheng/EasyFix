@@ -200,6 +200,13 @@
           </div>
         </el-tab-pane>
 
+        <!-- 英语单词库管理 -->
+        <el-tab-pane label="英语单词库" name="wordLibrary">
+          <div class="tab-content">
+            <WordLibrary />
+          </div>
+        </el-tab-pane>
+
         <!-- 行为配置 -->
         <el-tab-pane label="行为配置" name="starActions">
           <div class="tab-content">
@@ -541,6 +548,7 @@ import { questionApi, uploadApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { usersApi } from '@/api/users'
 import { useAppConfigStore } from '@/stores/appConfig'
+import WordLibrary from './WordLibrary.vue'
 
 const appConfigStore = useAppConfigStore()
 const activeTab = ref('system')

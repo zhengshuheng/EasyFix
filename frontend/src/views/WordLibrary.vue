@@ -3,23 +3,15 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>单词本</span>
-          <div class="review-buttons">
-            <el-button type="danger" @click="startReview(3)">
-              <el-icon><Microphone /></el-icon>
-              听写
+          <span>英语单词库</span>
+          <div>
+            <el-button type="primary" @click="showAddDialog">
+              <el-icon><Plus /></el-icon>
+              新增单词
             </el-button>
-            <el-button type="success" @click="startReview(1)">
-              <el-icon><Edit /></el-icon>
-              中-英
-            </el-button>
-            <el-button type="primary" @click="startReview(2)">
-              <el-icon><Select /></el-icon>
-              英-中
-            </el-button>
-            <el-button type="warning" @click="showPrintDialog">
-              <el-icon><Printer /></el-icon>
-              打印默写
+            <el-button type="info" @click="showImportDialog">
+              <el-icon><Upload /></el-icon>
+              导入单词
             </el-button>
           </div>
         </div>
@@ -107,9 +99,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button type="info" size="default" @click="viewDetail(row)">详情</el-button>
+            <el-button type="primary" size="default" @click="editWord(row)">编辑</el-button>
+            <el-button type="danger" size="default" @click="deleteWord(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -126,6 +120,41 @@
         />
       </div>
     </el-card>
+
+    <!-- 新增/编辑弹窗 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="英文" required>
+          <el-input v-model="form.english" placeholder="输入英文单词" />
+        </el-form-item>
+        <el-form-item label="中文" required>
+          <el-input v-model="form.chinese" placeholder="输入中文释义" />
+        </el-form-item>
+        <el-form-item label="音标">
+          <el-input v-model="form.phonetic" placeholder="输入音标（可选）" />
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-select v-model="form.grade" placeholder="选择年级" clearable style="width: 100%">
+            <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="学期">
+          <el-select v-model="form.semester" placeholder="选择学期" clearable style="width: 100%">
+            <el-option label="上学期" :value="1" />
+            <el-option label="下学期" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="form.tag_ids" multiple placeholder="选择标签" style="width: 100%">
+            <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveWord">保存</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 详情弹窗 -->
     <el-dialog v-model="detailVisible" title="单词详情" width="600px">
@@ -195,171 +224,121 @@
       </template>
     </el-dialog>
 
-    <!-- 复习弹窗 -->
-    <el-dialog v-model="reviewVisible" title="单词复习" width="1200px" :close-on-click-modal="false" class="review-dialog">
-      <div v-if="reviewStep === 'question'" class="review-question">
-        <div class="question-header">
-          <span class="progress">{{ currentIndex + 1 }} / {{ reviewQuestions.length }}</span>
-          <span class="timer">用时: {{ Math.floor(reviewElapsed / 60) }}:{{ String(reviewElapsed % 60).padStart(2, '0') }}</span>
-        </div>
-
-        <div class="question-content">
-          <!-- 默写模式：显示中文 + 喇叭按钮 + 字母格输入 -->
-          <div v-if="reviewConfig.type === 1" class="dictation">
-            <div class="chinese" :style="{ fontSize: chineseFontSize }">
-              {{ currentQuestion.chinese }}
-            </div>
-            <div class="audio-row">
-              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
-            </div>
-            <div class="hint-box">
-              <div class="hint">提示：{{ letterBlankCount }}个字母</div>
-            </div>
-            <div
-              ref="letterInputBoxRef"
-              class="letter-input"
-              tabindex="0"
-              @click="focusLetterInput"
-              @keydown="handleLetterKeydown"
-            >
-              <div class="letter-cells">
-                <div
-                  v-for="(cell, i) in dictationCells"
-                  :key="i"
-                  class="letter-cell"
-                  :class="{
-                    fixed: cell.fixed,
-                    filled: !!letterAnswers[i],
-                    active: i === activeLetterIdx && currentQuestion.correct === undefined,
-                    correct: currentQuestion.correct === true && !cell.fixed,
-                    wrong: currentQuestion.correct === false && !cell.fixed
-                  }"
-                >
-                  {{ cell.fixed ? cell.char : (letterAnswers[i] || '') }}
-                </div>
-              </div>
-              <input
-                ref="letterInputRef"
-                class="letter-hidden-input"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-              />
-            </div>
-          </div>
-
-          <!-- 选择模式：显示英文 + 喇叭按钮 -->
-          <div v-else-if="reviewConfig.type === 2" class="choice">
-            <div class="english">
-              {{ currentQuestion.english }}
-              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
-            </div>
-            <el-radio-group v-model="selectedOption" @change="submitAnswer">
-              <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :value="opt" :disabled="currentQuestion.correct !== undefined">
-                {{ opt }}
-              </el-radio>
-            </el-radio-group>
-          </div>
-
-          <!-- 听力模式：仅喇叭按钮 + 输入框 -->
-          <div v-else class="listening">
-            <div class="audio-controls">
-              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-large" type="primary" size="large">
-                🔊 播放发音
-              </el-button>
-              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-replay" size="small">
-                重播
-              </el-button>
-            </div>
-            <div class="hint-box">
-              <div class="hint">提示：{{ currentQuestion.word_length }}个字母</div>
-            </div>
+    <!-- 导入弹窗 -->
+    <el-dialog v-model="importDialogVisible" title="导入单词" width="1100px" class="import-dialog">
+      <el-form :model="importForm" label-width="100px">
+        <el-form-item label="导入方式">
+          <el-radio-group v-model="importForm.mode">
+            <el-radio label="text">文本粘贴</el-radio>
+            <el-radio label="file">文件上传</el-radio>
+            <el-radio label="image">图片识别</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="importForm.mode === 'text'" label="单词格式">
+          <el-input
+            v-model="importForm.text"
+            type="textarea"
+            :rows="6"
+            placeholder="每行一个单词，格式：英文 中文（用空格分隔）
+例如：
+apple 苹果
+banana 香蕉
+orange 橙子"
+            @input="onTextChange"
+          />
+        </el-form-item>
+        <el-form-item v-else-if="importForm.mode === 'file'" label="上传文件">
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            :limit="1"
+            accept=".txt,.csv"
+            :on-change="handleFileChange"
+          >
+            <el-button>选择文件</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持 .txt 或 .csv 文件，每行一个单词，格式：英文 中文</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item v-else-if="importForm.mode === 'image'" label="上传图片">
+          <el-upload
+            ref="imageUploadRef"
+            :auto-upload="false"
+            :limit="1"
+            accept="image/*"
+            :on-change="handleImageChange"
+            :on-remove="handleImageRemove"
+          >
+            <el-button>选择图片</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持 JPG、PNG 格式，图片中的单词文字将被识别提取</div>
+            </template>
+          </el-upload>
+          <!-- OCR识别结果预览 -->
+          <div v-if="importForm.ocrText" class="ocr-preview">
+            <div class="ocr-label">OCR原始识别：</div>
             <el-input
-              ref="answerInputRef"
-              v-model="userAnswer"
-              placeholder="输入听到的英文单词"
-              @keyup.enter="submitAnswer"
-              :disabled="currentQuestion.correct !== undefined"
-              class="answer-input"
+              v-model="importForm.ocrText"
+              type="textarea"
+              :rows="4"
+              placeholder="OCR识别的原始文本"
+              @input="importForm.parsedWords = smartParseWords(importForm.ocrText)"
             />
           </div>
-        </div>
-
-        <div class="question-actions">
-          <el-button type="danger" @click="terminateReview">终止答题</el-button>
-          <el-button v-if="currentQuestion.correct === undefined" type="primary" @click="submitAnswer">提交</el-button>
-          <el-button v-else type="success" @click="finishReview">完成</el-button>
-        </div>
-      </div>
-
-      <div v-else-if="reviewStep === 'result'" class="review-result">
-        <!-- 顶部统计区 -->
-        <div class="result-header">
-          <div class="accuracy-display">
-            <div class="accuracy-big">{{ reviewResult.accuracy }}%</div>
-            <div class="accuracy-label">正确率</div>
-          </div>
-          <div class="stats-panel">
-            <div class="stat-item">
-              <span class="stat-value">{{ reviewResult.total }}</span>
-              <span class="stat-label">总题数</span>
-            </div>
-            <div class="stat-item correct">
-              <span class="stat-value">{{ reviewResult.correct }}</span>
-              <span class="stat-label">正确</span>
-            </div>
-            <div class="stat-item error">
-              <span class="stat-value">{{ reviewResult.error }}</span>
-              <span class="stat-label">错误</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ Math.floor(reviewResult.duration / 60) }}:{{ String(reviewResult.duration % 60).padStart(2, '0') }}</span>
-              <span class="stat-label">用时</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 错误单词列表 -->
-        <div v-if="reviewResult.error > 0" class="error-word-list">
-          <div class="error-words-scroll">
-            <div v-for="(q, idx) in reviewQuestions.filter(q => !q.correct)" :key="idx" class="error-word-item">
-              <div class="correct-side">
-                <span class="correct-en">
-                  {{ q.english }}
-                  <el-button class="audio-btn" @click="playWordAudio(q.word_id)" :loading="audioLoading" size="small">🔊</el-button>
-                </span>
-                <span class="correct-cn">{{ q.chinese }}</span>
-              </div>
-              <div class="wrong-side">
-                <span class="wrong-tag">错误</span>
-                <span class="wrong-answer">{{ q.userAnswer || '(未作答)' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <el-button type="primary" @click="reviewVisible = false" class="finish-btn">完成</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 打印弹窗 -->
-    <el-dialog v-model="printDialogVisible" title="打印默写" width="400px">
-      <el-form :model="printForm" label-width="80px">
-        <el-form-item label="单词数量">
-          <el-input-number v-model="printForm.count" :min="5" :max="100" />
         </el-form-item>
-        <el-form-item v-if="subjectStore.isAllGrade" label="年级筛选">
-          <el-select v-model="printForm.grade" placeholder="全部" clearable style="width: 100%">
+
+        <!-- 单词预览表格 -->
+        <el-form-item v-if="importForm.parsedWords.length > 0" label="单词预览">
+          <div class="words-preview">
+            <el-table :data="importForm.parsedWords" border stripe size="small" max-height="300">
+              <el-table-column prop="english" label="英文" width="150">
+                <template #default="{ row }">
+                  <el-input v-model="row.english" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="chinese" label="中文" min-width="150">
+                <template #default="{ row }">
+                  <el-input v-model="row.chinese" size="small" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="phonetic" label="音标" width="120">
+                <template #default="{ row }">
+                  <el-input v-model="row.phonetic" size="small" placeholder="可选" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="60" fixed="right">
+                <template #default="{ $index }">
+                  <el-button type="danger" size="small" link @click="importForm.parsedWords.splice($index, 1)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="preview-summary">共 {{ importForm.parsedWords.length }} 个单词</div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="默认年级">
+          <el-select v-model="importForm.grade" placeholder="选择年级（可选）" clearable style="width: 100%">
             <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="默认学期">
+          <el-select v-model="importForm.semester" placeholder="选择学期（可选）" clearable style="width: 100%">
+            <el-option label="上学期" :value="1" />
+            <el-option label="下学期" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="importForm.tag_ids" multiple placeholder="选择标签（可选）" style="width: 100%">
+            <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="printDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="generatePrintPdf">生成PDF</el-button>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="importWords" :loading="importing">导入</el-button>
       </template>
     </el-dialog>
-
   </div>
 </template>
 
@@ -821,16 +800,14 @@ const deleteWord = async (row) => {
   }
 }
 
-// 复习（铺平：听写=3 中-英=1 英-中=2，点击直达）
-const startReview = (type) => {
-  reviewConfig.type = type
-  reviewStep.value = 'question'
+// 复习
+const startReview = () => {
+  reviewStep.value = 'config'
   // 如果有选中单词，默认数量为选中数量
   if (selectedWords.value.length > 0) {
     reviewConfig.count = selectedWords.value.length
   }
   reviewVisible.value = true
-  startReviewGame()
 }
 
 const handleSelectionChange = (selection) => {
