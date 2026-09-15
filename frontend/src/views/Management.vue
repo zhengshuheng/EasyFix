@@ -564,6 +564,7 @@ const getGradeLabel = (grade) => {
 
 // 学科
 const subjects = ref([])
+const showSubjectDialog = ref(false)
 // 年级选项
 const subjectForm = reactive({ name: '' })
 
