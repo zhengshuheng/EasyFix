@@ -125,25 +125,29 @@ def create_user(
     db.commit()
     db.refresh(user)
 
-    # 小孩创建成功后：自动为每个学科补建错题本（该学科已有错题本则跳过）
+    # 小孩创建成功后：自动为该小孩创建各学科错题本（该小孩该学科已有则跳过）
     if data.role == "child":
-        _ensure_default_error_books(db)
+        _ensure_default_error_books(db, user.id)
 
     return {"message": "创建成功", "user": user_dict(user)}
 
 
-def _ensure_default_error_books(db: Session):
-    """为所有未删除学科自动创建错题本（每学科一条，已有则跳过），无需家长手动添加"""
+def _ensure_default_error_books(db: Session, user_id: int):
+    """为指定小孩自动创建各学科错题本（该小孩该学科已有则跳过），无需家长手动添加"""
     subjects = db.query(Subject).filter(Subject.deleted == False).all()
     for s in subjects:
         exists = (
             db.query(ErrorBook)
-            .filter(ErrorBook.subject_id == s.id, ErrorBook.deleted == False)
+            .filter(
+                ErrorBook.user_id == user_id,
+                ErrorBook.subject_id == s.id,
+                ErrorBook.deleted == False,
+            )
             .first()
         )
         if exists:
             continue
-        db.add(ErrorBook(name=f"小学{s.name}错题本" if s.id <= 3 else f"{s.name}错题本", subject_id=s.id))
+        db.add(ErrorBook(name=f"小学{s.name}错题本" if s.id <= 3 else f"{s.name}错题本", subject_id=s.id, user_id=user_id))
     db.commit()
 
 
@@ -206,6 +210,9 @@ def delete_user(
         raise HTTPException(status_code=404, detail="用户不存在")
     if user.role == "admin" and _count_by_role(db, "admin") <= 1:
         raise HTTPException(status_code=400, detail="至少保留一个家长账号")
+    # 删除小孩时软删其错题本（避免孤儿数据残留）
+    if user.role == "child":
+        db.query(ErrorBook).filter(ErrorBook.user_id == user.id).update({ErrorBook.deleted: True})
     db.delete(user)
     db.commit()
     return {"message": "删除成功"}

@@ -10,6 +10,7 @@ class ErrorBookBase(BaseModel):
 
 
 class ErrorBookCreate(ErrorBookBase):
+    user_id: Optional[int] = None  # 所属小孩；家长创建时指定，小孩创建时忽略
     cover_image: Optional[str] = None
     original_images: Optional[List[str]] = None
 
@@ -23,6 +24,8 @@ class ErrorBookUpdate(BaseModel):
 
 class ErrorBookResponse(ErrorBookBase):
     id: int
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
     cover_image: Optional[str] = None
     original_images: Optional[List[str]] = None
     created_at: datetime

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -15,3 +16,6 @@ class User(Base):
     avatar = Column(String(200), nullable=True)
     enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
+
+    # 错题本（按小孩隔离）
+    error_books = relationship("ErrorBook", back_populates="owner")

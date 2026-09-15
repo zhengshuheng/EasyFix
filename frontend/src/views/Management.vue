@@ -170,17 +170,25 @@
         <!-- 错题本管理 -->
         <el-tab-pane label="错题本管理" name="errorBooks">
           <div class="tab-content">
-            <el-alert type="info" :closable="false" style="margin-bottom: 10px" title="添加小孩账号时，系统会自动为每个学科创建错题本，通常无需手动添加；如有需要，也可在此为特定学科补充错题本。" />
-            <div class="action-bar">
-              <el-button type="primary" @click="showErrorBookDialog = true">
+            <el-alert type="info" :closable="false" style="margin-bottom: 10px" title="添加小孩账号时，系统会自动为该小孩创建各学科错题本；错题本按小孩隔离，每个小孩只能看到/使用自己的错题本。" />
+            <div class="action-bar" style="display: flex; gap: 10px; align-items: center">
+              <el-button type="primary" @click="openCreateErrorBook">
                 <el-icon><Plus /></el-icon>
                 新增错题本
               </el-button>
+              <el-select v-model="errorBookFilterKid" placeholder="全部小孩" clearable style="width: 160px" @change="fetchErrorBooks">
+                <el-option v-for="k in kids" :key="k.id" :label="k.display_name || k.username" :value="k.id" />
+              </el-select>
             </div>
             <el-table :data="errorBooks" stripe style="width: 100%; margin-top: 15px">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="name" label="错题本名称" />
               <el-table-column prop="subject_name" label="学科" width="100" />
+              <el-table-column label="所属小孩" width="120">
+                <template #default="{ row }">
+                  {{ row.user_name || (row.user_id ? '小孩#' + row.user_id : '未分配') }}
+                </template>
+              </el-table-column>
               <el-table-column prop="description" label="描述" />
               <el-table-column label="操作" width="180">
                 <template #default="{ row }">
@@ -419,6 +427,11 @@
             <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="!editErrorBookData" label="所属小孩" required>
+          <el-select v-model="errorBookForm.user_id" placeholder="选择小孩" style="width: 100%">
+            <el-option v-for="k in kids" :key="k.id" :label="k.display_name || k.username" :value="k.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="errorBookForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </el-form-item>
@@ -526,6 +539,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
+import { usersApi } from '@/api/users'
 import { useAppConfigStore } from '@/stores/appConfig'
 
 const appConfigStore = useAppConfigStore()
@@ -617,9 +631,11 @@ const knowledgeForm = reactive({
 
 // 错题本
 const errorBooks = ref([])
+const kids = ref([])                    // 小孩列表（错题本归属/筛选）
+const errorBookFilterKid = ref(null)    // 错题本管理按小孩筛选
 const showErrorBookDialog = ref(false)
 const editErrorBookData = ref(null)
-const errorBookForm = reactive({ name: '', subject_id: null, description: '' })
+const errorBookForm = reactive({ name: '', subject_id: null, user_id: null, description: '' })
 
 // 行为配置
 const starActions = ref([])
@@ -960,10 +976,12 @@ const deleteKnowledgePoint = async (row) => {
   }
 }
 
-// 获取错题本列表
+// 获取错题本列表（按小孩隔离）
 const fetchErrorBooks = async () => {
   try {
-    const { data } = await questionApi.listErrorBooks()
+    const params = {}
+    if (errorBookFilterKid.value) params.user_id = errorBookFilterKid.value
+    const { data } = await questionApi.listErrorBooks(params)
     errorBooks.value = data.items || []
     // 如果有subject_id，获取学科名称
     if (errorBooks.value.length > 0) {
@@ -978,6 +996,26 @@ const fetchErrorBooks = async () => {
   }
 }
 
+// 获取小孩列表（错题本归属/筛选）
+const fetchKids = async () => {
+  try {
+    const { data } = await usersApi.listKids()
+    kids.value = (data && data.kids) || []
+  } catch (e) {
+    console.error('获取小孩列表失败:', e)
+  }
+}
+
+// 打开新增错题本弹窗
+const openCreateErrorBook = () => {
+  editErrorBookData.value = null
+  errorBookForm.name = ''
+  errorBookForm.subject_id = null
+  errorBookForm.user_id = errorBookFilterKid.value || null
+  errorBookForm.description = ''
+  showErrorBookDialog.value = true
+}
+
 // 创建或更新错题本
 const createOrUpdateErrorBook = async () => {
   if (!errorBookForm.name.trim()) {
@@ -988,18 +1026,24 @@ const createOrUpdateErrorBook = async () => {
     ElMessage.warning('请选择学科')
     return
   }
+  if (!editErrorBookData.value && !errorBookForm.user_id) {
+    ElMessage.warning('请选择所属小孩')
+    return
+  }
   try {
     if (editErrorBookData.value) {
-      await questionApi.updateErrorBook(editErrorBookData.value.id, errorBookForm)
+      const payload = { name: errorBookForm.name, subject_id: errorBookForm.subject_id, description: errorBookForm.description }
+      await questionApi.updateErrorBook(editErrorBookData.value.id, payload)
       ElMessage.success('更新成功')
     } else {
-      await questionApi.createErrorBook(errorBookForm)
+      await questionApi.createErrorBook({ ...errorBookForm })
       ElMessage.success('创建成功')
     }
     showErrorBookDialog.value = false
     editErrorBookData.value = null
     errorBookForm.name = ''
     errorBookForm.subject_id = null
+    errorBookForm.user_id = null
     errorBookForm.description = ''
     fetchErrorBooks()
   } catch (e) {
@@ -1012,6 +1056,7 @@ const editErrorBook = (row) => {
   editErrorBookData.value = row
   errorBookForm.name = row.name
   errorBookForm.subject_id = row.subject_id
+  errorBookForm.user_id = row.user_id
   errorBookForm.description = row.description || ''
   showErrorBookDialog.value = true
 }
@@ -1243,6 +1288,7 @@ const fetchAll = async () => {
   fetchTags()
   fetchErrorTypes()
   fetchKnowledgePoints()
+  fetchKids()
   fetchErrorBooks()
   fetchStarActions()
   fetchAchievements()

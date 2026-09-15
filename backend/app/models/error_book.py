@@ -9,6 +9,7 @@ class ErrorBook(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 所属小孩；NULL=未分配（家长创建）
     description = Column(Text, nullable=True)
     cover_image = Column(String(500), nullable=True)  # 封面图片路径（用于对比）
     original_images = Column(Text, nullable=True)   # JSON数组，存储多张原图路径
@@ -18,4 +19,5 @@ class ErrorBook(Base):
 
     # Relationships
     subject = relationship("Subject", back_populates="error_books")
+    owner = relationship("User", back_populates="error_books")
     questions = relationship("Question", back_populates="error_book")
