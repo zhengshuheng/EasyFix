@@ -15,8 +15,11 @@
               <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
               <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
-            <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习分析</el-menu-item>
+            <el-sub-menu index="/data">
+              <template #title>数据</template>
+              <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
+              <el-menu-item index="/learning-reports" @click="navTo('/learning-reports')">学习分析</el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/motivation" @click="navTo('/motivation')">激励中心</el-menu-item>
             <el-menu-item index="/parent-center" @click="openParentCenter">家长中心</el-menu-item>
           </el-menu>
