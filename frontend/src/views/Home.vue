@@ -3,8 +3,8 @@
     <!-- Hero -->
     <header class="hero">
       <div class="hero-left">
-        <p class="hero-eyebrow">WELCOME BACK</p>
         <h1 class="hero-title">
+          <span class="hero-badge">WELCOME BACK</span>
           <span class="hero-kid-avatar" :style="{ background: avatarColor(kidStore.activeKid) }">
             {{ kidStore.kidName.slice(0, 1) || '?' }}
           </span>
@@ -749,57 +749,63 @@ onMounted(async () => {
 .hero {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.hero-eyebrow {
-  font-size: 12px;
+.hero-badge {
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: #6366f1;
+  background: #e0e7ff;
+  border-radius: 999px;
+  padding: 3px 10px;
   text-transform: uppercase;
-  margin: 0 0 8px 0;
+  white-space: nowrap;
 }
 
 .hero-title {
-  font-size: 40px;
+  font-size: 26px;
   font-weight: 800;
   color: #312e81;
-  margin: 0 0 6px 0;
+  margin: 0;
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .hero-kid-avatar {
-  width: 42px;
-  height: 42px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   color: #fff;
-  font-size: 20px;
+  font-size: 14px;
   font-weight: bold;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
 }
 
 .hero-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .switch-kid-btn {
-  border-radius: 12px;
-  border: 3px solid #c7d2fe;
+  border-radius: 10px;
+  border: 2px solid #c7d2fe;
   background: #fff;
   color: #6366f1;
   font-weight: 600;
-  box-shadow: 3px 3px 0 rgba(99, 102, 241, 0.2);
+  box-shadow: 2px 2px 0 rgba(99, 102, 241, 0.2);
 }
 
 .switch-kid-btn:hover {
@@ -814,30 +820,30 @@ onMounted(async () => {
 }
 
 .hero-sub {
-  font-size: 16px;
+  font-size: 13px;
   color: #64748b;
-  margin: 0;
+  margin: 4px 0 0 0;
 }
 
 .date-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
+  gap: 8px;
+  padding: 7px 12px;
   background: #ffffff;
-  border: 3px solid #c7d2fe;
-  border-radius: 16px;
-  box-shadow: 5px 5px 0 rgba(99, 102, 241, 0.28), 0 10px 24px rgba(79, 70, 229, 0.12);
+  border: 2px solid #c7d2fe;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 rgba(99, 102, 241, 0.25), 0 6px 14px rgba(79, 70, 229, 0.1);
 }
 
 .chip-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: #6366f1;
 }
 
 .chip-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #4338ca;
 }
