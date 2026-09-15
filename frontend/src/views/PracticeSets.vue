@@ -72,12 +72,14 @@
         style="width: 100%"
       >
         <el-table-column type="selection" width="40" />
-        <el-table-column prop="name" label="名称" width="1200">
+        <el-table-column prop="name" label="名称" min-width="240">
           <template #default="{ row }">
-            <span class="ps-name">{{ row.name }}</span>
-            <el-tag :type="row.question_type === 'original' ? 'primary' : 'success'" :style="{ marginLeft: '8px', fontSize: '14px' }">
-              {{ row.question_type === 'original' ? '原题' : '相似题' }}
-            </el-tag>
+            <div class="ps-name-cell">
+              <span class="ps-name" :title="row.name">{{ row.name }}</span>
+              <el-tag :type="row.question_type === 'original' ? 'primary' : 'success'" :style="{ marginLeft: '8px', fontSize: '14px', flexShrink: 0 }">
+                {{ row.question_type === 'original' ? '原题' : '相似题' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="subject_name" label="学科" width="100" />
@@ -2272,6 +2274,22 @@ onMounted(() => {
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+/* 练习集名称列：超长省略 */
+.ps-name-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ps-name {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .do-tip {
