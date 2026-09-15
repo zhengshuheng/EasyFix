@@ -4,7 +4,9 @@
       <el-header>
         <div class="header-content">
           <h1>EasyFix</h1>
-          <el-menu mode="horizontal" :router="true" :default-active="$route.path">
+
+          <!-- 选择页隐藏导航，其余页面显示 -->
+          <el-menu v-if="!isSelectPage" mode="horizontal" :router="true" :default-active="$route.path">
             <el-menu-item index="/home">首页</el-menu-item>
             <el-menu-item index="/questions">错题</el-menu-item>
             <el-menu-item index="/words">单词</el-menu-item>
@@ -16,23 +18,51 @@
             <el-menu-item v-if="isAdminSession" index="/management">管理</el-menu-item>
             <el-menu-item v-if="isAdminSession" index="/user-manage">账号</el-menu-item>
             <el-menu-item v-if="isAdminSession" index="/settings">配置</el-menu-item>
-            <el-menu-item index="/" @click.prevent="switchKid">切换小孩</el-menu-item>
           </el-menu>
-          <div class="header-user">
-            <template v-if="isAdminSession">
-              <el-tag size="small" type="danger" effect="dark">家长</el-tag>
-              <span class="user-name">{{ authStore.displayName }}</span>
-              <el-button link type="primary" size="small" class="logout-btn" @click="handleLogout">
-                退出管理
-              </el-button>
-            </template>
-            <template v-else>
-              <el-tag size="small" type="success" effect="dark">小孩</el-tag>
-              <span class="user-name">{{ kidStore.kidName }}</span>
-              <el-button link type="warning" size="small" class="logout-btn" @click="parentLockVisible = true">
-                🔒 家长中心
-              </el-button>
-            </template>
+
+          <div v-if="!isSelectPage" class="header-user">
+            <!-- 家长会话：管理入口下拉 -->
+            <el-dropdown v-if="isAdminSession" trigger="click" @command="handleAdminCommand">
+              <span class="user-chip">
+                <span class="mini-avatar admin-avatar">👤</span>
+                <span class="user-name">{{ authStore.displayName }}</span>
+                <el-icon class="arrow"><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="user-manage">账号管理</el-dropdown-item>
+                  <el-dropdown-item command="management">题库管理</el-dropdown-item>
+                  <el-dropdown-item command="settings">系统配置</el-dropdown-item>
+                  <el-dropdown-item divided command="logout">退出管理</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+
+            <!-- 小孩会话：当前小孩 + 下拉切换 -->
+            <el-dropdown v-else-if="kidStore.isKidSelected" trigger="click" @command="handleKidCommand">
+              <span class="user-chip">
+                <span class="mini-avatar" :style="{ background: avatarColor(kidStore.activeKid) }">
+                  {{ kidStore.kidName.slice(0, 1) || '?' }}
+                </span>
+                <span class="user-name">{{ kidStore.kidName }}</span>
+                <el-icon class="arrow"><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="k in kids"
+                    :key="k.id"
+                    :command="'kid:' + k.id"
+                    :class="{ active: k.id === kidStore.activeKid?.id }"
+                  >
+                    {{ k.display_name }}
+                    <el-icon v-if="k.id === kidStore.activeKid?.id"><Check /></el-icon>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="parent">🔒 家长中心</el-dropdown-item>
+                  <el-dropdown-item command="reselect">重新选择</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
 
@@ -47,27 +77,80 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useAuthStore } from '@/stores/auth'
 import { useKidStore } from '@/stores/kid'
+import { usersApi } from '@/api/users'
 import ParentLockDialog from '@/components/ParentLockDialog.vue'
 
+const route = useRoute()
 const router = useRouter()
 const appConfigStore = useAppConfigStore()
 const authStore = useAuthStore()
 const kidStore = useKidStore()
 
 const parentLockVisible = ref(false)
+const kids = ref([])
+
+// 选择页（选人/创建入口）不显示顶部导航与用户区
+const isSelectPage = computed(() => route.path === '/')
 // 家长会话：已通过家长密码验证（存在家长 token）
 const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
 
+const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
+
+function avatarColor(k) {
+  const seed = k?.id || k?.username?.length || 0
+  return AVATAR_COLORS[seed % AVATAR_COLORS.length]
+}
+
+async function loadKids() {
+  try {
+    const { data } = await usersApi.listKids()
+    kids.value = (data.kids || []).filter((k) => k.enabled)
+  } catch (e) {
+    // 忽略：家长会话下拉展示失败不影响使用
+  }
+}
+
 onMounted(() => {
+  loadKids()
   // 家长会话时预加载默认年级等应用配置（config 接口需家长权限）
   if (isAdminSession.value) {
     appConfigStore.load()
   }
 })
+
+// 小孩会话下拉
+function handleKidCommand(cmd) {
+  if (cmd === 'parent') {
+    parentLockVisible.value = true
+    return
+  }
+  if (cmd === 'reselect') {
+    switchKid()
+    return
+  }
+  if (cmd.startsWith('kid:')) {
+    const k = kids.value.find((x) => x.id === Number(cmd.split(':')[1]))
+    if (k) {
+      kidStore.select(k)
+      // 若当前在选择页则进入首页；否则原地切换
+      if (route.path === '/') router.push('/home')
+      else loadKids()
+    }
+  }
+}
+
+// 家长会话下拉
+function handleAdminCommand(cmd) {
+  if (cmd === 'logout') {
+    handleLogout()
+    return
+  }
+  router.push('/' + cmd)
+}
 
 function goParentCenter() {
   router.push('/user-manage')
@@ -209,6 +292,42 @@ function handleLogout() {
   white-space: nowrap;
 }
 
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 20px;
+  transition: background 0.2s ease;
+}
+
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mini-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-avatar {
+  background: #f56c6c;
+}
+
+.arrow {
+  font-size: 12px;
+}
+
 .user-name {
   color: #fff;
   font-size: 14px;
@@ -219,6 +338,11 @@ function handleLogout() {
 
 .logout-btn {
   color: #fff !important;
+}
+
+.el-dropdown-menu .active {
+  color: #409eff;
+  font-weight: bold;
 }
 
 .header-content .el-menu-item:hover {
