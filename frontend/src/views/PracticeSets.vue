@@ -72,7 +72,7 @@
         style="width: 100%"
       >
         <el-table-column type="selection" width="40" />
-        <el-table-column prop="name" label="名称" min-width="240">
+        <el-table-column prop="name" label="名称" width="260">
           <template #default="{ row }">
             <div class="ps-name-cell">
               <span class="ps-name" :title="row.name">{{ row.name }}</span>
@@ -111,7 +111,7 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="400" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
             <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
