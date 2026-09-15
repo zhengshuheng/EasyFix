@@ -4,6 +4,12 @@
       <template #header>
         <div class="card-header">
           <span>练习集管理</span>
+          <div class="header-actions">
+            <el-button type="success" size="large" @click="showGenerateDialog">
+              <el-icon><Plus /></el-icon>
+              出题
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -528,6 +534,37 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
+
+    <!-- 出题弹窗：从错题池生成练习集（自动生成PDF） -->
+    <el-dialog v-model="generateDialogVisible" title="出题" width="420px">
+      <el-form :model="generateForm" label-width="70px">
+        <el-form-item label="学科" required>
+          <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%">
+            <el-option
+              v-for="subject in subjects"
+              :key="subject.id"
+              :label="subject.name"
+              :value="subject.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%">
+            <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="数量">
+          <el-input-number v-model="generateForm.count" :min="1" :max="99" />
+        </el-form-item>
+        <el-form-item>
+          <span style="color: #909399; font-size: 12px">优先选择未复习、低正确率的题目，生成后自动打印 PDF</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="generateDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="generatePractice" :loading="generating">生成并打印</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -550,6 +587,55 @@ const pagination = reactive({
   page: 1,
   limit: 1000,
 })
+
+// 出题（生成练习）相关
+const generateDialogVisible = ref(false)
+const generating = ref(false)
+const generateForm = reactive({
+  subject_id: null,
+  grade: null,
+  count: 5,
+})
+const gradeOptions = [
+  { value: 1, label: '一年级' },
+  { value: 2, label: '二年级' },
+  { value: 3, label: '三年级' },
+  { value: 4, label: '四年级' },
+  { value: 5, label: '五年级' },
+  { value: 6, label: '六年级' },
+]
+
+const showGenerateDialog = () => {
+  generateForm.subject_id = null
+  generateForm.grade = null
+  generateForm.count = 5
+  generateDialogVisible.value = true
+}
+
+const generatePractice = async () => {
+  if (!generateForm.subject_id) {
+    ElMessage.warning('请选择学科')
+    return
+  }
+  generating.value = true
+  try {
+    const { data } = await questionApi.generateFromQuestions({
+      subject_id: generateForm.subject_id,
+      grade: generateForm.grade,
+      count: generateForm.count,
+    })
+    ElMessage.success('练习集已生成，可下载打印 PDF')
+    generateDialogVisible.value = false
+    await fetchPracticeSets()
+    if (data.id) {
+      showDetail(data)
+    }
+  } catch (error) {
+    ElMessage.error('生成失败')
+  } finally {
+    generating.value = false
+  }
+}
 
 // 复习完成上传相关
 const uploadDialogVisible = ref(false)
