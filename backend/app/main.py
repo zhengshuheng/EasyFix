@@ -31,11 +31,13 @@ Base.metadata.create_all(bind=engine)
 # 轻量迁移：为旧库补充新增列（SQLite 支持 ALTER TABLE ADD COLUMN）
 def _ensure_column(table: str, column: str, ddl: str):
     try:
-        with engine.connect() as conn:
-            cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
-            if column not in cols:
-                conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
-                print(f"[migrate] {table} 增加列 {column}")
+        from sqlalchemy import inspect as sa_inspect, text
+        insp = sa_inspect(engine)
+        cols = [c["name"] for c in insp.get_columns(table)]
+        if column not in cols:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
+            print(f"[migrate] {table} 增加列 {column}")
     except Exception as e:
         print(f"[migrate] 跳过 {table}.{column}: {e}")
 
