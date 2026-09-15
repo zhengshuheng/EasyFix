@@ -41,9 +41,7 @@
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" size="small" @click="openPassword(row)">
-              {{ row.role === 'admin' ? '改密码' : '改PIN' }}
-            </el-button>
+            <el-button v-if="row.role === 'admin'" link type="warning" size="small" @click="openPassword(row)">改密码</el-button>
             <el-button
               link
               type="danger"
