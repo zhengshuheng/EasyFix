@@ -20,14 +20,16 @@ from app.utils.auth import (
     require_admin,
 )
 from app.services.init_motivation_data import init_preset_data, init_achievement_progress, init_star_records_from_existing_data, init_achievement_configs
+from app.services.init_base_data import init_base_data
 
 settings = get_settings()
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
-# 初始化激励系统预设数据 + 默认家长账号
+# 初始化基础数据（学科/标签/错误类型）+ 激励系统预设数据 + 默认家长账号
 with SessionLocal() as db:
+    init_base_data(db)
     init_preset_data(db)
     init_achievement_progress(db)
     init_star_records_from_existing_data(db)
