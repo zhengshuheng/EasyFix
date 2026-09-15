@@ -279,6 +279,23 @@ function switchKid() {
   transition: all 0.3s ease;
 }
 
+.header-content .el-sub-menu .el-sub-menu__title {
+  color: white !important;
+  background-color: transparent !important;
+  font-size: 16px;
+  padding: 0 16px;
+  height: 60px;
+  line-height: 60px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-content .el-sub-menu .el-sub-menu__title:hover,
+.header-content .el-sub-menu .el-sub-menu__title.is-active {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
 .header-user {
   display: flex;
   align-items: center;
