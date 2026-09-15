@@ -88,7 +88,7 @@ class LLMService:
         try:
             # 使用重试机制调用API
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=1000,
                 messages=[
@@ -243,7 +243,7 @@ class LLMService:
         try:
             # 使用重试机制调用API
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=4000,  # 报告较长，需要更多token
                 messages=[
@@ -410,6 +410,19 @@ class LLMService:
             except Exception as e:
                 raise e
 
+    def _call_messages_create(self, **kwargs):
+        """
+        调用 messages.create，兼容不支持 thinking 参数的模型/服务商。
+        部分 OpenAI 兼容接口（如 DeepSeek 等）不接收 thinking 参数，降级重试。
+        """
+        try:
+            return self._client.messages.create(**kwargs)
+        except TypeError as e:
+            if "thinking" in str(e):
+                kwargs.pop("thinking", None)
+                return self._client.messages.create(**kwargs)
+            raise
+
     def generate_reading_passage(self, grade: int, topic: str, difficulty: int) -> dict:
         """
         生成英语阅读理解短文
@@ -459,7 +472,7 @@ class LLMService:
         try:
             # 使用重试机制调用API
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
@@ -535,7 +548,7 @@ class LLMService:
         try:
             # 使用重试机制调用API
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
@@ -664,7 +677,7 @@ class LLMService:
         try:
             # 使用重试机制调用API
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=self._get_config("model", "claude-sonnet-4-20250514"),
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}]
@@ -712,7 +725,7 @@ class LLMService:
 
         try:
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
@@ -830,7 +843,7 @@ class LLMService:
 
         try:
             response = self._retry_on_rate_limit(
-                self._client.messages.create,
+                self._call_messages_create,
                 model=model,
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}],
