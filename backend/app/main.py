@@ -21,21 +21,18 @@ from app.utils.auth import (
 )
 from app.services.init_motivation_data import init_preset_data, init_achievement_progress, init_star_records_from_existing_data, init_achievement_configs
 from app.services.init_base_data import init_base_data
+from app.services.init_demo_data import init_demo_data
 
 settings = get_settings()
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
-# 初始化基础数据（学科/标签/错误类型）+ 激励系统预设数据 + 默认家长账号
+# 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:
     init_base_data(db)
-    init_preset_data(db)
-    init_achievement_progress(db)
-    init_star_records_from_existing_data(db)
-    init_achievement_configs(db)
 
-    # 无家长账号时自动创建默认家长（密码迁移自 access_config.ACCESS_PASSWORD）
+    # 无家长账号时先创建默认家长（确保 admin 为 id=1，兼容旧版激励统计 DEFAULT_USER_ID=1）
     if not db.query(User).filter_by(role="admin").first():
         db.add(User(
             username=DEFAULT_ADMIN_USERNAME,
@@ -44,6 +41,13 @@ with SessionLocal() as db:
             password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
         ))
         db.commit()
+
+    # 演示小孩与演示学习数据（demo 账号不存在时创建）
+    init_demo_data(db)
+    init_preset_data(db)
+    init_achievement_progress(db)
+    init_star_records_from_existing_data(db)
+    init_achievement_configs(db)
 
 app = FastAPI(
     title="EasyFix API",
