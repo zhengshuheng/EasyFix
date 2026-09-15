@@ -15,7 +15,7 @@
 
           <!-- 筛选条件 -->
           <div class="filters">
-            <el-select v-model="filters.subject_id" placeholder="学科" clearable @change="fetchReports" style="width: 150px">
+            <el-select v-if="subjectStore.isAll" v-model="filters.subject_id" placeholder="学科" clearable @change="fetchReports" style="width: 150px">
               <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
             </el-select>
           </div>
@@ -77,7 +77,7 @@
           <el-input v-model="generateForm.title" placeholder="不填则自动生成" clearable />
         </el-form-item>
         <el-form-item label="学科">
-          <el-select v-model="generateForm.subject_id" placeholder="选择学科（可选）" clearable style="width: 100%">
+          <el-select v-model="generateForm.subject_id" placeholder="选择学科（可选）" clearable style="width: 100%" :disabled="!subjectStore.isAll">
             <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
         </el-form-item>
@@ -266,12 +266,14 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useSubjectStore } from '@/stores/subject'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { learningReportApi } from '@/api/learning_report'
 import { questionApi } from '@/api/question'
 
 const appConfigStore = useAppConfigStore()
+const subjectStore = useSubjectStore()
 const reports = ref({ total: 0, items: [] })
 const subjects = ref([])
 const filters = reactive({
@@ -346,7 +348,9 @@ const fetchReports = async () => {
       skip: (pagination.page - 1) * pagination.limit,
       limit: pagination.limit,
     }
-    if (filters.subject_id) params.subject_id = filters.subject_id
+    // 学习空间指定学科时：只加载当前学科报告
+    if (subjectStore.activeSubjectId !== null) params.subject_id = subjectStore.activeSubjectId
+    else if (filters.subject_id) params.subject_id = filters.subject_id
 
     const { data } = await learningReportApi.list(params)
     reports.value = data
@@ -366,7 +370,8 @@ const fetchSubjects = async () => {
 
 const showGenerateDialog = () => {
   generateForm.title = ''
-  generateForm.subject_id = null
+  // 学习空间指定学科时：默认当前学科且不可切换
+  generateForm.subject_id = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
   generateForm.grade = null
   generateForm.time_range_days = null
   generateDialogVisible.value = true
