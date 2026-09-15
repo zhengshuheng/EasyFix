@@ -5,7 +5,15 @@
         <div class="card-header">
           <span>练习集管理</span>
           <div class="header-actions">
-            <el-button type="success" size="large" @click="showGenerateDialog">
+            <el-button type="warning" size="large" @click="openSelectPracticeSet('do')">
+              <el-icon><EditPen /></el-icon>
+              去做题
+            </el-button>
+            <el-button type="success" size="large" @click="openSelectPracticeSet('grade')">
+              <el-icon><MagicStick /></el-icon>
+              批改
+            </el-button>
+            <el-button type="primary" size="large" @click="showGenerateDialog">
               <el-icon><Plus /></el-icon>
               出题
             </el-button>
@@ -101,13 +109,11 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="420" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
-            <el-button type="warning" size="default" @click="openStudentDo(row)">去做题</el-button>
             <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
             <el-button v-else type="info" size="default" disabled>无PDF</el-button>
-            <el-button type="success" size="default" @click="markReviewed(row)" :disabled="row.reviewed">批改</el-button>
             <el-button type="danger" size="default" @click="deletePracticeSet(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -240,6 +246,55 @@
             >提交批改结果</el-button>
           </div>
         </div>
+      </template>
+    </el-dialog>
+
+    <!-- 选择卷子弹窗（做题/批改） -->
+    <el-dialog
+      v-model="selectPsDialogVisible"
+      :title="selectPsMode === 'do' ? '选择卷子 - 学生做题' : '选择卷子 - 家长批改'"
+      width="760px"
+      destroy-on-close
+    >
+      <div class="do-tip">
+        {{ selectPsMode === 'do'
+          ? '选择一份卷子开始做题，完成后提交作答，家长可在「批改」中查看结果'
+          : '选择一份未批改的卷子，查看学生作答并批改（可 AI 一键批改）' }}
+      </div>
+      <div class="select-ps-list" v-loading="selectPsLoading">
+        <div
+          v-for="ps in selectPsList"
+          :key="ps.id"
+          class="select-ps-row"
+          @click="enterSelectedPracticeSet(ps)"
+        >
+          <div class="select-ps-info">
+            <div class="select-ps-name">
+              {{ ps.name }}
+              <el-tag size="small" :type="ps.question_type === 'original' ? 'primary' : 'success'">
+                {{ ps.question_type === 'original' ? '原题' : '相似题' }}
+              </el-tag>
+              <el-tag size="small" :type="ps.reviewed ? 'success' : 'info'">
+                {{ ps.reviewed ? '已批改' : '未批改' }}
+              </el-tag>
+            </div>
+            <div class="select-ps-meta">
+              <span>{{ ps.subject_name || '未分类' }}</span>
+              <span>{{ ps.source_type === 'word' ? '单词复习' : (ps.source_type === 'reading' ? '阅读理解' : '错题练习') }}</span>
+              <span>{{ ps.total_questions }} 题</span>
+              <span v-if="selectPsMode === 'grade'" :class="ps.student_answered_count > 0 ? 'meta-answered' : 'meta-empty'">
+                已作答 {{ ps.student_answered_count || 0 }}/{{ ps.total_questions }}
+              </span>
+            </div>
+          </div>
+          <el-button type="primary" size="default" @click.stop="enterSelectedPracticeSet(ps)">
+            {{ selectPsMode === 'do' ? '开始做题' : (ps.reviewed ? '重新批改' : '去批改') }}
+          </el-button>
+        </div>
+        <el-empty v-if="!selectPsLoading && selectPsList.length === 0" description="暂无可用卷子" />
+      </div>
+      <template #footer>
+        <el-button @click="selectPsDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -801,6 +856,11 @@ const studentDoDialogVisible = ref(false)
 const studentAnswers = ref({}) // { questionId: 学生作答 }
 const studentDoSubmitting = ref(false)
 const currentDoPsId = ref(null)
+// 选择卷子（做题/批改入口）
+const selectPsDialogVisible = ref(false)
+const selectPsMode = ref('do') // 'do' | 'grade'
+const selectPsList = ref([])
+const selectPsLoading = ref(false)
 
 // 计算属性
 const gradedCount = computed(() => Object.keys(gradingResults.value).length)
@@ -884,6 +944,35 @@ const initGrading = async (ps) => {
 }
 
 // ============ 做题（学生） ============
+const openSelectPracticeSet = async (mode) => {
+  selectPsMode.value = mode
+  selectPsDialogVisible.value = true
+  selectPsLoading.value = true
+  try {
+    const { data } = await questionApi.listPracticeSets({ limit: 500 })
+    let items = data.items || []
+    if (mode === 'do') {
+      // 做题只针对错题练习/阅读理解卷，单词复习卷走独立流程
+      items = items.filter(ps => ps.source_type !== 'word')
+    }
+    selectPsList.value = items
+  } catch (error) {
+    ElMessage.error('获取卷子列表失败')
+    selectPsList.value = []
+  } finally {
+    selectPsLoading.value = false
+  }
+}
+
+const enterSelectedPracticeSet = (ps) => {
+  selectPsDialogVisible.value = false
+  if (selectPsMode.value === 'do') {
+    openStudentDo(ps)
+  } else {
+    markReviewed(ps)
+  }
+}
+
 const openStudentDo = async (ps) => {
   studentDoDialogVisible.value = true
   currentDoPsId.value = ps.id
@@ -2174,6 +2263,17 @@ onMounted(() => {
 }
 
 /* 做题弹窗 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .do-tip {
   font-size: 13px;
   color: #e6a23c;
@@ -2215,6 +2315,60 @@ onMounted(() => {
   color: #303133;
   line-height: 1.5;
   word-break: break-word;
+}
+
+/* 选择卷子弹窗 */
+.select-ps-list {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.select-ps-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-ps-row:hover {
+  border-color: #409eff;
+  background: #f5f9ff;
+}
+
+.select-ps-info {
+  min-width: 0;
+}
+
+.select-ps-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.select-ps-meta {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #909399;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.meta-answered {
+  color: #67c23a;
+}
+
+.meta-empty {
+  color: #e6a23c;
 }
 
 .question-actions {

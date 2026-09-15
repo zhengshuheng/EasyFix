@@ -489,6 +489,13 @@ def list_practice_sets(
     for ps in items:
         subject_name = db.query(Subject).filter(Subject.id == ps.subject_id).first().name if ps.subject_id else ""
 
+        # 学生已作答题数（做题环节提交了作答的题）
+        student_answered_count = db.query(func.count(PracticeSetQuestion.id)).filter(
+            PracticeSetQuestion.practice_set_id == ps.id,
+            PracticeSetQuestion.student_answer.isnot(None),
+            PracticeSetQuestion.student_answer != "",
+        ).scalar() or 0
+
         # 获取单词复习统计
         word_review_stats = None
         if ps.source_type == "word":
@@ -539,6 +546,7 @@ def list_practice_sets(
             "reviewed": ps.reviewed or False,
             "review_count": ps.review_count or 0,
             "accuracy": ps.accuracy,
+            "student_answered_count": student_answered_count,
             "created_at": ps.created_at,
             "questions": [],
             "word_review_stats": word_review_stats,
