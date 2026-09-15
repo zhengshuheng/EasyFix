@@ -1,18 +1,6 @@
 <template>
   <div class="settings">
-    <!-- 访问密码验证 -->
-    <el-dialog v-model="showPasswordDialog" title="请输入访问密码" width="400px" :close-on-click-modal="false" :show-close="false">
-      <el-form>
-        <el-form-item label="访问密码">
-          <el-input v-model="password" type="password" placeholder="请输入访问密码" @keyup.enter="verifyPassword" show-password />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="verifyPassword" :loading="verifying">验证</el-button>
-      </template>
-    </el-dialog>
-
-    <el-card v-if="isVerified">
+    <el-card>
       <template #header>
         <span>系统配置</span>
       </template>
@@ -252,15 +240,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { configApi } from '@/api/question'
-import axios from 'axios'
 
 const activeTab = ref('ocr')
 const saving = ref(false)
 const loading = ref(false)
-const showPasswordDialog = ref(true)
-const isVerified = ref(false)
-const password = ref('')
-const verifying = ref(false)
 
 const ocrForm = reactive({
   provider: 'multimodal',
@@ -335,25 +318,6 @@ const saveLlmConfig = async () => {
   }
 }
 
-const verifyPassword = async () => {
-  if (!password.value) {
-    ElMessage.warning('请输入密码')
-    return
-  }
-  verifying.value = true
-  try {
-    await axios.post('/api/auth/verify-password', { password: password.value })
-    isVerified.value = true
-    showPasswordDialog.value = false
-    loadConfigs()
-  } catch (error) {
-    ElMessage.error('密码错误')
-    password.value = ''
-  } finally {
-    verifying.value = false
-  }
-}
-
 const loadConfigs = async () => {
   loading.value = true
   try {
@@ -371,6 +335,11 @@ const loadConfigs = async () => {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  // 家长中心已统一密码验证，进入即加载配置
+  loadConfigs()
+})
 </script>
 
 <style scoped>

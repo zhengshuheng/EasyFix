@@ -1,18 +1,6 @@
 <template>
   <div class="management">
-    <!-- 访问密码验证 -->
-    <el-dialog v-model="showPasswordDialog" title="请输入访问密码" width="400px" :close-on-click-modal="false" :show-close="false">
-      <el-form>
-        <el-form-item label="访问密码">
-          <el-input v-model="password" type="password" placeholder="请输入访问密码" @keyup.enter="verifyPassword" show-password />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="verifyPassword" :loading="verifying">验证</el-button>
-      </template>
-    </el-dialog>
-
-    <el-card v-if="isVerified">
+    <el-card>
       <template #header>
         <div class="card-header">
           <span>管理中心</span>
@@ -523,7 +511,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { useAppConfigStore } from '@/stores/appConfig'
-import axios from 'axios'
 
 const appConfigStore = useAppConfigStore()
 const activeTab = ref('system')
@@ -553,11 +540,6 @@ const saveAppConfig = async () => {
     savingAppConfig.value = false
   }
 }
-const showPasswordDialog = ref(true)
-const isVerified = ref(false)
-const password = ref('')
-const verifying = ref(false)
-
 // 年级选项
 const gradeOptions = [
   { label: '一年级', value: 1 },
@@ -582,7 +564,7 @@ const getGradeLabel = (grade) => {
 
 // 学科
 const subjects = ref([])
-const showSubjectDialog = ref(false)
+// 年级选项
 const subjectForm = reactive({ name: '' })
 
 // 标签
@@ -1216,25 +1198,6 @@ const deleteReward = async (row) => {
   }
 }
 
-const verifyPassword = async () => {
-  if (!password.value) {
-    ElMessage.warning('请输入密码')
-    return
-  }
-  verifying.value = true
-  try {
-    await axios.post('/api/auth/verify-password', { password: password.value })
-    isVerified.value = true
-    showPasswordDialog.value = false
-    fetchAll()
-  } catch (error) {
-    ElMessage.error('密码错误')
-    password.value = ''
-  } finally {
-    verifying.value = false
-  }
-}
-
 const fetchAll = async () => {
   await loadAppConfig()
   // 知识点筛选套用默认年级/学期
@@ -1251,7 +1214,8 @@ const fetchAll = async () => {
 }
 
 onMounted(() => {
-  // 先显示密码对话框
+  // 家长中心已统一密码验证，进入即加载数据
+  fetchAll()
 })
 </script>
 
