@@ -38,8 +38,9 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if user.role == "admin":
         if not data.password or not verify_password(data.password, user.password_hash):
             raise HTTPException(status_code=401, detail="用户名或密码错误")
+    # 小孩无需密码：仅校验账号存在且启用（PIN 字段保留兼容，不再作为登录凭据）
     else:
-        if not data.pin or data.pin.strip() != (user.pin or ""):
+        if data.pin and data.pin.strip() != (user.pin or ""):
             raise HTTPException(status_code=401, detail="PIN 码错误")
 
     return {

@@ -42,14 +42,6 @@
         <el-form-item label="名字">
           <el-input v-model="createForm.display_name" placeholder="怎么称呼你？" maxlength="20" autofocus />
         </el-form-item>
-        <el-form-item label="PIN 码">
-          <el-input
-            v-model="createForm.pin"
-            placeholder="4 位数字（可留空）"
-            maxlength="4"
-            inputmode="numeric"
-          />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
@@ -78,7 +70,7 @@ const loading = ref(false)
 
 const createVisible = ref(false)
 const creating = ref(false)
-const createForm = reactive({ display_name: '', pin: '' })
+const createForm = reactive({ display_name: '' })
 
 const parentLockVisible = ref(false)
 
@@ -108,7 +100,6 @@ function enter(kid) {
 
 function openCreate() {
   createForm.display_name = ''
-  createForm.pin = ''
   createVisible.value = true
 }
 
@@ -118,10 +109,6 @@ async function handleCreate() {
     ElMessage.warning('请输入名字')
     return
   }
-  if (createForm.pin && !/^\d{4}$/.test(createForm.pin)) {
-    ElMessage.warning('PIN 码必须是 4 位数字，或留空')
-    return
-  }
   creating.value = true
   try {
     // 宽松模式（首次）无需家长登录即可创建第一个小孩
@@ -129,7 +116,6 @@ async function handleCreate() {
       username: `kid_${Date.now()}`,
       role: 'child',
       display_name: name,
-      pin: createForm.pin || undefined,
     }
     const { data } = await usersApi.create(payload)
     const newKid = data.user

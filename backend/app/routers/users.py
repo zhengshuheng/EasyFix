@@ -109,14 +109,13 @@ def create_user(
     else:
         if _count_by_role(db, "child") >= MAX_CHILD:
             raise HTTPException(status_code=400, detail=f"小孩账号最多 {MAX_CHILD} 个")
+        # 小孩无需密码：PIN 为可选字段（保留兼容，可为空）
         pin = (data.pin or "").strip()
-        if not pin.isdigit() or len(pin) != 4:
-            raise HTTPException(status_code=400, detail="小孩 PIN 码必须是 4 位数字")
         user = User(
             username=username,
             display_name=data.display_name or username,
             role="child",
-            pin=pin,
+            pin=pin or None,
             avatar=data.avatar,
         )
 

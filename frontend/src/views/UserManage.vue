@@ -68,8 +68,8 @@
         <el-form-item v-if="createForm.role === 'admin'" label="密码">
           <el-input v-model="createForm.password" type="password" placeholder="至少 4 位" show-password />
         </el-form-item>
-        <el-form-item v-else label="PIN 码">
-          <el-input v-model="createForm.pin" placeholder="4 位数字" maxlength="4" />
+        <el-form-item v-else label="说明">
+          <span class="no-pin-tip">小孩无需密码，点击即可进入</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -156,7 +156,6 @@ async function handleCreate() {
     display_name: createForm.display_name || undefined,
   }
   if (createForm.role === 'admin') payload.password = createForm.password
-  else payload.pin = createForm.pin
   saving.value = true
   try {
     await usersApi.create(payload)
@@ -234,6 +233,12 @@ onMounted(load)
 </script>
 
 <style scoped>
+.no-pin-tip {
+  font-size: 13px;
+  color: #909399;
+  line-height: 32px;
+}
+
 .card-header {
   display: flex;
   align-items: center;
