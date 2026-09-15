@@ -4,10 +4,35 @@
     <header class="hero">
       <div class="hero-left">
         <p class="hero-eyebrow">WELCOME BACK</p>
-        <h1 class="hero-title">学习概览</h1>
+        <h1 class="hero-title">
+          <span class="hero-kid-avatar" :style="{ background: avatarColor(kidStore.activeKid) }">
+            {{ kidStore.kidName.slice(0, 1) || '?' }}
+          </span>
+          <span>{{ kidStore.kidName }} 的学习空间</span>
+        </h1>
         <p class="hero-sub">保持节奏，每天进步一点点</p>
       </div>
       <div class="hero-right">
+        <el-dropdown trigger="click" @command="handleKidSwitch">
+          <el-button size="small" class="switch-kid-btn">
+            切换小孩
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item
+                v-for="k in kids"
+                :key="k.id"
+                :command="'kid:' + k.id"
+                :class="{ active: k.id === kidStore.activeKid?.id }"
+              >
+                {{ k.display_name }}
+                <el-icon v-if="k.id === kidStore.activeKid?.id"><Check /></el-icon>
+              </el-dropdown-item>
+              <el-dropdown-item divided command="reselect">重新选择</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <div class="date-chip">
           <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -323,8 +348,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { statsApi, statsOverviewApi } from '@/api/question'
 import { useAppConfigStore } from '@/stores/appConfig'
+import { useKidStore } from '@/stores/kid'
+import { usersApi } from '@/api/users'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -336,6 +364,41 @@ use([CanvasRenderer, PieChart, BarChart, LineChart, RadarChart, TitleComponent, 
 
 const router = useRouter()
 const appConfigStore = useAppConfigStore()
+const kidStore = useKidStore()
+
+const kids = ref([])
+const AVATAR_COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6', '#00b5ad']
+
+function avatarColor(k) {
+  const seed = k?.id || k?.username?.length || 0
+  return AVATAR_COLORS[seed % AVATAR_COLORS.length]
+}
+
+async function loadKids() {
+  try {
+    const { data } = await usersApi.listKids()
+    kids.value = (data.kids || []).filter((k) => k.enabled)
+  } catch (e) {
+    // 忽略：切换下拉加载失败不影响主页
+  }
+}
+
+// 首页"切换小孩"下拉
+async function handleKidSwitch(cmd) {
+  if (cmd === 'reselect') {
+    kidStore.clear()
+    router.push('/')
+    return
+  }
+  if (cmd.startsWith('kid:')) {
+    const k = kids.value.find((x) => x.id === Number(cmd.split(':')[1]))
+    if (k) {
+      kidStore.select(k)
+      ElMessage.success(`已切换到「${k.display_name}」`)
+      loadAllStats()
+    }
+  }
+}
 
 const stats = ref({
   total_questions: 0,
@@ -659,6 +722,7 @@ const dualAccuracyCurveOption = computed(() => {
 })
 
 onMounted(async () => {
+  loadKids()
   // 默认使用管理配置中的年级（当前为六年级）；配置接口仅家长会话可读
   if (localStorage.getItem('easyfix_token')) {
     try {
@@ -704,6 +768,49 @@ onMounted(async () => {
   color: #312e81;
   margin: 0 0 6px 0;
   letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-kid-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.hero-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switch-kid-btn {
+  border-radius: 12px;
+  border: 3px solid #c7d2fe;
+  background: #fff;
+  color: #6366f1;
+  font-weight: 600;
+  box-shadow: 3px 3px 0 rgba(99, 102, 241, 0.2);
+}
+
+.switch-kid-btn:hover {
+  background: #eef2ff !important;
+  border-color: #a5b4fc !important;
+  color: #4f46e5 !important;
+}
+
+.el-dropdown-menu .active {
+  color: #409eff;
+  font-weight: bold;
 }
 
 .hero-sub {

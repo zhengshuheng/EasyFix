@@ -19,23 +19,8 @@
           </el-menu>
 
           <div v-if="!isSelectPage" class="header-user">
-            <!-- 家长会话：管理入口下拉 -->
-            <el-dropdown v-if="isAdminSession" trigger="click" @command="handleAdminCommand">
-              <span class="user-chip">
-                <span class="mini-avatar admin-avatar">👤</span>
-                <span class="user-name">{{ authStore.displayName }}</span>
-                <el-icon class="arrow"><ArrowDown /></el-icon>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="parent-center">家长中心</el-dropdown-item>
-                  <el-dropdown-item divided command="logout">退出管理</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-
             <!-- 小孩会话：当前小孩 + 下拉切换 -->
-            <el-dropdown v-else-if="kidStore.isKidSelected" trigger="click" @command="handleKidCommand">
+            <el-dropdown v-if="kidStore.isKidSelected" trigger="click" @command="handleKidCommand">
               <span class="user-chip">
                 <span class="mini-avatar" :style="{ background: avatarColor(kidStore.activeKid) }">
                   {{ kidStore.kidName.slice(0, 1) || '?' }}
@@ -152,32 +137,12 @@ function handleKidCommand(cmd) {
   }
 }
 
-// 家长会话下拉
-function handleAdminCommand(cmd) {
-  if (cmd === 'logout') {
-    handleLogout()
-    return
-  }
-  if (cmd === 'parent-center') {
-    // 统一走密码验证入口
-    parentLockVisible.value = true
-    return
-  }
-  router.push('/' + cmd)
-}
-
 function goParentCenter() {
   router.push('/parent-center')
 }
 
 function switchKid() {
   kidStore.clear()
-  localStorage.removeItem('easyfix_token')
-  localStorage.removeItem('easyfix_user')
-  router.push('/')
-}
-
-function handleLogout() {
   localStorage.removeItem('easyfix_token')
   localStorage.removeItem('easyfix_user')
   router.push('/')
