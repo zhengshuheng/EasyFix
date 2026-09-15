@@ -99,11 +99,14 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="reviewed" label="状态" width="80" align="center">
+        <el-table-column prop="reviewed" label="状态" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.reviewed ? 'success' : 'info'" :style="{ fontSize: '14px' }">
+            <el-tag v-if="row.source_type === 'word'" :type="row.reviewed ? 'success' : 'info'" :style="{ fontSize: '14px' }">
               {{ row.reviewed ? '已复习' : '未复习' }}
             </el-tag>
+            <el-tag v-else-if="row.reviewed" type="success" :style="{ fontSize: '14px' }">已批改</el-tag>
+            <el-tag v-else-if="row.student_answered_count > 0" type="warning" :style="{ fontSize: '14px' }">已作答待批改</el-tag>
+            <el-tag v-else type="info" :style="{ fontSize: '14px' }">未作答</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="150">
