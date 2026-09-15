@@ -10,11 +10,16 @@
             <el-menu-item index="/home" @click="navTo('/home')">首页</el-menu-item>
             <el-menu-item index="/questions" @click="navTo('/questions')">错题</el-menu-item>
             <el-menu-item index="/practice-sets" @click="navTo('/practice-sets')">练习</el-menu-item>
-            <el-sub-menu v-if="showEnglishMenu" index="/english">
+            <!-- 全部空间：英语模块收进子菜单；英语学科空间：单词/阅读直接平铺 -->
+            <el-sub-menu v-if="subjectStore.isAll" index="/english">
               <template #title>英语</template>
               <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
               <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
             </el-sub-menu>
+            <template v-else-if="subjectStore.isEnglish">
+              <el-menu-item index="/words" @click="navTo('/words')">单词</el-menu-item>
+              <el-menu-item index="/reading" @click="navTo('/reading')">阅读</el-menu-item>
+            </template>
             <el-sub-menu index="/data">
               <template #title>数据</template>
               <el-menu-item index="/stats" @click="navTo('/stats')">统计</el-menu-item>
@@ -115,8 +120,6 @@ const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
 const activeMenu = computed(() =>
   route.path.startsWith('/parent-center') ? '/parent-center' : route.path
 )
-// 学科控制菜单：「英语▾（单词/阅读）」仅在 全部 或 英语学科 空间显示
-const showEnglishMenu = computed(() => subjectStore.isAll || subjectStore.isEnglish)
 
 function navTo(path) {
   if (route.path !== path) router.push(path)
