@@ -693,7 +693,7 @@
         <el-tab-pane label="AI 出题" name="ai">
           <el-form :model="aiGenerateForm" label-width="70px">
             <el-form-item label="学科" required>
-              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll">
+              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll" @change="loadAiKnowledgePoints">
                 <el-option
                   v-for="subject in subjects"
                   :key="subject.id"
@@ -703,24 +703,43 @@
               </el-select>
             </el-form-item>
             <el-form-item label="年级">
-              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade">
+              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade" @change="loadAiKnowledgePoints">
                 <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
               </el-select>
             </el-form-item>
             <el-form-item label="知识点">
               <el-radio-group v-model="aiGenerateForm.knowledge_mode">
                 <el-radio value="auto">自动（按错题薄弱点）</el-radio>
+                <el-radio value="select">从知识点库选择</el-radio>
                 <el-radio value="manual">手动输入</el-radio>
               </el-radio-group>
+              <el-select
+                v-if="aiGenerateForm.knowledge_mode === 'select'"
+                v-model="aiGenerateForm.selected_kp_ids"
+                multiple
+                filterable
+                collapse-tags
+                collapse-tags-tooltip
+                placeholder="按单元选择知识点（可多选）"
+                style="width: 100%; margin-top: 8px"
+                :loading="aiKpLoading"
+              >
+                <el-option-group v-for="g in aiKpGroups" :key="g.key" :label="g.label">
+                  <el-option v-for="kp in g.items" :key="kp.id" :label="kp.name" :value="kp.id" />
+                </el-option-group>
+              </el-select>
+              <div v-if="aiGenerateForm.knowledge_mode === 'select' && !aiKpLoading && aiKpAll.length === 0" style="color: #e6a23c; font-size: 12px; margin-top: 6px; line-height: 1.6">
+                当前学科/年级暂无知识点：请在家长中心 → 题库管理 → 知识点管理用「按教材同步导入」，或切换到其他年级
+              </div>
+              <div v-else-if="aiGenerateForm.knowledge_mode === 'auto'" style="color: #909399; font-size: 12px; margin-top: 8px; line-height: 1.6">
+                自动统计当前学科错误最多的知识点出题（需有错题记录，否则请选择/输入知识点）
+              </div>
               <el-input
                 v-if="aiGenerateForm.knowledge_mode === 'manual'"
                 v-model="aiGenerateForm.knowledge_text"
                 placeholder="多个知识点用逗号分隔，如：分数加减法,乘法分配律"
                 style="margin-top: 8px"
               />
-              <div v-else style="color: #909399; font-size: 12px; margin-top: 8px; line-height: 1.6">
-                自动统计当前学科错误最多的知识点出题（需有错题记录，否则请手动输入）
-              </div>
             </el-form-item>
             <el-form-item label="数量">
               <el-select v-model="aiGenerateForm.count" style="width: 100%">
@@ -787,10 +806,44 @@ const generateForm = reactive({
 const aiGenerateForm = reactive({
   subject_id: null,
   grade: null,
-  knowledge_mode: 'auto', // auto=按错题薄弱点 manual=手动输入
+  knowledge_mode: 'auto', // auto=按错题薄弱点 select=从知识点库选择 manual=手动输入
   knowledge_text: '',
+  selected_kp_ids: [],    // 从知识点库选择的 id 列表
   count: 5,
   difficulty: null,
+})
+// AI 出题知识点库（按学科+年级加载，按单元分组）
+const aiKpAll = ref([])
+const aiKpLoading = ref(false)
+const loadAiKnowledgePoints = async () => {
+  if (!aiGenerateForm.subject_id) return
+  aiKpLoading.value = true
+  try {
+    const params = { subject_id: aiGenerateForm.subject_id }
+    if (aiGenerateForm.grade) params.grade = aiGenerateForm.grade
+    const { data } = await questionApi.listKnowledgePoints(params)
+    aiKpAll.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('加载知识点失败:', e)
+    aiKpAll.value = []
+  } finally {
+    aiKpLoading.value = false
+  }
+}
+const aiKpGroups = computed(() => {
+  const map = new Map()
+  for (const k of aiKpAll.value) {
+    const key = `${k.grade ?? ''}|${k.semester ?? ''}|${k.chapter ?? ''}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        label: [k.grade ? getGradeLabel(k.grade) : '', k.semester === 1 ? '上学期' : k.semester === 2 ? '下学期' : '', k.chapter || '未归类'].filter(Boolean).join(' · '),
+        items: [],
+      })
+    }
+    map.get(key).items.push(k)
+  }
+  return Array.from(map.values())
 })
 const gradeOptions = [
   { value: 1, label: '一年级' },
@@ -811,10 +864,14 @@ const showGenerateDialog = () => {
   aiGenerateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
   aiGenerateForm.knowledge_mode = 'auto'
   aiGenerateForm.knowledge_text = ''
+  aiGenerateForm.selected_kp_ids = []
   aiGenerateForm.count = 5
   aiGenerateForm.difficulty = null
   generateTab.value = 'pool'
   generateDialogVisible.value = true
+  if (defaultSubjectId) {
+    loadAiKnowledgePoints()
+  }
 }
 
 const generatePractice = async () => {
@@ -855,6 +912,17 @@ const generateAiPractice = async () => {
       .filter(Boolean)
     if (knowledge_points.length === 0) {
       ElMessage.warning('请输入知识点（多个用逗号分隔）')
+      return
+    }
+  } else if (aiGenerateForm.knowledge_mode === 'select') {
+    if (aiGenerateForm.selected_kp_ids.length === 0) {
+      ElMessage.warning('请选择知识点（可多选）')
+      return
+    }
+    const idSet = new Set(aiGenerateForm.selected_kp_ids)
+    knowledge_points = aiKpAll.value.filter(k => idSet.has(k.id)).map(k => k.name)
+    if (knowledge_points.length === 0) {
+      ElMessage.warning('所选知识点不存在，请重新选择')
       return
     }
   }

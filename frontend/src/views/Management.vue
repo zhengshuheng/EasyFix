@@ -90,62 +90,155 @@
         <!-- 知识点管理 -->
         <el-tab-pane label="知识点管理" name="knowledgePoints">
           <div class="tab-content">
-            <!-- 筛选条：学科/年级/学期 平铺多选 -->
-            <div class="kp-filters">
-              <div class="kp-filter-item">
+            <!-- 筛选：标签组平铺点选，组间组合过滤 -->
+            <div class="kp-filter-bar">
+              <div class="kp-filter-group">
                 <span class="kp-filter-label">学科</span>
-                <el-select v-model="kpFilterSubject" multiple collapse-tags collapse-tags-tooltip placeholder="全部学科" style="width: 200px" clearable @change="applyKpFilter">
-                  <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
-                </el-select>
+                <div class="kp-filter-chips">
+                  <el-check-tag
+                    v-for="s in subjects"
+                    :key="s.id"
+                    :checked="kpFilterSubject.includes(s.id)"
+                    @change="toggleKpFilter(kpFilterSubject, s.id)"
+                  >{{ s.name }}</el-check-tag>
+                </div>
               </div>
-              <div class="kp-filter-item">
+              <div class="kp-filter-group">
                 <span class="kp-filter-label">年级</span>
-                <el-select v-model="kpFilterGrade" multiple collapse-tags collapse-tags-tooltip placeholder="全部年级" style="width: 200px" clearable @change="applyKpFilter">
-                  <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
-                </el-select>
+                <div class="kp-filter-chips">
+                  <el-check-tag
+                    v-for="g in gradeOptions"
+                    :key="g.value"
+                    :checked="kpFilterGrade.includes(g.value)"
+                    @change="toggleKpFilter(kpFilterGrade, g.value)"
+                  >{{ g.label }}</el-check-tag>
+                </div>
               </div>
-              <div class="kp-filter-item">
+              <div class="kp-filter-group">
                 <span class="kp-filter-label">学期</span>
-                <el-select v-model="kpFilterSemester" multiple collapse-tags collapse-tags-tooltip placeholder="全部学期" style="width: 160px" clearable @change="applyKpFilter">
-                  <el-option label="上学期" :value="1" />
-                  <el-option label="下学期" :value="2" />
-                </el-select>
+                <div class="kp-filter-chips">
+                  <el-check-tag :checked="kpFilterSemester.includes(1)" @change="toggleKpFilter(kpFilterSemester, 1)">上学期</el-check-tag>
+                  <el-check-tag :checked="kpFilterSemester.includes(2)" @change="toggleKpFilter(kpFilterSemester, 2)">下学期</el-check-tag>
+                </div>
               </div>
+              <div class="kp-filter-group">
+                <span class="kp-filter-label">标签</span>
+                <div class="kp-filter-chips">
+                  <el-check-tag
+                    v-for="t in kpOptionTags"
+                    :key="t"
+                    :checked="kpFilterTag.includes(t)"
+                    @change="toggleKpFilter(kpFilterTag, t)"
+                  >{{ t }}</el-check-tag>
+                </div>
+              </div>
+              <div class="kp-filter-group">
+                <span class="kp-filter-label">要求</span>
+                <div class="kp-filter-chips">
+                  <el-check-tag
+                    v-for="r in kpOptionRequirements"
+                    :key="r"
+                    :checked="kpFilterRequirement.includes(r)"
+                    @change="toggleKpFilter(kpFilterRequirement, r)"
+                  >{{ r }}</el-check-tag>
+                </div>
+              </div>
+              <div class="kp-filter-group">
+                <span class="kp-filter-label">类型</span>
+                <div class="kp-filter-chips">
+                  <el-check-tag
+                    v-for="t in kpOptionTypes"
+                    :key="t"
+                    :checked="kpFilterType.includes(t)"
+                    @change="toggleKpFilter(kpFilterType, t)"
+                  >{{ t }}</el-check-tag>
+                  <span v-if="!kpOptionTypes.length" class="kp-filter-empty">（暂无类型，新增知识点时可输入）</span>
+                </div>
+              </div>
+            </div>
+            <div class="action-bar" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px">
               <el-button type="primary" @click="openKnowledgeDialog">
                 <el-icon><Plus /></el-icon>
                 新增知识点
-              </el-button>
-              <el-button type="success" plain @click="openK12Dialog">
-                <el-icon><Download /></el-icon>
-                从教材知识库导入
               </el-button>
               <el-button type="warning" plain @click="showTextbookImport = true">
                 <el-icon><Reading /></el-icon>
                 按教材同步导入
               </el-button>
+              <el-button :type="kpGrouped ? 'primary' : 'default'" plain size="small" style="margin-left: auto" @click="toggleKpGrouped">
+                {{ kpGrouped ? '平铺视图' : '按单元分组' }}
+              </el-button>
             </div>
             <div class="kp-summary">
               <span class="kp-path">{{ kpFilterText }}（共 {{ knowledgePoints.length }} 条）</span>
             </div>
-            <el-table :data="knowledgePoints" stripe style="width: 100%; margin-top: 10px">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="知识点名称" />
-              <el-table-column prop="subject_name" label="学科" width="100" />
-              <el-table-column prop="grade" label="年级" width="100">
+            <!-- 按单元分组视图 -->
+            <el-collapse v-if="kpGrouped" v-model="kpOpenChapters" class="kp-groups" style="margin-top: 10px">
+              <el-collapse-item v-for="g in kpGroups" :key="g.key" :name="g.key">
+                <template #title>
+                  <span class="kp-group-title">{{ g.label }}</span>
+                  <span class="kp-group-count">{{ g.items.length }} 条</span>
+                </template>
+                <el-table :data="g.items" stripe style="width: 100%">
+                  <el-table-column prop="id" label="ID" width="70" />
+                  <el-table-column prop="name" label="知识点名称" min-width="240" show-overflow-tooltip />
+                  <el-table-column label="标签" width="150">
+                    <template #default="{ row }">
+                      <el-tag v-for="t in (row.tags || [])" :key="t" :type="tagType(t)" size="small" style="margin-right: 4px">{{ t }}</el-tag>
+                      <span v-if="!(row.tags || []).length" style="color: #c0c4cc">—</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="要求" width="80">
+                    <template #default="{ row }">{{ row.requirement || '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="类型" width="100">
+                    <template #default="{ row }">{{ row.kp_type || '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="200" fixed="right">
+                    <template #default="{ row }">
+                      <el-button link type="primary" size="small" @click="editKnowledgePoint(row)">编辑</el-button>
+                      <el-button link type="warning" size="small" @click="viewInTextbook(row)">看教材</el-button>
+                      <el-button link type="danger" size="small" @click="deleteKnowledgePoint(row)">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-collapse-item>
+            </el-collapse>
+            <!-- 平铺视图 -->
+            <el-table v-else :data="knowledgePoints" stripe style="width: 100%; margin-top: 10px">
+              <el-table-column prop="id" label="ID" width="70" />
+              <el-table-column prop="name" label="知识点名称" min-width="240" show-overflow-tooltip />
+              <el-table-column prop="subject_name" label="学科" width="90" />
+              <el-table-column label="年级" width="90">
                 <template #default="{ row }">
                   {{ getGradeLabel(row.grade) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="semester" label="学期" width="100">
+              <el-table-column label="学期" width="90">
                 <template #default="{ row }">
                   {{ row.semester === 1 ? '上学期' : row.semester === 2 ? '下学期' : '未分学期' }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="240">
+              <el-table-column label="单元" min-width="130" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.chapter || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="标签" width="150">
                 <template #default="{ row }">
-                  <el-button type="primary" size="default" @click="editKnowledgePoint(row)">编辑</el-button>
-                  <el-button type="warning" size="default" plain @click="viewInTextbook(row)">看教材</el-button>
-                  <el-button type="danger" size="default" @click="deleteKnowledgePoint(row)">删除</el-button>
+                  <el-tag v-for="t in (row.tags || [])" :key="t" :type="tagType(t)" size="small" style="margin-right: 4px">{{ t }}</el-tag>
+                  <span v-if="!(row.tags || []).length" style="color: #c0c4cc">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="要求" width="70">
+                <template #default="{ row }">{{ row.requirement || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="类型" width="90">
+                <template #default="{ row }">{{ row.kp_type || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="200" fixed="right">
+                <template #default="{ row }">
+                  <el-button link type="primary" size="small" @click="editKnowledgePoint(row)">编辑</el-button>
+                  <el-button link type="warning" size="small" @click="viewInTextbook(row)">看教材</el-button>
+                  <el-button link type="danger" size="small" @click="deleteKnowledgePoint(row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -263,39 +356,28 @@
             <el-option label="下学期" :value="2" />
           </el-select>
         </el-form-item>
+        <el-form-item label="单元">
+          <el-input v-model="knowledgeForm.chapter" placeholder="如：第一单元 分数乘法（教材同步自动带入）" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="knowledgeForm.tags" multiple placeholder="重点/难点/易错点" style="width: 100%">
+            <el-option v-for="t in kpOptionTags" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="要求">
+          <el-select v-model="knowledgeForm.requirement" placeholder="认知要求" clearable style="width: 100%">
+            <el-option v-for="r in kpOptionRequirements" :key="r" :label="r" :value="r" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="knowledgeForm.kp_type" placeholder="内容类型（可输入新类型）" clearable filterable allow-create default-first-option style="width: 100%">
+            <el-option v-for="t in kpOptionTypes" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="closeKnowledgeDialog">取消</el-button>
         <el-button type="primary" @click="saveKnowledgePoint">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 教材知识库导入弹窗 -->
-    <el-dialog v-model="showK12Dialog" title="从教材知识库导入知识点" width="580px">
-      <el-alert type="info" :closable="false" style="margin-bottom: 16px">
-        <template #title>
-          数据来自开源 K12 知识点数据集（33,765 个知识点，按人教版/统编版教材抽取，覆盖 17 科目）。
-          选择学段和科目后，AI 会自动为该科目每个知识点判断所属年级/学期并批量录入，
-          已有同名知识点自动跳过。首次导入需联网下载数据，几千条约需 1~3 分钟。
-        </template>
-      </el-alert>
-      <el-form :model="k12Form" label-width="100px">
-        <el-form-item label="学段" required>
-          <el-select v-model="k12Form.gradeBand" placeholder="选择学段" style="width: 100%" @change="onK12BandChange">
-            <el-option label="小学" value="小学" />
-            <el-option label="初中" value="初中" />
-            <el-option label="高中" value="高中" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="科目" required>
-          <el-select v-model="k12Form.subject" placeholder="先选择学段" style="width: 100%" :disabled="!k12Form.gradeBand" filterable>
-            <el-option v-for="f in k12Subjects" :key="f.path" :label="`${f.subject}（${f.kp_count} 个知识点）`" :value="f.subject" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showK12Dialog = false" :disabled="k12Importing">取消</el-button>
-        <el-button type="primary" @click="doK12Import" :loading="k12Importing">开始导入</el-button>
       </template>
     </el-dialog>
 
@@ -335,7 +417,6 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi } from '@/api/question'
-import { k12Api } from '@/api/k12'
 import { usersApi } from '@/api/users'
 import WordLibrary from './WordLibrary.vue'
 import TextbookImport from './TextbookImport.vue'
@@ -407,65 +488,83 @@ const errorTypeForm = reactive({
   subject_id: localStorage.getItem('lastEtSubject') ? parseInt(localStorage.getItem('lastEtSubject')) : null
 })
 
-// 知识点（表格上方 学科/年级/学期 平铺多选筛选）
+// 知识点（筛选：标签组平铺点选，组间组合过滤）
 const knowledgePoints = ref([])
 const kpAll = ref([])               // 全量知识点（前端过滤）
 const kpFilterSubject = ref([])     // 学科多选
 const kpFilterGrade = ref([])       // 年级多选
 const kpFilterSemester = ref([])    // 学期多选
+const kpFilterTag = ref([])         // 标签：重点/难点/易错点
+const kpFilterRequirement = ref([]) // 要求：识记/理解/背诵/运用/综合
+const kpFilterType = ref([])        // 内容类型（学科 distinct + 可自定义）
+const kpOptionTags = ref(['重点', '难点', '易错点'])
+const kpOptionRequirements = ref(['识记', '理解', '背诵', '运用', '综合'])
+const kpOptionTypes = ref([])       // 类型选项（按学科动态）
+const kpGrouped = ref(true)         // 默认按单元分组视图
+const kpOpenChapters = ref([])      // 展开的单元
 const showKnowledgeDialog = ref(false)
 const editKnowledgeData = ref(null)
 const knowledgeForm = reactive({
   name: '',
   subject_id: null,
   grade: null,
-  semester: null
+  semester: null,
+  chapter: '',
+  tags: [],
+  requirement: null,
+  kp_type: null
 })
 
-// 教材知识库导入（K12 数据集 + AI 分配年级学期）
-const showK12Dialog = ref(false)
-const k12Catalog = ref(null)   // 知识库索引
-const k12Subjects = ref([])    // 当前学段科目清单
-const k12Form = reactive({ gradeBand: '', subject: '' })
-const k12Importing = ref(false)
+// 标签组点选：点一下选中/取消，组内多选
+const toggleKpFilter = (arr, value) => {
+  const i = arr.indexOf(value)
+  if (i >= 0) arr.splice(i, 1)
+  else arr.push(value)
+  applyKpFilter()
+}
 
-const openK12Dialog = async () => {
-  showK12Dialog.value = true
-  if (!k12Catalog.value) {
-    try {
-      const { data } = await k12Api.catalog()
-      k12Catalog.value = data
-    } catch (e) {
-      ElMessage.error(e.detail || '获取知识库索引失败（需要联网）')
+// 按单元分组（学科×年级×学期×单元）
+const kpGroups = computed(() => {
+  const map = new Map()
+  for (const k of knowledgePoints.value) {
+    const key = `${k.subject_id}|${k.grade ?? ''}|${k.semester ?? ''}|${k.chapter ?? ''}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        chapter: k.chapter || '未归类',
+        label: `${k.subject_name ? k.subject_name + ' · ' : ''}${k.chapter || '未归类'}`,
+        items: [],
+      })
     }
+    map.get(key).items.push(k)
+  }
+  return Array.from(map.values())
+})
+
+const toggleKpGrouped = () => {
+  kpGrouped.value = !kpGrouped.value
+  if (kpGrouped.value) {
+    kpOpenChapters.value = kpGroups.value.map(g => g.key)
   }
 }
 
-const onK12BandChange = () => {
-  k12Form.subject = ''
-  k12Subjects.value = (k12Catalog.value?.files || []).filter(f => f.grade_band === k12Form.gradeBand)
+const tagType = (t) => {
+  if (t === '重点') return 'danger'
+  if (t === '难点') return 'warning'
+  if (t === '易错点') return 'info'
+  return 'primary'
 }
 
-const doK12Import = async () => {
-  if (!k12Form.gradeBand || !k12Form.subject) {
-    ElMessage.warning('请选择学段和科目')
-    return
-  }
-  k12Importing.value = true
+// 获取知识点过滤选项（标签/要求/类型）
+const fetchKpOptions = async () => {
   try {
-    const { data } = await k12Api.importSubject({
-      grade_band: k12Form.gradeBand,
-      subject: k12Form.subject,
-    })
-    showK12Dialog.value = false
-    ElMessage.success(
-      `导入完成：新增 ${data.imported} 条，跳过重复 ${data.skipped} 条，失败 ${data.failed + (data.llm_failed || 0)} 条`
-    )
-    fetchKpAll()
+    const subjectId = kpFilterSubject.value.length === 1 ? kpFilterSubject.value[0] : null
+    const { data } = await questionApi.knowledgePointOptions(subjectId)
+    if (data.tags) kpOptionTags.value = data.tags
+    if (data.requirements) kpOptionRequirements.value = data.requirements
+    if (Array.isArray(data.kp_types)) kpOptionTypes.value = data.kp_types
   } catch (e) {
-    ElMessage.error(e.detail || '导入失败，请查看后端日志')
-  } finally {
-    k12Importing.value = false
+    console.error('获取知识点选项失败:', e)
   }
 }
 
@@ -661,16 +760,23 @@ const fetchKpAll = async () => {
     kpAll.value = []
   }
   applyKpFilter()
+  fetchKpOptions()
 }
 
-// 前端按多选条件过滤
+// 前端按条件过滤（学科/年级/学期/标签/要求/类型，组内多选，组间组合）
 const applyKpFilter = () => {
   knowledgePoints.value = kpAll.value.filter(k => {
     if (kpFilterSubject.value.length && !kpFilterSubject.value.includes(k.subject_id)) return false
     if (kpFilterGrade.value.length && !kpFilterGrade.value.includes(k.grade)) return false
     if (kpFilterSemester.value.length && !kpFilterSemester.value.includes(k.semester)) return false
+    if (kpFilterTag.value.length && !(k.tags || []).some(t => kpFilterTag.value.includes(t))) return false
+    if (kpFilterRequirement.value.length && !kpFilterRequirement.value.includes(k.requirement)) return false
+    if (kpFilterType.value.length && !kpFilterType.value.includes(k.kp_type)) return false
     return true
   })
+  if (kpGrouped.value) {
+    kpOpenChapters.value = kpGroups.value.map(g => g.key)
+  }
 }
 
 // 当前筛选条件文本
@@ -685,6 +791,15 @@ const kpFilterText = computed(() => {
   if (kpFilterSemester.value.length) {
     parts.push(kpFilterSemester.value.map(s => s === 1 ? '上学期' : '下学期').join('、'))
   }
+  if (kpFilterTag.value.length) {
+    parts.push(`标签:${kpFilterTag.value.join('、')}`)
+  }
+  if (kpFilterRequirement.value.length) {
+    parts.push(`要求:${kpFilterRequirement.value.join('、')}`)
+  }
+  if (kpFilterType.value.length) {
+    parts.push(`类型:${kpFilterType.value.join('、')}`)
+  }
   return parts.length ? '筛选：' + parts.join(' · ') : '全部知识点'
 })
 
@@ -698,22 +813,22 @@ const createKnowledgePoint = async () => {
     ElMessage.warning('请选择学科')
     return
   }
+  const payload = {
+    name: knowledgeForm.name,
+    subject_id: knowledgeForm.subject_id,
+    grade: knowledgeForm.grade,
+    semester: knowledgeForm.semester,
+    chapter: knowledgeForm.chapter || null,
+    tags: knowledgeForm.tags || [],
+    requirement: knowledgeForm.requirement || null,
+    kp_type: knowledgeForm.kp_type || null,
+  }
   try {
     if (editKnowledgeData.value) {
-      await questionApi.updateKnowledgePoint(editKnowledgeData.value.id, {
-        name: knowledgeForm.name,
-        subject_id: knowledgeForm.subject_id,
-        grade: knowledgeForm.grade,
-        semester: knowledgeForm.semester,
-      })
+      await questionApi.updateKnowledgePoint(editKnowledgeData.value.id, payload)
       ElMessage.success('更新成功')
     } else {
-      await questionApi.createKnowledgePoint({
-        name: knowledgeForm.name,
-        subject_id: knowledgeForm.subject_id,
-        grade: knowledgeForm.grade,
-        semester: knowledgeForm.semester,
-      })
+      await questionApi.createKnowledgePoint(payload)
       ElMessage.success('创建成功')
     }
     closeKnowledgeDialog()
@@ -723,13 +838,17 @@ const createKnowledgePoint = async () => {
   }
 }
 
-// 打开新增知识点弹窗（默认带入单选筛选条件）
+// 打开新增知识点弹窗（默认带入筛选条件）
 const openKnowledgeDialog = () => {
   editKnowledgeData.value = null
   knowledgeForm.name = ''
   knowledgeForm.subject_id = kpFilterSubject.value.length === 1 ? kpFilterSubject.value[0] : null
   knowledgeForm.grade = kpFilterGrade.value.length === 1 ? kpFilterGrade.value[0] : null
   knowledgeForm.semester = kpFilterSemester.value.length === 1 ? kpFilterSemester.value[0] : null
+  knowledgeForm.chapter = ''
+  knowledgeForm.tags = []
+  knowledgeForm.requirement = null
+  knowledgeForm.kp_type = null
   showKnowledgeDialog.value = true
 }
 
@@ -738,6 +857,10 @@ const closeKnowledgeDialog = () => {
   showKnowledgeDialog.value = false
   editKnowledgeData.value = null
   knowledgeForm.name = ''
+  knowledgeForm.chapter = ''
+  knowledgeForm.tags = []
+  knowledgeForm.requirement = null
+  knowledgeForm.kp_type = null
 }
 
 // 编辑知识点
@@ -747,6 +870,10 @@ const editKnowledgePoint = (row) => {
   knowledgeForm.subject_id = row.subject_id
   knowledgeForm.grade = row.grade
   knowledgeForm.semester = row.semester
+  knowledgeForm.chapter = row.chapter || ''
+  knowledgeForm.tags = row.tags || []
+  knowledgeForm.requirement = row.requirement || null
+  knowledgeForm.kp_type = row.kp_type || null
   showKnowledgeDialog.value = true
 }
 
@@ -906,10 +1033,51 @@ onMounted(() => {
   gap: 6px;
 }
 
+.kp-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kp-filter-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.kp-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.kp-filter-empty {
+  color: #c0c4cc;
+  font-size: 12px;
+  line-height: 24px;
+}
+
 .kp-filter-label {
   color: #606266;
   font-size: 13px;
   white-space: nowrap;
+  line-height: 24px;
+  min-width: 32px;
+}
+
+.kp-group-title {
+  font-weight: 600;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kp-group-count {
+  margin-left: 8px;
+  color: #909399;
+  font-size: 12px;
 }
 
 .kp-summary {

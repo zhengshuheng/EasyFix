@@ -56,6 +56,9 @@ export const questionApi = {
   listKnowledgePoints(params) {
     return api.get('/knowledge-points', { params })
   },
+  knowledgePointOptions(subjectId) {
+    return api.get('/knowledge-points/options', { params: { subject_id: subjectId || undefined } })
+  },
   createKnowledgePoint(data) {
     return api.post('/knowledge-points', data)
   },
