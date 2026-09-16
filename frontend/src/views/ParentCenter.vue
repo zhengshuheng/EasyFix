@@ -9,6 +9,9 @@
         <el-menu-item index="/parent-center/management">
           <el-icon><Collection /></el-icon><span>题库管理</span>
         </el-menu-item>
+        <el-menu-item index="/parent-center/incentive">
+          <el-icon><Trophy /></el-icon><span>激励配置</span>
+        </el-menu-item>
         <el-menu-item index="/parent-center/settings">
           <el-icon><Setting /></el-icon><span>系统配置</span>
         </el-menu-item>
@@ -19,6 +22,13 @@
     </el-aside>
 
     <el-main class="pc-content">
+      <div class="pc-topbar">
+        <span class="pc-topbar-title">{{ topbarTitle }}</span>
+        <el-button type="primary" size="large" round @click="backToKid">
+          <el-icon><Back /></el-icon>
+          <span style="margin-left: 6px">返回学习空间</span>
+        </el-button>
+      </div>
       <router-view />
     </el-main>
   </el-container>
@@ -37,10 +47,19 @@ const kidStore = useKidStore()
 const activeMenu = computed(() => {
   const p = route.path
   if (p.startsWith('/parent-center')) {
-    const subs = ['/parent-center/users', '/parent-center/management', '/parent-center/settings']
+    const subs = ['/parent-center/users', '/parent-center/management', '/parent-center/incentive', '/parent-center/settings']
     return subs.includes(p) ? p : '/parent-center/users'
   }
   return p
+})
+
+// 顶部返回条标题：跟随当前家长中心子页面
+const topbarTitle = computed(() => {
+  const p = route.path
+  if (p.startsWith('/parent-center/management')) return '题库管理'
+  if (p.startsWith('/parent-center/incentive')) return '激励配置'
+  if (p.startsWith('/parent-center/settings')) return '系统配置'
+  return '账号管理'
 })
 
 function backToKid() {
@@ -98,6 +117,23 @@ function backToKid() {
 .pc-footer {
   padding: 14px;
   text-align: center;
+}
+
+.pc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pc-topbar-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
 }
 
 .pc-content {

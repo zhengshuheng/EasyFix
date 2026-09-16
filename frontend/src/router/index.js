@@ -13,11 +13,6 @@ const routes = [
     component: () => import('@/views/Home.vue'),
   },
   {
-    path: '/space/:id',
-    name: 'SubjectSpace',
-    component: () => import('@/views/SubjectSpace.vue'),
-  },
-  {
     path: '/questions',
     name: 'Questions',
     component: () => import('@/views/Questions.vue'),
@@ -47,6 +42,11 @@ const routes = [
         path: 'management',
         name: 'Management',
         component: () => import('@/views/Management.vue'),
+      },
+      {
+        path: 'incentive',
+        name: 'IncentiveConfig',
+        component: () => import('@/views/IncentiveConfig.vue'),
       },
       {
         path: 'settings',

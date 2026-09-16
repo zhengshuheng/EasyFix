@@ -6,6 +6,46 @@
       </template>
 
       <el-tabs v-model="activeTab">
+        <!-- 通用配置 -->
+        <el-tab-pane label="通用配置" name="general">
+          <div class="tab-content general-config">
+            <div class="gen-config-form">
+              <el-form :model="appConfigForm" label-width="120px" style="max-width: 480px">
+                <el-form-item label="默认年级">
+                  <el-select v-model="appConfigForm.defaultGrade" placeholder="选择默认年级" clearable style="width: 100%">
+                    <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+                  </el-select>
+                  <div class="form-tip">各页面搜索/筛选将默认使用该年级；可单独清空后查看全部</div>
+                </el-form-item>
+                <el-form-item label="默认学期">
+                  <el-select v-model="appConfigForm.defaultSemester" placeholder="选择默认学期" clearable style="width: 100%">
+                    <el-option label="上学期" :value="1" />
+                    <el-option label="下学期" :value="2" />
+                  </el-select>
+                  <div class="form-tip">若页面提供学期筛选，将默认使用该值</div>
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="saveAppConfig" :loading="savingAppConfig">保存配置</el-button>
+                </el-form-item>
+              </el-form>
+              <el-alert type="info" :closable="false" style="margin-top: 8px">
+                <template #title>
+                  保存后立即生效：单词、错题、阅读、学习报告、上传录入等页面的默认筛选与新建表单会自动带入默认年级。
+                </template>
+              </el-alert>
+            </div>
+            <el-card class="sys-info-card" shadow="never">
+              <template #header><span>系统信息</span></template>
+              <el-descriptions :column="1" size="small">
+                <el-descriptions-item label="服务状态">{{ healthText }}</el-descriptions-item>
+                <el-descriptions-item label="运行端口">{{ portText }}</el-descriptions-item>
+                <el-descriptions-item label="数据存储">backend/easyfix.db（仅本机）</el-descriptions-item>
+                <el-descriptions-item label="运行模式">本地单机 · 数据不出本机</el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+          </div>
+        </el-tab-pane>
+
         <!-- OCR配置 -->
         <el-tab-pane label="OCR配置" name="ocr">
           <el-form :model="ocrForm" label-width="120px" style="max-width: 600px">
@@ -240,10 +280,67 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { configApi } from '@/api/question'
+import { useAppConfigStore } from '@/stores/appConfig'
 
-const activeTab = ref('ocr')
+const appConfigStore = useAppConfigStore()
+const activeTab = ref('general')
 const saving = ref(false)
 const loading = ref(false)
+
+const healthText = ref('检测中…')
+const portText = ref(window.location.port || '80')
+
+async function fetchHealth() {
+  try {
+    const res = await fetch('/health')
+    const data = await res.json()
+    healthText.value = data.status === 'ok' ? '✅ 服务正常' : '⚠️ 服务异常'
+  } catch {
+    healthText.value = '❌ 无法连接'
+  }
+}
+
+// 通用配置：默认年级/学期
+const appConfigForm = reactive({
+  defaultGrade: null,
+  defaultSemester: null,
+})
+const savingAppConfig = ref(false)
+const gradeOptions = [
+  { label: '一年级', value: 1 },
+  { label: '二年级', value: 2 },
+  { label: '三年级', value: 3 },
+  { label: '四年级', value: 4 },
+  { label: '五年级', value: 5 },
+  { label: '六年级', value: 6 },
+  { label: '初一', value: 7 },
+  { label: '初二', value: 8 },
+  { label: '初三', value: 9 },
+  { label: '高一', value: 10 },
+  { label: '高二', value: 11 },
+  { label: '高三', value: 12 },
+]
+
+const loadAppConfig = async () => {
+  await appConfigStore.load(true)
+  appConfigForm.defaultGrade = appConfigStore.defaultGrade
+  appConfigForm.defaultSemester = appConfigStore.defaultSemester
+}
+
+const saveAppConfig = async () => {
+  savingAppConfig.value = true
+  try {
+    await appConfigStore.save({
+      defaultGrade: appConfigForm.defaultGrade,
+      defaultSemester: appConfigForm.defaultSemester,
+    })
+    ElMessage.success('默认年级配置已保存')
+  } catch (e) {
+    ElMessage.error('保存失败')
+  } finally {
+    savingAppConfig.value = false
+  }
+}
 
 const ocrForm = reactive({
   provider: 'multimodal',
@@ -339,6 +436,8 @@ const loadConfigs = async () => {
 onMounted(() => {
   // 家长中心已统一密码验证，进入即加载配置
   loadConfigs()
+  loadAppConfig()
+  fetchHealth()
 })
 </script>
 
@@ -346,6 +445,43 @@ onMounted(() => {
 .settings {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.tab-content {
+  padding: 10px 0;
+}
+
+.general-config {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.gen-config-form {
+  flex: 0 0 480px;
+  max-width: 520px;
+}
+
+.sys-info-card {
+  flex: 1 1 260px;
+  min-width: 260px;
+  background: #fafbfc;
+  border-color: #ebeef5;
+}
+
+.sys-info-card :deep(.el-card__header) {
+  padding: 12px 16px;
+  font-weight: bold;
+  background: #f0f2f5;
+}
+
+.sys-info-card :deep(.el-card__body) {
+  padding: 16px;
+}
+
+.sys-info-card :deep(.el-descriptions__label) {
+  color: #909399;
 }
 
 .form-tip {
