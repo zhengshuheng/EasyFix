@@ -11,7 +11,7 @@ class PracticeSet(Base):
     name = Column(String(200), nullable=False)  # 练习集名称
     notes = Column(Text, nullable=True)  # 备注
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=False)  # 所属学科
-    source_type = Column(String(20), default="question")  # question=来自错题, word=来自单词复习
+    source_type = Column(String(20), default="question")  # question=来自错题, word=来自单词复习, reading=阅读理解, ai=AI出题
     question_type = Column(String(20), default="original")  # original=原题, similar=相似题
     pdf_path = Column(String(500), nullable=True)  # 生成的PDF路径
     total_questions = Column(Integer, default=0)  # 总题数

@@ -85,7 +85,7 @@
         <el-table-column prop="subject_name" label="学科" width="100" />
         <el-table-column prop="source_type" label="类型" width="100">
           <template #default="{ row }">
-            {{ row.source_type === 'word' ? '单词复习' : (row.source_type === 'reading' ? '阅读理解' : '错题练习') }}
+            {{ getSourceTypeLabel(row.source_type) }}
           </template>
         </el-table-column>
         <el-table-column prop="total_questions" label="题目数" width="80" align="center" />
@@ -285,7 +285,7 @@
             </div>
             <div class="select-ps-meta">
               <span>{{ ps.subject_name || '未分类' }}</span>
-              <span>{{ ps.source_type === 'word' ? '单词复习' : (ps.source_type === 'reading' ? '阅读理解' : '错题练习') }}</span>
+              <span>{{ getSourceTypeLabel(ps.source_type) }}</span>
               <span>{{ ps.total_questions }} 题</span>
               <span :class="ps.student_answered_count > 0 ? 'meta-answered' : 'meta-empty'">
                 {{ ps.student_answered_count > 0 ? `已作答 ${ps.student_answered_count}/${ps.total_questions}` : '未作答' }}
@@ -466,7 +466,7 @@
                 <el-descriptions :column="2" border size="small">
                   <el-descriptions-item label="名称">{{ detailData.name }}</el-descriptions-item>
                   <el-descriptions-item label="学科">{{ detailData.subject_name }}</el-descriptions-item>
-                  <el-descriptions-item label="类型">{{ detailData.source_type === 'word' ? '单词复习' : (detailData.source_type === 'reading' ? '阅读理解' : '错题练习') }}</el-descriptions-item>
+                  <el-descriptions-item label="类型">{{ getSourceTypeLabel(detailData.source_type) }}</el-descriptions-item>
                   <el-descriptions-item label="题目数">{{ detailData.total_questions }}</el-descriptions-item>
                   <el-descriptions-item label="复习次数">{{ detailData.review_count }}</el-descriptions-item>
                   <el-descriptions-item label="备注" :span="2">{{ detailData.notes || '无' }}</el-descriptions-item>
@@ -547,12 +547,12 @@
                     <div
                       v-for="(row, idx) in detailData.questions"
                       :key="row.id"
-                      :class="['question-card', row.is_correct ? 'card-correct' : 'card-wrong']"
+                      :class="['question-card', row.is_correct === true ? 'card-correct' : row.is_correct === false ? 'card-wrong' : 'card-pending']"
                     >
                       <div class="card-header-small">
                         <span class="card-index">{{ idx + 1 }}</span>
-                        <el-tag :type="row.is_correct ? 'success' : 'danger'" size="small">
-                          {{ row.is_correct ? '正确' : '错误' }}
+                        <el-tag :type="row.is_correct === true ? 'success' : row.is_correct === false ? 'danger' : 'info'" size="small">
+                          {{ row.is_correct === true ? '正确' : row.is_correct === false ? '错误' : '未作答' }}
                         </el-tag>
                       </div>
                       <div class="card-body">
@@ -1517,6 +1517,14 @@ const getReviewTypeLabel = (type) => {
   return labels[type] || '默写英文'
 }
 
+// 获取练习集类型标签
+const getSourceTypeLabel = (type) => {
+  if (type === 'word') return '单词复习'
+  if (type === 'reading') return '阅读理解'
+  if (type === 'ai') return 'AI练习'
+  return '错题练习'
+}
+
 const deletePracticeSet = async (ps) => {
   try {
     await ElMessageBox.confirm('确定要删除这个练习集吗？', '删除确认', {
@@ -2153,6 +2161,11 @@ onMounted(() => {
 .question-card.card-wrong {
   background: #fef0f0;
   border-left-color: #f56c6c;
+}
+
+.question-card.card-pending {
+  background: #f5f7fa;
+  border-left-color: #909399;
 }
 
 .card-index {

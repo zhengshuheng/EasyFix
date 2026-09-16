@@ -353,7 +353,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
     practice_set = PracticeSet(
         name=f"AI练习_{datetime.now().strftime('%Y%m%d%H%M%S')}",
         subject_id=data.subject_id,
-        source_type="question",
+        source_type="ai",
         question_type="original",
         total_questions=len(new_questions),
     )
@@ -391,7 +391,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
         "name": practice_set.name,
         "subject_id": practice_set.subject_id,
         "subject_name": subject.name,
-        "source_type": "question",
+        "source_type": "ai",
         "question_type": "original",
         "total_questions": len(new_questions),
         "reviewed": False,
