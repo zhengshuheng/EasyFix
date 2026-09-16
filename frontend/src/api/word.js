@@ -53,8 +53,8 @@ export const wordApi = {
   },
 
   // 获取单词记忆曲线
-  getMemoryCurve(wordId) {
-    return api.get(`/words/${wordId}/memory-curve`)
+  getMemoryCurve(wordId, params) {
+    return api.get(`/words/${wordId}/memory-curve`, { params })
   },
 }
 

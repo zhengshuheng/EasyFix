@@ -151,9 +151,9 @@ async function load() {
 function enter(kid) {
   kidStore.select(kid)
   applySpace()
-  // 选了具体学科 → 直达学科空间（tab）；全部学科 → 首页概览
+  // 选了具体学科 → 直达该学科默认功能页（错题）；全部学科 → 首页概览
   if (subjectStore.activeSubjectId !== null) {
-    router.push('/space/' + subjectStore.activeSubjectId)
+    router.push('/questions')
   } else {
     router.push('/home')
   }
@@ -185,7 +185,7 @@ async function handleCreate() {
     ElMessage.success('创建成功，开始学习吧！')
     createVisible.value = false
     if (subjectStore.activeSubjectId !== null) {
-      router.push('/space/' + subjectStore.activeSubjectId)
+      router.push('/questions')
     } else {
       router.push('/home')
     }

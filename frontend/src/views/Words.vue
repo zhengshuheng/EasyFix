@@ -373,10 +373,12 @@ import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useSubjectStore } from '@/stores/subject'
+import { useKidStore } from '@/stores/kid'
 
 const route = useRoute()
 const appConfigStore = useAppConfigStore()
 const subjectStore = useSubjectStore()
+const kidStore = useKidStore()
 const words = ref({ total: 0, items: [] })
 const allTags = ref([])
 const filters = reactive({
@@ -595,7 +597,9 @@ const memoryCurveLoading = ref(false)
 const fetchMemoryCurve = async (wordId) => {
   memoryCurveLoading.value = true
   try {
-    const { data } = await wordApi.getMemoryCurve(wordId)
+    const params = {}
+    if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
+    const { data } = await wordApi.getMemoryCurve(wordId, params)
     memoryCurve.value = data
   } catch (error) {
     console.error('获取记忆曲线失败:', error)
@@ -737,6 +741,8 @@ const fetchWords = async () => {
       params.sort_by = filters.sort_by
       params.sort_order = filters.sort_order
     }
+    // 复习情况/正确率按当前小孩隔离
+    if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
 
     const { data } = await wordApi.list(params)
     words.value = data
@@ -849,6 +855,8 @@ const startReviewGame = async () => {
     if (selectedWords.value.length > 0) {
       params.word_ids = selectedWords.value.map(w => w.id).join(',')
     }
+    // 复习进度按当前小孩
+    if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
 
     const { data } = await wordApi.startReview(params)
     reviewQuestions.value = data.questions.map(q => ({
@@ -1041,6 +1049,7 @@ const finishReview = async () => {
       session_id: currentSessionId.value,
       results,
       duration,
+      user_id: kidStore.activeKid?.id,
     })
     reviewResult.total = data.total
     reviewResult.correct = data.correct

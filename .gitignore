@@ -29,8 +29,16 @@ frontend/node_modules/
 # 前端构建产物（由源码构建生成，不入库）
 frontend/dist/
 
+TEXTBOOK_IMPORT_TODO.md
+*_TODO.md
+
 # K12 教材知识点数据集缓存（首次导入自动下载，不入库）
 backend/data/k12/
+
+# 教材 PDF/OCR 文本缓存（用户按需下载，不入库）
+backend/data/textbooks/*.pdf
+backend/data/textbooks/**/*.pdf
+backend/data/textbooks/**/*.txt
 
 # 根目录 sqlite 占位文件
 /easyfix.db

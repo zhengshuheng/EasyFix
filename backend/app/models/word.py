@@ -27,13 +27,13 @@ class Word(Base):
     grade = Column(Integer, nullable=True)  # 年级 1-12
     semester = Column(Integer, nullable=True)  # 学期 1=上学期, 2=下学期
 
-    # 复习相关
+    # 复习相关（已废弃：自 v1.1 起复习数据按小孩隔离，存 WordProgress 表；以下列仅保留兼容旧库）
     review_count = Column(Integer, default=0)  # 复习次数
     correct_count = Column(Integer, default=0)  # 正确次数
     last_reviewed_at = Column(DateTime, nullable=True)  # 上次复习时间
     next_review_at = Column(DateTime, nullable=True)  # 下次复习时间
 
-    # 记忆曲线参数（艾宾浩斯）
+    # 记忆曲线参数（艾宾浩斯）（已废弃：见上）
     ease_factor = Column(Integer, default=250)  # 难度因子（单位：分钟）
     interval = Column(Integer, default=1)  # 当前间隔天数
     learning_phase = Column(String(20), default="新学")  # 新学/在途/遗忘点/牢记
@@ -54,6 +54,7 @@ class WordReviewLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     word_id = Column(Integer, ForeignKey("word.id"), nullable=False)
+    user_id = Column(Integer, nullable=True, index=True)  # 复习小孩（NULL=旧数据，迁移后归属演示小孩）
     is_correct = Column(Boolean, nullable=False)  # 是否正确
     user_answer = Column(Text, nullable=True)  # 用户答案
     review_type = Column(Integer, nullable=False)  # 复习题型 1=默写, 2=选择
@@ -69,8 +70,34 @@ class WordReview(Base):
     __tablename__ = "word_review"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=True, index=True)  # 复习小孩（NULL=旧数据，迁移后归属演示小孩）
     total_count = Column(Integer, default=0)  # 总单词数
     correct_count = Column(Integer, default=0)  # 正确数
     error_count = Column(Integer, default=0)  # 错误数
     duration = Column(Integer, default=0)  # 用时（秒）
     reviewed_at = Column(DateTime, default=datetime.now, nullable=False)
+
+
+class WordProgress(Base):
+    """单词复习进度（按小孩隔离）——单词库本身共享，复习情况/正确率每小孩一份"""
+    __tablename__ = "word_progress"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    word_id = Column(Integer, ForeignKey("word.id"), nullable=False, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    review_count = Column(Integer, default=0)  # 复习次数
+    correct_count = Column(Integer, default=0)  # 正确次数
+    last_reviewed_at = Column(DateTime, nullable=True)  # 上次复习时间
+    next_review_at = Column(DateTime, nullable=True)  # 下次复习时间
+
+    # 记忆曲线参数（艾宾浩斯）
+    ease_factor = Column(Integer, default=250)  # 难度因子（单位：分钟）
+    interval = Column(Integer, default=1)  # 当前间隔天数
+    learning_phase = Column(String(20), default="新学")  # 新学/在途/遗忘点/牢记
+
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+    __table_args__ = (
+        # 每小孩每词只有一条进度
+        __import__("sqlalchemy").UniqueConstraint("word_id", "user_id", name="uq_word_progress_word_user"),
+    )

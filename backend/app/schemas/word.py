@@ -86,6 +86,7 @@ class ReviewSessionSubmit(BaseModel):
     session_id: int
     results: List[WordReviewSubmit]
     duration: int = Field(0, description="用时秒数")
+    user_id: Optional[int] = Field(None, description="小孩ID；不传则默认第一个小孩（兼容旧前端）")
 
 
 class WordStatsResponse(BaseModel):

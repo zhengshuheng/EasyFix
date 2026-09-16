@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc
 from typing import Optional, List
 from pydantic import BaseModel
 import random
@@ -11,6 +11,8 @@ import json
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models import Word, Tag, WordReviewLog, WordReview
+from app.models.word import WordProgress
+from app.models.user import User
 from app.schemas.word import (
     WordCreate, WordUpdate, WordResponse, WordListResponse,
     WordStatsResponse, ReviewSessionSubmit, ReviewStartResponse, ReviewQuestion,
@@ -21,6 +23,27 @@ router = APIRouter(prefix="/api/words", tags=["单词"])
 
 # 默认用户ID
 DEFAULT_USER_ID = 1
+
+
+def _resolve_user_id(db: Session, user_id: Optional[int]) -> int:
+    """未指定小孩时回退到第一个小孩（演示小孩），兼容旧前端"""
+    if user_id:
+        return user_id
+    kid = db.query(User.id).filter(User.role == "child").order_by(User.id).first()
+    return kid[0] if kid else DEFAULT_USER_ID
+
+
+def _get_progress(db: Session, word_id: int, user_id: int) -> WordProgress:
+    """获取（必要时创建）某小孩对某词的复习进度"""
+    p = db.query(WordProgress).filter(
+        WordProgress.word_id == word_id,
+        WordProgress.user_id == user_id,
+    ).first()
+    if not p:
+        p = WordProgress(word_id=word_id, user_id=user_id)
+        db.add(p)
+        db.flush()
+    return p
 
 
 def _get_accuracy_level(review_count: int, correct_count: int) -> str:
@@ -38,10 +61,11 @@ def _get_accuracy_level(review_count: int, correct_count: int) -> str:
         return "mastered"  # 掌握
 
 
-def _get_consecutive_correct(word_id: int, db: Session) -> int:
+def _get_consecutive_correct(word_id: int, user_id: int, db: Session) -> int:
     """获取连续正确次数"""
     logs = db.query(WordReviewLog).filter(
         WordReviewLog.word_id == word_id,
+        WordReviewLog.user_id == user_id,
         WordReviewLog.deleted == False
     ).order_by(WordReviewLog.reviewed_at.desc()).limit(10).all()
 
@@ -58,6 +82,7 @@ def _get_consecutive_correct(word_id: int, db: Session) -> int:
 def list_words(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
+    user_id: Optional[int] = Query(None, description="小孩ID（复习情况/正确率按该小孩统计；不传则默认第一个小孩）"),
     grade: Optional[int] = Query(None, ge=1, le=12),
     semester: Optional[int] = Query(None, ge=1, le=2),
     tag_ids: Optional[str] = Query(None, description="标签ID，多个用逗号分隔"),
@@ -69,7 +94,8 @@ def list_words(
     accuracy_level: Optional[str] = Query(None, description="正确率等级：new, weak, learning, good, mastered"),
     db: Session = Depends(get_db),
 ):
-    """获取单词列表"""
+    """获取单词列表（单词库全局共享；复习情况/正确率按 user_id 隔离）"""
+    uid = _resolve_user_id(db, user_id)
     query = db.query(Word).filter(Word.deleted == False)
 
     if grade:
@@ -90,13 +116,27 @@ def list_words(
     # 先获取所有匹配的数据用于计算正确率
     all_items = query.all()
 
+    # 批量读取该小孩的复习进度（避免 N+1）
+    word_ids = [w.id for w in all_items]
+    progress_map = {}
+    if word_ids:
+        progs = db.query(WordProgress).filter(
+            WordProgress.user_id == uid,
+            WordProgress.word_id.in_(word_ids),
+        ).all()
+        progress_map = {p.word_id: p for p in progs}
+
     # 计算正确率并过滤
     items_with_accuracy = []
     for item in all_items:
-        accuracy = (item.correct_count / item.review_count * 100) if item.review_count and item.review_count > 0 else (0 if item.review_count == 0 else None)
-        item_accuracy_level = _get_accuracy_level(item.review_count or 0, item.correct_count or 0)
+        p = progress_map.get(item.id)
+        review_count = p.review_count if p else 0
+        correct_count = p.correct_count if p else 0
+        accuracy = (correct_count / review_count * 100) if review_count and review_count > 0 else (0 if review_count == 0 else None)
+        item_accuracy_level = _get_accuracy_level(review_count or 0, correct_count or 0)
         items_with_accuracy.append({
             'item': item,
+            'progress': p,
             'accuracy': accuracy,
             'accuracy_level': item_accuracy_level
         })
@@ -115,7 +155,7 @@ def list_words(
     if sort_by == 'accuracy':
         items_with_accuracy.sort(key=lambda x: x['accuracy'] if x['accuracy'] is not None else -1, reverse=(sort_order == 'desc'))
     elif sort_by == 'review_count':
-        items_with_accuracy.sort(key=lambda x: x['item'].review_count or 0, reverse=(sort_order == 'desc'))
+        items_with_accuracy.sort(key=lambda x: (x['progress'].review_count if x['progress'] else 0) or 0, reverse=(sort_order == 'desc'))
     else:
         items_with_accuracy.sort(key=lambda x: x['item'].created_at.timestamp(), reverse=(sort_order == 'desc'))
 
@@ -128,6 +168,7 @@ def list_words(
     items = []
     for x in paginated:
         item = x['item']
+        p = x['progress']
         items.append({
             "id": item.id,
             "english": item.english,
@@ -135,12 +176,12 @@ def list_words(
             "phonetic": item.phonetic,
             "grade": item.grade,
             "semester": item.semester,
-            "review_count": item.review_count or 0,
-            "correct_count": item.correct_count or 0,
+            "review_count": (p.review_count if p else 0) or 0,
+            "correct_count": (p.correct_count if p else 0) or 0,
             "accuracy": x['accuracy'],
             "accuracy_level": x['accuracy_level'],
-            "last_reviewed_at": item.last_reviewed_at,
-            "next_review_at": item.next_review_at,
+            "last_reviewed_at": p.last_reviewed_at if p else None,
+            "next_review_at": p.next_review_at if p else None,
             "created_at": item.created_at,
             "tags": item.tags,
         })
@@ -151,16 +192,74 @@ def list_words(
     }
 
 
+@router.get("/errors", response_model=WordListResponse)
+def get_error_words(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    user_id: Optional[int] = Query(None, description="小孩ID（错词按该小孩进度计算；不传则默认第一个小孩）"),
+    db: Session = Depends(get_db)
+):
+    """获取错词列表（该小孩正确率低于60%的单词）"""
+    uid = _resolve_user_id(db, user_id)
+    query = db.query(Word).filter(
+        Word.deleted == False,
+        Word.id.in_(
+            db.query(WordProgress.word_id).filter(
+                WordProgress.user_id == uid,
+                WordProgress.review_count > 0,
+                WordProgress.correct_count * 1.0 / WordProgress.review_count < 0.6,
+            )
+        )
+    )
+
+    total = query.count()
+    items = query.order_by(desc(Word.id)).offset(skip).limit(limit).all()
+
+    # 组装进度字段
+    word_ids = [w.id for w in items]
+    progress_map = {
+        p.word_id: p for p in db.query(WordProgress).filter(
+            WordProgress.user_id == uid,
+            WordProgress.word_id.in_(word_ids),
+        ).all()
+    } if word_ids else {}
+    result_items = []
+    for w in items:
+        p = progress_map.get(w.id)
+        result_items.append({
+            "id": w.id,
+            "english": w.english,
+            "chinese": w.chinese,
+            "phonetic": w.phonetic,
+            "grade": w.grade,
+            "semester": w.semester,
+            "review_count": (p.review_count if p else 0) or 0,
+            "correct_count": (p.correct_count if p else 0) or 0,
+            "accuracy": round((p.correct_count / p.review_count * 100), 1) if p and p.review_count else 0,
+            "accuracy_level": _get_accuracy_level((p.review_count if p else 0) or 0, (p.correct_count if p else 0) or 0),
+            "last_reviewed_at": p.last_reviewed_at if p else None,
+            "next_review_at": p.next_review_at if p else None,
+            "created_at": w.created_at,
+            "tags": w.tags,
+        })
+
+    return {"total": total, "items": result_items}
+
+
 @router.get("/{word_id}/memory-curve", response_model=MemoryCurveResponse)
-def get_memory_curve(word_id: int, db: Session = Depends(get_db)):
-    """获取单词记忆曲线"""
+def get_memory_curve(word_id: int, user_id: Optional[int] = Query(None, description="小孩ID，不传则默认第一个小孩"), db: Session = Depends(get_db)):
+    """获取单词记忆曲线（按小孩隔离）"""
+    uid = _resolve_user_id(db, user_id)
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
         raise HTTPException(status_code=404, detail="单词不存在")
 
-    # 获取复习历史
+    progress = _get_progress(db, word_id, uid)
+
+    # 获取该小孩的复习历史
     logs = db.query(WordReviewLog).filter(
         WordReviewLog.word_id == word_id,
+        WordReviewLog.user_id == uid,
         WordReviewLog.deleted == False
     ).order_by(WordReviewLog.reviewed_at.desc()).all()
 
@@ -174,20 +273,35 @@ def get_memory_curve(word_id: int, db: Session = Depends(get_db)):
 
     return {
         "word_id": word.id,
-        "learning_phase": word.learning_phase or "新学",
-        "interval": word.interval or 1,
-        "next_review_at": word.next_review_at,
+        "learning_phase": progress.learning_phase or "新学",
+        "interval": progress.interval or 1,
+        "next_review_at": progress.next_review_at,
         "review_history": review_history
     }
 
 
 @router.get("/{word_id}", response_model=WordResponse)
-def get_word(word_id: int, db: Session = Depends(get_db)):
-    """获取单词详情"""
+def get_word(word_id: int, user_id: Optional[int] = Query(None, description="小孩ID，不传则默认第一个小孩"), db: Session = Depends(get_db)):
+    """获取单词详情（复习字段按小孩隔离）"""
+    uid = _resolve_user_id(db, user_id)
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
         raise HTTPException(status_code=404, detail="单词不存在")
-    return word
+    progress = _get_progress(db, word_id, uid)
+    return {
+        "id": word.id,
+        "english": word.english,
+        "chinese": word.chinese,
+        "phonetic": word.phonetic,
+        "grade": word.grade,
+        "semester": word.semester,
+        "review_count": progress.review_count or 0,
+        "correct_count": progress.correct_count or 0,
+        "last_reviewed_at": progress.last_reviewed_at,
+        "next_review_at": progress.next_review_at,
+        "tags": word.tags,
+        "created_at": word.created_at,
+    }
 
 
 @router.post("", response_model=WordResponse, status_code=201)
@@ -401,11 +515,13 @@ def generate_audio(grade: Optional[int] = None, db: Session = Depends(get_db)):
 
 @router.get("/stats/summary", response_model=WordStatsResponse)
 def get_stats(
+    user_id: Optional[int] = Query(None, description="小孩ID（复习统计按该小孩；不传则默认第一个小孩）"),
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
 ):
-    """获取单词统计（单词属于英语学科；指定其他学科时返回全零；可按年级过滤）"""
+    """获取单词统计（单词属于英语学科；指定其他学科时返回全零；复习数据按小孩隔离）"""
+    uid = _resolve_user_id(db, user_id)
     # 学科过滤：仅英语学科有单词数据
     if subject_id is not None:
         from app.models.subject import Subject
@@ -432,13 +548,20 @@ def get_stats(
             q = q.filter(Word.grade == grade)
         return q
 
+    def _pq(q):
+        """WordProgress 查询按年级过滤（join Word）"""
+        if grade is not None:
+            q = q.join(Word, Word.id == WordProgress.word_id).filter(Word.deleted == False, Word.grade == grade)
+        return q
+
     def _lq(q):
-        """WordReviewLog 查询按年级过滤（join Word）"""
+        """WordReviewLog 查询按小孩 + 年级过滤（join Word）"""
+        q = q.filter(WordReviewLog.user_id == uid)
         if grade is not None:
             q = q.join(Word, Word.id == WordReviewLog.word_id).filter(Word.deleted == False, Word.grade == grade)
         return q
 
-    # 总单词数
+    # 总单词数（词库全局共享）
     total_words = _wq(db.query(Word).filter(Word.deleted == False)).count()
 
     # 总复习次数 = 练习场次数（排除已删除练习集）；指定年级时按该年级单词的复习日志数近似
@@ -464,40 +587,45 @@ def get_stats(
     # 正确率
     accuracy = (total_correct / total_logs * 100) if total_logs > 0 else 0
 
-    # 各状态单词数
-    mastered_words = _wq(db.query(Word).filter(
-        Word.deleted == False,
-        Word.review_count >= 5,
-        Word.correct_count / Word.review_count >= 0.9
+    # 各状态单词数（按该小孩进度：掌握/学习中/新词）
+    mastered_words = _pq(db.query(WordProgress).filter(
+        WordProgress.user_id == uid,
+        WordProgress.review_count >= 5,
+        WordProgress.correct_count / WordProgress.review_count >= 0.9
     )).count()
 
-    new_words = _wq(db.query(Word).filter(
-        Word.deleted == False,
-        Word.review_count == 0
+    # 该小孩复习过的词数（有进度且 review_count>0）
+    reviewed_words_count = _pq(db.query(WordProgress).filter(
+        WordProgress.user_id == uid,
+        WordProgress.review_count > 0
     )).count()
 
-    learning_words = total_words - mastered_words - new_words
+    # 新词 = 词库中该小孩从未复习（或进度为0）的词
+    new_words = total_words - reviewed_words_count
 
-    # 今日复习数
+    # 学习中 = 复习过但未达掌握
+    learning_words = reviewed_words_count - mastered_words
+
+    # 今日复习数（该小孩）
     today = datetime.now().date()
     review_today = _lq(db.query(WordReviewLog).filter(
         WordReviewLog.deleted == False,
         func.date(WordReviewLog.reviewed_at) == today
     )).count()
 
-    # 待复习数（超过预定复习时间）
+    # 待复习数（该小孩，超过预定复习时间）
     now = datetime.now()
-    due_words = _wq(db.query(Word).filter(
-        Word.deleted == False,
-        Word.next_review_at != None,
-        Word.next_review_at <= now
+    due_words = _pq(db.query(WordProgress).filter(
+        WordProgress.user_id == uid,
+        WordProgress.next_review_at != None,
+        WordProgress.next_review_at <= now
     )).count()
 
-    # 待复习数量 = 未复习 + 曲线到期
-    unreviewed_count = _wq(db.query(Word).filter(Word.deleted == False, Word.review_count == 0)).count()
+    # 待复习数量 = 未复习（新词）+ 曲线到期（该小孩）
+    unreviewed_count = total_words - reviewed_words_count
     to_review_count = unreviewed_count + due_words
 
-    # 年级分布
+    # 年级分布（词库全局）
     grade_dist = {}
     words_by_grade = _wq(db.query(Word.grade, func.count(Word.id)).filter(
         Word.deleted == False,
@@ -524,11 +652,13 @@ def get_stats(
 @router.post("/review/start", response_model=ReviewStartResponse)
 def start_review(
     count: int = Query(25, ge=10, le=100, description="复习单词数量"),
+    user_id: Optional[int] = Query(None, description="小孩ID（复习进度按该小孩抽样；不传则默认第一个小孩）"),
     grade: Optional[int] = Query(None, description="按年级筛选"),
     word_ids: Optional[str] = Query(None, description="指定单词ID，多个用逗号分隔"),
     db: Session = Depends(get_db)
 ):
-    """开始复习 - 智能抽取单词，优先抽取未复习和低正确率的单词"""
+    """开始复习 - 智能抽取单词，优先抽取该小孩未复习和低正确率的单词"""
+    uid = _resolve_user_id(db, user_id)
     query = db.query(Word).filter(Word.deleted == False)
 
     # 如果指定了单词ID，使用指定的单词（不走智能抽样）
@@ -545,11 +675,19 @@ def start_review(
     if len(all_words) == 0:
         raise HTTPException(status_code=400, detail="没有可复习的单词")
 
+    # 批量读取该小孩进度
+    progress_map = {
+        p.word_id: p for p in db.query(WordProgress).filter(
+            WordProgress.user_id == uid,
+            WordProgress.word_id.in_([w.id for w in all_words]),
+        ).all()
+    }
+
     # 如果指定了单词ID且数量足够，直接使用；否则使用智能抽样
     if word_ids and len(all_words) <= count:
         selected_words = all_words
     else:
-        # 新算法：按优先级抽取
+        # 新算法：按优先级抽取（基于该小孩进度）
         pool_unreviewed = []  # 未复习
         pool_due = []         # 曲线到期
         pool_low_acc = []     # 低正确率(<60%)
@@ -557,10 +695,14 @@ def start_review(
 
         now = datetime.now()
         for w in all_words:
-            accuracy = (w.correct_count / w.review_count * 100) if w.review_count and w.review_count > 0 else 0
-            if w.review_count == 0:
+            p = progress_map.get(w.id)
+            review_count = p.review_count if p else 0
+            correct_count = p.correct_count if p else 0
+            next_review_at = p.next_review_at if p else None
+            accuracy = (correct_count / review_count * 100) if review_count and review_count > 0 else 0
+            if review_count == 0:
                 pool_unreviewed.append(w)
-            elif w.next_review_at and w.next_review_at <= now:
+            elif next_review_at and next_review_at <= now:
                 pool_due.append(w)
             elif accuracy < 60:
                 pool_low_acc.append(w)
@@ -596,8 +738,8 @@ def start_review(
             if o_count > 0:
                 selected_words.extend(random.sample(pool_other, o_count))
 
-    # 创建复习场次
-    review_session = WordReview(total_count=len(selected_words))
+    # 创建复习场次（按小孩）
+    review_session = WordReview(user_id=uid, total_count=len(selected_words))
     db.add(review_session)
     db.commit()
     db.refresh(review_session)
@@ -630,10 +772,11 @@ def start_review(
 
 @router.post("/review/submit")
 def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
-    """提交复习结果"""
+    """提交复习结果（复习进度写入该小孩的 WordProgress；若未指定 user_id 则默认第一个小孩）"""
     from app.models import PracticeSet, WordReviewSession, Subject
     from app.models.tag import Tag
 
+    uid = _resolve_user_id(db, data.user_id)
     correct_count = 0
     error_count = 0
     now = datetime.now()
@@ -646,9 +789,10 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
             continue
         reviewed_words.append(word)
 
-        # 记录复习日志
+        # 记录复习日志（按小孩）
         log = WordReviewLog(
             word_id=result.word_id,
+            user_id=uid,
             is_correct=result.is_correct,
             user_answer=result.user_answer,
             review_type=result.review_type,
@@ -656,33 +800,36 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         )
         db.add(log)
 
+        # 读取/创建该小孩进度
+        progress = _get_progress(db, result.word_id, uid)
+
         # 增加复习次数（每次复习都要增加）
-        word.review_count = (word.review_count or 0) + 1
+        progress.review_count = (progress.review_count or 0) + 1
 
         # 更新间隔和阶段
         if result.is_correct:
-            word.correct_count = (word.correct_count or 0) + 1
+            progress.correct_count = (progress.correct_count or 0) + 1
             correct_count += 1
             # 艾宾浩斯间隔：答对则加倍，最多30天
-            word.interval = min((word.interval or 1) * 2, 30)
+            progress.interval = min((progress.interval or 1) * 2, 30)
             # 更新阶段
-            consecutive_correct = _get_consecutive_correct(word.id, db)
-            if consecutive_correct >= 3 and word.interval >= 7:
-                word.learning_phase = "牢记"
-            elif word.next_review_at and word.next_review_at <= datetime.now():
-                word.learning_phase = "遗忘点"
+            consecutive_correct = _get_consecutive_correct(word.id, uid, db)
+            if consecutive_correct >= 3 and progress.interval >= 7:
+                progress.learning_phase = "牢记"
+            elif progress.next_review_at and progress.next_review_at <= datetime.now():
+                progress.learning_phase = "遗忘点"
             else:
-                word.learning_phase = "在途"
+                progress.learning_phase = "在途"
         else:
             error_count += 1
-            word.interval = 1  # 错误后重置为1天
-            word.learning_phase = "在途"  # 退回在途
+            progress.interval = 1  # 错误后重置为1天
+            progress.learning_phase = "在途"  # 退回在途
 
         # 计算下次复习时间
-        word.last_reviewed_at = now
-        word.next_review_at = datetime(
+        progress.last_reviewed_at = now
+        progress.next_review_at = datetime(
             now.year, now.month, now.day
-        ) + timedelta(days=word.interval)
+        ) + timedelta(days=progress.interval)
 
     # 更新复习场次
     review_session = db.query(WordReview).filter(WordReview.id == data.session_id).first()
@@ -705,7 +852,7 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         # 检查单词正确率成就（满足条件时触发）
         if len(data.results) >= 10 and accuracy >= 90:
             service.check_word_accuracy(
-                user_id=DEFAULT_USER_ID,
+                user_id=uid,
                 total_count=len(data.results),
                 correct_count=correct_count,
                 reason=f"单词正确率{accuracy}%"
@@ -758,35 +905,6 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         "error": error_count,
         "accuracy": accuracy
     }
-
-
-@router.get("/errors", response_model=WordListResponse)
-def get_error_words(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000),
-    db: Session = Depends(get_db)
-):
-    """获取错词列表（正确率低于60%的单词）"""
-    # 子查询：获取正确率
-    from sqlalchemy import case
-
-    query = db.query(Word).filter(
-        Word.deleted == False,
-        Word.review_count > 0
-    ).outerjoin(
-        WordReviewLog, Word.id == WordReviewLog.word_id
-    ).filter(
-        or_(WordReviewLog.deleted == None, WordReviewLog.deleted == False)
-    ).group_by(
-        Word.id
-    ).having(
-        func.sum(case((WordReviewLog.is_correct == True, 1), else_=0)) / func.count(WordReviewLog.id) < 0.6
-    )
-
-    total = query.count()
-    items = query.order_by(desc(Word.review_count)).offset(skip).limit(limit).all()
-
-    return {"total": total, "items": items}
 
 
 @router.post("/print-pdf")
