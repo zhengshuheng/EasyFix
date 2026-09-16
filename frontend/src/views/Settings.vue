@@ -1,11 +1,7 @@
 <template>
   <div class="settings">
-    <el-card>
-      <template #header>
-        <span>系统配置</span>
-      </template>
-
-      <el-tabs v-model="activeTab">
+    <el-card shadow="never">
+      <el-tabs v-model="activeTab" tab-position="left" class="mgmt-tabs">
         <!-- 通用配置 -->
         <el-tab-pane label="通用配置" name="general">
           <div class="tab-content general-config">
@@ -443,12 +439,40 @@ onMounted(() => {
 
 <style scoped>
 .settings {
-  max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .tab-content {
   padding: 10px 0;
+}
+
+/* 左侧子菜单竖排：与题库管理/激励配置保持一致 */
+.mgmt-tabs {
+  display: flex;
+}
+
+.mgmt-tabs :deep(.el-tabs__header) {
+  width: 150px;
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.mgmt-tabs :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+.mgmt-tabs :deep(.el-tabs__item) {
+  height: 42px;
+  line-height: 42px;
+  text-align: left;
+  padding-left: 18px;
+}
+
+.mgmt-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  min-width: 0;
+  padding: 0 0 0 18px;
+  overflow: auto;
 }
 
 .general-config {

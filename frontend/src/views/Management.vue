@@ -1,12 +1,6 @@
 <template>
   <div class="management">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>管理中心</span>
-        </div>
-      </template>
-
+    <el-card shadow="never">
       <el-tabs v-model="activeTab" tab-position="left" class="mgmt-tabs">
         <!-- 学科管理 -->
         <el-tab-pane label="学科管理" name="subjects">
@@ -860,12 +854,6 @@ onMounted(() => {
 .management {
   /* 不限制最大宽度：内容区占满右侧区域，避免宽屏下左右大片空白 */
   width: 100%;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .tab-content {

@@ -1,9 +1,6 @@
 <template>
   <div class="incentive-config">
     <el-card shadow="never">
-      <template #header>
-        <span>激励配置</span>
-      </template>
       <el-tabs v-model="activeTab" tab-position="left" class="mgmt-tabs">
         <!-- 行为配置 -->
         <el-tab-pane label="行为配置" name="starActions">
