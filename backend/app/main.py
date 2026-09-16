@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.database import engine, Base, SessionLocal, get_db
-from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router
+from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router, textbook_router
 from app.config import get_settings
 from app.models.user import User
 from app.utils.auth import (
@@ -154,6 +154,7 @@ app.include_router(reading_router)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(k12_router)
+app.include_router(textbook_router)
 
 
 @app.get("/")

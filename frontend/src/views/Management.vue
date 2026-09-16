@@ -119,6 +119,10 @@
                 <el-icon><Download /></el-icon>
                 从教材知识库导入
               </el-button>
+              <el-button type="warning" plain @click="showTextbookImport = true">
+                <el-icon><Reading /></el-icon>
+                按教材同步导入
+              </el-button>
             </div>
             <div class="kp-summary">
               <span class="kp-path">{{ kpFilterText }}（共 {{ knowledgePoints.length }} 条）</span>
@@ -319,6 +323,9 @@
         <el-button type="primary" @click="createOrUpdateErrorBook">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 教材同步导入弹窗 -->
+    <TextbookImport v-model="showTextbookImport" @imported="onTextbookImported" />
   </div>
 </template>
 
@@ -329,8 +336,16 @@ import { questionApi } from '@/api/question'
 import { k12Api } from '@/api/k12'
 import { usersApi } from '@/api/users'
 import WordLibrary from './WordLibrary.vue'
+import TextbookImport from './TextbookImport.vue'
 
 const activeTab = ref('subjects')
+
+// 教材同步导入弹窗
+const showTextbookImport = ref(false)
+const onTextbookImported = () => {
+  // 刷新知识点列表
+  fetchKpAll()
+}
 
 // 年级选项
 const gradeOptions = [

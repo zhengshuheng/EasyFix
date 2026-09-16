@@ -1,0 +1,5844 @@
+{
+ "generatedAt": "2026-09-16 17:21:11",
+ "total": 381,
+ "books": [
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMKaqI7kG-mqJ1KqthxJVe9vGgCbngAAtAeAALcuBBVpY1AaUo2h1s9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMmaqI9uLX_dYcck0f_2cwd_CHlWF8AAuYeAALcuBBVleOsCphhi8o9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMkaqI9neNllfSEd2uw5DkZeF8GH94AAuUeAALcuBBV-IWhPP-P0eQ9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMiaqI9WsUIiB6I3HXSGRbS23p_azAAAuIeAALcuBBVbga9op5vTfc9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMgaqI9R62R89kY-kUDEUKRbZYaUJEAAuEeAALcuBBVC-XB5g313UU9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMeaqI9K9Pq9hdj4GwKwTn5VqNMw1MAAt8eAALcuBBVY5Kr8avCWUw9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMaaqI8xIHjsTB1msORc__ryIvPLN4AAtweAALcuBBVoNwgqxAyzAM9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学一年级上册.pdf",
+     "size": 50154321
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMYaqI8tDEEgm0rJPs5ooPMoCGaa6sAAtseAALcuBBVsUo2yReqzjw9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学一年级下册.pdf",
+     "size": 31615878
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMWaqI8oCh5voxHGHYGmJgYCA43b7sAAtoeAALcuBBVWrPSUCZqh-Q9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMUaqI8kMM8FI_hfdjLKJcGb3Is6o4AAtkeAALcuBBVICWay2eBQOs9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMSaqI8XHWEamThIXm1AruUVZgsxh0AAtceAALcuBBVAl0tUI2-0-k9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMQaqI8RW8cCKsj3JX-euRNv0Vmhi8AAtUeAALcuBBVwd_f5tbKPj09BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMOaqI8CnHT4gobzh6lFT-9NMfRze0AAtMeAALcuBBVJM3foeg5GF49BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANEaqJD_fADH5aKhcPjMlZlYnLDPmQAAhYfAALcuBBVL5nhvDfN8009BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANCaqJD-wNWb1JwNxHxTb9zdKyGacUAAhUfAALcuBBVVsN84yNNU8A9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANAaqJDx2h1hJeBmOcLF-zIgZYz8-wAAhQfAALcuBBV7L82ULuWH4I9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAM-aqJDkKZTPSzWkoDcDw18aCn6ybUAAhAfAALcuBBVtVgETGg8XKA9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAM8aqJDfMZhfb3L8yJATc5FCWg4GGEAAg8fAALcuBBVLxZB9oMstVE9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAM6aqJDaSg9gcmmFiF9CldLY8QlNgwAAg4fAALcuBBVXoJL_9iYPZw9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAM0aqJCqtdGEmDZiCp9-B-TKYlv8XgAAgsfAALcuBBV3Lf8RepYG6U9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMyaqJCdqpRnZ6aJ2mQ0PrqkofQlPcAAgofAALcuBBVo03sZCcN28I9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学二年级上册.pdf",
+     "size": 45622631
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMwaqJCTyAMJYohhc-JAniZme922CoAAgkfAALcuBBVPlH8WUG9cpI9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学二年级下册.pdf",
+     "size": 25106337
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMuaqJCN4Q9b5uepqVRPCOkFUqFcaUAAgcfAALcuBBVVmZsqRNF8uU9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMsaqJCCRQ2ve8m-gZV2VW5bZlY4wwAAgYfAALcuBBVsugW9hCFbwg9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMqaqJB5rhiFdlEQBmf6KQBwiRQ2OQAAgUfAALcuBBV3gvvMpRnyXk9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAAMoaqJB2nDkhInD-Ac0Rwy6dVSkVsEAAgQfAALcuBBVXhytZumeGpc9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://tu.20190723.xyz/file/1789021137652_语文_三年级上册.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANqaqJHuWt4pQ_eKCk_ETI84gVHkJ8AAiwfAALcuBBVuwABj_mwyPiwPQQ.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANoaqJHcpm7FWoDre0ubFoC0fOVI-AAAisfAALcuBBV7VPC8rqEB5s9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANmaqJHVWgN06r0g2rM4DTMHrHHX6YAAiofAALcuBBViUTJz_uJEb49BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANgaqJG4l4vYswa4vn7Oe0Ya4NOTbgAAicfAALcuBBV-jS-7-aL3Fg9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANcaqJGk3jYw9qulsN8uN-rkIFj_b0AAiUfAALcuBBV-1zGWLURmdc9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANYaqJGSes0KMe8Qj8Qpga_qM4wOUwAAiMfAALcuBBVtv1xBVGkDZE9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学三年级上册.pdf",
+     "size": 29858964
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANUaqJGLJ7HbXuhSwABx4EbX-a1ZzPpAAIhHwAC3LgQVWO08wFT6sSSPQQ.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANSaqJF-n5PObN6MFXg8A2QoZlvg2wAAiAfAALcuBBV9SA1ukRSjTY9BA.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学三年级下册.pdf",
+     "size": 15535688
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANQaqJFrkOCXITFFIH_PuqNoC0Y9zgAAh8fAALcuBBVGgdZOf_ZzP09BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANOaqJFjgqhnyljCNvqvssMbAUw6OEAAh0fAALcuBBVW1lUcM6ymMU9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANMaqJFb0m_GhdlZb5TlHtYlxrj9joAAhwfAALcuBBVwoJjXCBXeFg9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANKaqJFVcow65TK4ELO0bYK7hzQck4AAhsfAALcuBBVPczt3ftiHL09BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANIaqJFDwwEFkN15cxWL51jjEOsGVUAAhkfAALcuBBVpxPZzTmCL7g9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/BQACAgUAAyEGAATrEHjgAANGaqJE9Wv2hW2zhJekuDLxwrqIWykAAhgfAALcuBBVxj8cxzU1gPw9BA.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021968614_6k1zw7.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学四年级上册.pdf",
+     "size": 22734596
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021905729_2vk7qo.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021904560_9m74fk.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学四年级下册.pdf",
+     "size": 14949022
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021677598_zbuhif.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021641059_gl7p36.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021518221_5210p5.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021517290_nd1hf9.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021453330_sehbk5.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021427727_avhtmb.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021409631_wh3kzb.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021369224_79272y.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021306876_qd0fp8.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021301961_gca6l7.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021281974_xfj6ff.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789021280369_iu5bkq.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023145080_zpshpb.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学五年级下册.pdf",
+     "size": 14621452
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023070205_4dag1s.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023067188_xczf8z.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022906882_xl8amj.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022880611_qy6xak.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022778220_h5b9xg.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022772536_oyc423.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022736821_73e53f.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学五年级上册.pdf",
+     "size": 25743599
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022705764_p43326.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022516921_zin631.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022423980_2055my.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022370533_fu5vze.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022346382_hefdth.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022329471_0kpbqn.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789022324131_vb0c15.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023743721_37pdcn.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "语文",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023736616_eo78ql.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023683544_ft8pnp.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023656514_vm7a9z.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023622766_lbk093.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "音乐",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023592147_k9b2oz.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "体育与健康",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "全一册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023589390_fbxjgk.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023567889_50yepe.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书 · 数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书 · 数学六年级上册.pdf",
+     "size": 18717437
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023545440_ct4jhq.pdf"
+    },
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/人教版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/人教版/义务教育教科书·数学六年级下册.pdf",
+     "size": 13134464
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023514054_w44neb.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023484565_74orst.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "美术",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023445995_qk98cz.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "科学",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023427268_e7xjfz.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023403716_sa28ee.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "道德与法治",
+   "version": "人教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "freepep",
+     "url": "https://p.20190723.xyz/file/r2:r2_1789023399217_l89t7b.pdf"
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学一年级上册.pdf",
+     "size": 18554897
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学一年级下册.pdf",
+     "size": 17130401
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学三年级上册.pdf",
+     "size": 36356675
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学三年级下册.pdf",
+     "size": 30899033
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学二年级上册.pdf",
+     "size": 19104991
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学二年级下册.pdf",
+     "size": 17224814
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学五年级上册.pdf",
+     "size": 30904965
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学五年级下册.pdf",
+     "size": 25592140
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学六年级上册.pdf",
+     "size": 30936571
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学六年级下册.pdf",
+     "size": 24506546
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学四年级上册.pdf",
+     "size": 23532215
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "冀教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/冀教版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/冀教版/义务教育教科书·数学四年级下册.pdf",
+     "size": 20071520
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学一年级上册.pdf",
+     "size": 16928795
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学一年级下册.pdf",
+     "size": 27562875
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学三年级上册.pdf",
+     "size": 22107258
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学三年级下册.pdf",
+     "size": 19705076
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学二年级上册.pdf",
+     "size": 16263887
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学二年级下册.pdf",
+     "size": 26993824
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学五年级上册.pdf",
+     "size": 21833973
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学五年级下册.pdf",
+     "size": 13334624
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学六年级上册.pdf",
+     "size": 21850334
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学六年级下册.pdf",
+     "size": 7034102
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学四年级上册.pdf",
+     "size": 25579387
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北京版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北京版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北京版/义务教育教科书·数学四年级下册.pdf",
+     "size": 20844400
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学一年级上册.pdf",
+     "size": 52038985
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学一年级下册.pdf",
+     "size": 44951064
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学三年级上册.pdf",
+     "size": 50956204
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学三年级下册.pdf",
+     "size": 48833868
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学二年级下册.pdf",
+     "size": 49323077
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学五年级上册.pdf",
+     "size": 51641244
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学五年级下册.pdf",
+     "size": 45086347
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学六年级上册.pdf",
+     "size": 50618072
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "北师大版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/北师大版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/北师大版/义务教育教科书·数学四年级下册.pdf",
+     "size": 49973640
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学一年级上册.pdf",
+     "size": 11932516
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学一年级下册.pdf",
+     "size": 11408549
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学三年级上册.pdf",
+     "size": 10697141
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学三年级下册.pdf",
+     "size": 10956594
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学二年级上册.pdf",
+     "size": 10379030
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学二年级下册.pdf",
+     "size": 10218180
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学五年级上册.pdf",
+     "size": 9823607
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学五年级下册.pdf",
+     "size": 11237644
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学六年级上册.pdf",
+     "size": 9879129
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学六年级下册.pdf",
+     "size": 9800327
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学四年级上册.pdf",
+     "size": 10253338
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "苏教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/苏教版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/苏教版/义务教育教科书·数学四年级下册.pdf",
+     "size": 10504999
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学一年级上册.pdf",
+     "size": 22365141
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学三年级上册.pdf",
+     "size": 21712688
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学二年级上册.pdf",
+     "size": 24606690
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学五年级上册.pdf",
+     "size": 14917028
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学五年级下册.pdf",
+     "size": 52309781
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南大学版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南大学版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南大学版/义务教育教科书·数学六年级上册.pdf",
+     "size": 15360934
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学一年级上册.pdf",
+     "size": 14103434
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学一年级下册.pdf",
+     "size": 9865791
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学三年级上册.pdf",
+     "size": 9425586
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学三年级下册.pdf",
+     "size": 8643553
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学二年级上册.pdf",
+     "size": 11239437
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学二年级下册.pdf",
+     "size": 8319015
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学五年级上册.pdf",
+     "size": 6941889
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学五年级下册.pdf",
+     "size": 6983559
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学六年级上册.pdf",
+     "size": 6248442
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学六年级下册.pdf",
+     "size": 6296277
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学四年级上册.pdf",
+     "size": 10081306
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "西南师大版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/西南师大版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/西南师大版/义务教育教科书·数学四年级下册.pdf",
+     "size": 7936175
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学一年级上册.pdf",
+     "size": 16745269
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学一年级下册.pdf",
+     "size": 22685837
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学三年级上册.pdf",
+     "size": 10854182
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学三年级下册.pdf",
+     "size": 18705690
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学二年级上册.pdf",
+     "size": 14079797
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学二年级下册.pdf",
+     "size": 25066538
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学五年级上册.pdf",
+     "size": 6933982
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学五年级下册.pdf",
+     "size": 28178892
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学六年级上册.pdf",
+     "size": 4367117
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学六年级下册.pdf",
+     "size": 22500230
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学四年级上册.pdf",
+     "size": 7219395
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "数学",
+   "version": "青岛版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/数学/青岛版/义务教育教科书·数学四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/数学/青岛版/义务教育教科书·数学四年级下册.pdf",
+     "size": 19271858
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）三年级上册.pdf",
+     "size": 9394549
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）五年级上册.pdf",
+     "size": 9151584
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）六年级上册.pdf",
+     "size": 10122487
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（PEP）（三年级起点）四年级上册.pdf",
+     "size": 8904633
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 8861448
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 9420980
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 8525157
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（PEP）（三年级起点）（主编：吴欣）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（PEP）（三年级起点）（主编：吴欣）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 9532806
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "size": 11030983
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "size": 15668712
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "size": 18460456
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "size": 20266927
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "size": 13456263
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "size": 16440436
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "size": 11517174
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "size": 10048468
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "size": 10681044
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "size": 7779633
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "size": 12912678
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（一年级起点）（主编：吴欣）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（一年级起点）（主编：吴欣）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "size": 10490499
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（精通）（三年级起点）（主编：郝建平）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 18211711
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（精通）（三年级起点）（主编：郝建平）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）三年级上册.pdf",
+     "size": 21056623
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（精通）（三年级起点）（主编：郝建平）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）五年级上册.pdf",
+     "size": 18822201
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（精通）（三年级起点）（主编：郝建平）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）六年级上册.pdf",
+     "size": 17198812
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "人教版（精通）（三年级起点）（主编：郝建平）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/人教版（精通）（三年级起点）（主编：郝建平）/义务教育教科书·英语（精通）（三年级起点）四年级上册.pdf",
+     "size": 25547647
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "size": 8361171
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "size": 8646161
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "size": 7903766
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "size": 8230729
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "size": 9120781
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "size": 8611527
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "size": 7547303
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "size": 8081607
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "size": 7787368
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "size": 6264400
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "size": 7861043
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（一年级起点）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（一年级起点）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "size": 7288585
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 9272839
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 10162532
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 9116024
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 9861681
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 9969132
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 6850104
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 9573038
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "冀教版（三年级起点）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/冀教版（三年级起点）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 9723926
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "size": 13247600
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "size": 15571477
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "size": 15892946
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "size": 14494878
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "size": 29882405
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "size": 22266600
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "size": 16520934
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "size": 17556195
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "size": 14013705
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "size": 13484551
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "size": 20266446
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北京版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北京版/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北京版/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "size": 16539930
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 31077740
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 28453830
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 34035948
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 33564594
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 34462691
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 26067958
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 31033315
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "北师大版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/北师大版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/北师大版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 29840904
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "size": 23177467
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "size": 20561346
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "size": 20287718
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "size": 22017293
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "size": 19606298
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "size": 18939637
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "size": 20436562
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "size": 23344853
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "size": 29962636
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "size": 22039711
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "size": 18840356
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（一年级起点）（主编：陈琳）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（一年级起点）（主编：陈琳）/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "size": 19597450
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 15184666
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 16226870
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 19120492
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 14891111
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 17923968
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 15152422
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 16074479
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：刘兆义）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：刘兆义）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 15202448
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 13793215
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 12715144
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 30713369
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 31064486
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 15557621
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 14438539
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 15044882
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：桂诗春）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：桂诗春）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 14244563
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 32078141
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 23156945
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 23760767
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 22807600
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 24500137
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 22724096
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 32681329
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "外研社版（三年级起点）（主编：陈琳）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/外研社版（三年级起点）（主编：陈琳）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 21004164
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 24877010
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 22577750
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 18342865
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 15874348
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 19876557
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 18573993
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 14363223
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "川教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/川教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/川教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 13490009
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 12960310
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 11922309
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 9874023
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 9313217
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 9559995
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 8882338
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 13489457
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "接力版三年级起点",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/接力版三年级起点/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 11552905
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 17555109
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 20067395
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 14614322
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 15482897
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 15549506
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 15599970
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 14595060
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（EEC学院）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（EEC学院）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 15991839
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 18998393
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 19178407
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 24136433
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 24594035
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 26537990
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 23947202
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 23154121
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "教科版（主编：龚亚夫&鲁宗干）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/教科版（主编：龚亚夫&鲁宗干）/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 23824144
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 7745674
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 8930985
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 10233891
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 10587400
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 9755688
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 9783396
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 9442097
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/沪教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/沪教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 9117380
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）一年级上册.pdf",
+     "size": 9922584
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）一年级下册.pdf",
+     "size": 8648106
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）三年级上册.pdf",
+     "size": 10636815
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）三年级下册.pdf",
+     "size": 10481554
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）二年级上册.pdf",
+     "size": 7424529
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）二年级下册.pdf",
+     "size": 8434567
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）五年级上册.pdf",
+     "size": 9704772
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）五年级下册.pdf",
+     "size": 10198795
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）六年级上册.pdf",
+     "size": 9586818
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）六年级下册.pdf",
+     "size": 9076906
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）四年级上册.pdf",
+     "size": 9968733
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "清华大学版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/清华大学版/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/清华大学版/义务教育教科书·英语（一年级起点）四年级下册.pdf",
+     "size": 10341589
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 26829052
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 24139703
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 32742075
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 35663422
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 33377791
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 22862393
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 29991696
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "湘少版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/湘少版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/湘少版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 23689132
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 16396931
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 17172480
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 16196799
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 16317379
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 12924197
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 12987994
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 15369141
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "科普版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/科普版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/科普版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 17440334
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 16663142
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 11195933
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 51668909
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 10263512
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 47854727
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "粤教粤人版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/粤教粤人版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 10294859
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 11174489
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 13911540
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 9332197
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 9227981
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 20559993
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 8349968
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 18544571
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "辽宁师大版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/辽宁师大版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 12255335
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 36711955
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 44208520
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 22449594
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 20374422
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 49122372
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 27209415
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 44297703
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "重庆大学版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/重庆大学版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 41693010
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "闽教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/闽教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/闽教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 36843402
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 16155611
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 18503343
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 22627904
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 18013087
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 14950478
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 17493214
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 15860876
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "陕旅版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/陕旅版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/陕旅版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 18954274
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）三年级上册.pdf",
+     "size": 31332045
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）三年级下册.pdf",
+     "size": 29431029
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）五年级上册.pdf",
+     "size": 27941651
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）五年级下册.pdf",
+     "size": 22763718
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）六年级上册.pdf",
+     "size": 24871338
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）六年级下册.pdf",
+     "size": 30546967
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）四年级上册.pdf",
+     "size": 32077827
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "鲁教湘教版",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [
+    {
+     "source": "chinatx",
+     "repo": "TapXWorld/ChinaTextbook",
+     "path": "小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "url": "https://raw.githubusercontent.com/TapXWorld/ChinaTextbook/master/小学/英语/鲁教湘教版/义务教育教科书·英语（三年级起点）四年级下册.pdf",
+     "size": 29524061
+    }
+   ]
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "一年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "一年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "二年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "二年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "三年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "三年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "四年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "四年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "五年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "五年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "六年级",
+   "semester": "上册",
+   "downloads": [],
+   "local_only": true
+  },
+  {
+   "stage": "小学",
+   "subject": "英语",
+   "version": "沪教版（深圳，一年级起点）",
+   "grade": "六年级",
+   "semester": "下册",
+   "downloads": [],
+   "local_only": true
+  }
+ ]
+}

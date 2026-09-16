@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, Boolean, Table
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, func, Boolean, Table
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -21,6 +21,8 @@ class KnowledgePoint(Base):
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=False)
     grade = Column(Integer, nullable=True)  # 年级 1-12
     semester = Column(Integer, nullable=True)  # 学期 1-2
+    chapter = Column(String(200), nullable=True)  # 教材章节/单元（教材同步导入）
+    description = Column(Text, nullable=True)  # 知识点一句话说明（教材同步导入）
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
     created_at = Column(DateTime, server_default=func.now())
 
