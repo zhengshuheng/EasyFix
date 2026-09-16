@@ -303,8 +303,8 @@
       </template>
     </el-dialog>
 
-    <!-- 做题弹窗（学生做题） -->
-    <el-dialog v-model="studentDoDialogVisible" title="学生做题" width="760px" destroy-on-close>
+    <!-- 做题弹窗（学生做题，全屏便于一年级操作） -->
+    <el-dialog v-model="studentDoDialogVisible" title="学生做题" fullscreen class="student-do-dialog" destroy-on-close>
       <div class="do-tip">
         请逐题作答，完成后点「提交作答」。提交后家长可在「批改」中查看并确认结果。
       </div>
@@ -2786,6 +2786,7 @@ onMounted(() => {
 }
 
 /* 做题无障碍：语音读题 / 语音输入 / 软键盘 */
+/* 做题无障碍：语音读题 / 语音输入 / 软键盘 */
 .do-question-text {
   flex: 1;
   line-height: 1.6;
@@ -3045,5 +3046,27 @@ onMounted(() => {
 .practice-detail-dialog .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__label,
 .practice-detail-dialog .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__content {
   font-size: 16px !important;
+}
+
+/* 做题弹窗全屏布局：题目列表滚动区 + 底部软键盘固定 */
+.student-do-dialog .el-dialog__body {
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* 列表不独立滚动，全部展开在 body 流内（覆盖 scoped 的 max-height:60vh） */
+.student-do-dialog .do-question-list {
+  max-height: none;
+  overflow: visible;
+}
+
+/* 软键盘 sticky 固定底部：body 滚动时键盘始终可见 */
+.student-do-dialog .soft-keyboard {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin-top: 14px;
+  border-top: 1px solid #e4e7ed;
 }
 </style>
