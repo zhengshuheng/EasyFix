@@ -713,23 +713,23 @@
                 <el-radio value="select">从知识点库选择</el-radio>
                 <el-radio value="manual">手动输入</el-radio>
               </el-radio-group>
-              <el-select
-                v-if="aiGenerateForm.knowledge_mode === 'select'"
-                v-model="aiGenerateForm.selected_kp_ids"
-                multiple
-                filterable
-                collapse-tags
-                collapse-tags-tooltip
-                placeholder="按单元选择知识点（可多选）"
-                style="width: 100%; margin-top: 8px"
-                :loading="aiKpLoading"
-              >
-                <el-option-group v-for="g in aiKpGroups" :key="g.key" :label="g.label">
-                  <el-option v-for="kp in g.items" :key="kp.id" :label="kp.name" :value="kp.id" />
-                </el-option-group>
-              </el-select>
-              <div v-if="aiGenerateForm.knowledge_mode === 'select' && !aiKpLoading && aiKpAll.length === 0" style="color: #e6a23c; font-size: 12px; margin-top: 6px; line-height: 1.6">
-                当前学科/年级暂无知识点：请在家长中心 → 题库管理 → 知识点管理用「按教材同步导入」，或切换到其他年级
+              <div v-if="aiGenerateForm.knowledge_mode === 'select'" style="width: 100%; margin-top: 8px">
+                <el-button type="primary" plain style="width: 100%" @click="openKpPicker" :loading="aiKpLoading">
+                  <el-icon><Collection /></el-icon>
+                  &nbsp;选择知识点（{{ aiGenerateForm.selected_kp_ids.length }}）
+                </el-button>
+                <div v-if="aiSelectedKp.length" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px">
+                  <el-tag
+                    v-for="kp in aiSelectedKp"
+                    :key="kp.id"
+                    closable
+                    size="small"
+                    @close="toggleAiKp(kp.id)"
+                  >{{ kp.chapter ? kp.chapter + ' · ' : '' }}{{ kp.name }}</el-tag>
+                </div>
+                <div v-else-if="!aiKpLoading" style="color: #e6a23c; font-size: 12px; margin-top: 6px; line-height: 1.6">
+                  当前学科/年级暂无知识点：请在家长中心 → 题库管理 → 知识点管理用「按教材同步导入」，或切换到其他年级
+                </div>
               </div>
               <div v-else-if="aiGenerateForm.knowledge_mode === 'auto'" style="color: #909399; font-size: 12px; margin-top: 8px; line-height: 1.6">
                 自动统计当前学科错误最多的知识点出题（需有错题记录，否则请选择/输入知识点）
@@ -769,13 +769,54 @@
         </el-button>
       </template>
     </el-dialog>
+
+      <!-- 知识点选择弹窗（按单元分组标签点选） -->
+      <el-dialog v-model="kpPickerVisible" title="选择知识点" width="640px" append-to-body>
+        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center">
+          <el-input v-model="kpSearch" placeholder="搜索知识点名称" clearable style="flex: 1">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button v-if="aiGenerateForm.selected_kp_ids.length" size="default" @click="clearAiKpSelection">清空已选</el-button>
+          <span v-if="aiGenerateForm.selected_kp_ids.length" style="color: #409eff; font-size: 13px; white-space: nowrap">已选 {{ aiGenerateForm.selected_kp_ids.length }} 个</span>
+        </div>
+        <div v-if="aiKpLoading" style="text-align: center; padding: 30px; color: #909399">知识点加载中…</div>
+        <div v-else style="max-height: 400px; overflow-y: auto">
+          <div v-for="g in filteredAiKpGroups" :key="g.key" style="margin-bottom: 10px">
+            <div
+              style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #f5f7fa; border-radius: 6px; cursor: pointer; user-select: none"
+              @click="toggleGroup(g)"
+            >
+              <el-checkbox :model-value="isGroupAllChecked(g)" @click.stop @change="toggleGroup(g)" />
+              <span style="font-weight: 600; font-size: 13px">{{ g.label }}</span>
+              <span style="color: #909399; font-size: 12px">{{ g.items.length }} 个</span>
+              <span v-if="isGroupAllChecked(g)" style="color: #409eff; font-size: 12px; margin-left: auto">已全选</span>
+              <span v-else style="color: #c0c4cc; font-size: 12px; margin-left: auto">全选本单元</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 6px 0 6px">
+              <el-check-tag
+                v-for="kp in g.items"
+                :key="kp.id"
+                :checked="aiGenerateForm.selected_kp_ids.includes(kp.id)"
+                @change="toggleAiKp(kp.id)"
+              >{{ kp.name }}</el-check-tag>
+            </div>
+          </div>
+          <div v-if="!filteredAiKpGroups.length" style="text-align: center; padding: 30px; color: #909399">
+            没有匹配的知识点，可在家长中心导入教材或切换学科/年级
+          </div>
+        </div>
+        <template #footer>
+          <el-button @click="kpPickerVisible = false">取消</el-button>
+          <el-button type="primary" @click="kpPickerVisible = false">确定（已选 {{ aiGenerateForm.selected_kp_ids.length }}）</el-button>
+        </template>
+      </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Collection, Search } from '@element-plus/icons-vue'
 import { questionApi } from '@/api/question'
 import { useSubjectStore } from '@/stores/subject'
 
@@ -830,6 +871,11 @@ const loadAiKnowledgePoints = async () => {
     aiKpLoading.value = false
   }
 }
+const getGradeLabel = (g) => {
+  const map = { 1: '一年级', 2: '二年级', 3: '三年级', 4: '四年级', 5: '五年级', 6: '六年级', 7: '初一', 8: '初二', 9: '初三', 10: '高一', 11: '高二', 12: '高三' }
+  return map[g] || (g ? `${g}年级` : '')
+}
+
 const aiKpGroups = computed(() => {
   const map = new Map()
   for (const k of aiKpAll.value) {
@@ -845,6 +891,50 @@ const aiKpGroups = computed(() => {
   }
   return Array.from(map.values())
 })
+
+// 知识点选择弹窗（按单元分组标签点选）
+const kpPickerVisible = ref(false)
+const kpSearch = ref('')
+const openKpPicker = () => {
+  if (aiGenerateForm.subject_id) {
+    loadAiKnowledgePoints() // 打开时强制刷新，保证最新数据
+  }
+  kpSearch.value = ''
+  kpPickerVisible.value = true
+}
+const toggleAiKp = (id) => {
+  const i = aiGenerateForm.selected_kp_ids.indexOf(id)
+  if (i >= 0) aiGenerateForm.selected_kp_ids.splice(i, 1)
+  else aiGenerateForm.selected_kp_ids.push(id)
+}
+const clearAiKpSelection = () => {
+  aiGenerateForm.selected_kp_ids = []
+}
+// 已选知识点对象（用于标签回显）
+const aiSelectedKp = computed(() => {
+  const set = new Set(aiGenerateForm.selected_kp_ids)
+  return aiKpAll.value.filter(k => set.has(k.id))
+})
+// 按搜索词过滤后的分组
+const filteredAiKpGroups = computed(() => {
+  const q = kpSearch.value.trim()
+  if (!q) return aiKpGroups.value
+  return aiKpGroups.value
+    .map(g => ({ ...g, items: g.items.filter(k => k.name.includes(q)) }))
+    .filter(g => g.items.length)
+})
+const isGroupAllChecked = (g) => g.items.length > 0 && g.items.every(k => aiGenerateForm.selected_kp_ids.includes(k.id))
+const toggleGroup = (g) => {
+  const ids = g.items.map(k => k.id)
+  const all = isGroupAllChecked(g)
+  if (all) {
+    aiGenerateForm.selected_kp_ids = aiGenerateForm.selected_kp_ids.filter(id => !ids.includes(id))
+  } else {
+    const set = new Set(aiGenerateForm.selected_kp_ids)
+    ids.forEach(id => set.add(id))
+    aiGenerateForm.selected_kp_ids = Array.from(set)
+  }
+}
 const gradeOptions = [
   { value: 1, label: '一年级' },
   { value: 2, label: '二年级' },
