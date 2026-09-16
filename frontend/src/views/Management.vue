@@ -358,6 +358,7 @@ const viewInTextbook = (row) => {
       subject: row.subject_name || '',
       grade: getGradeLabel(row.grade),
       semester: row.semester === 1 ? '上册' : row.semester === 2 ? '下册' : '',
+      version: row.version || '',
       kw: [row.name, row.chapter].filter(Boolean).join(','),
     },
   })

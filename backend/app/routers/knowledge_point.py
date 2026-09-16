@@ -23,6 +23,8 @@ class KnowledgePointResponse(BaseModel):
     subject_name: Optional[str] = None
     grade: Optional[int] = None
     semester: Optional[int] = None
+    version: Optional[str] = None
+    chapter: Optional[str] = None
     created_at: Optional[str] = None
     error_types: List[ErrorTypeSimple] = []
 
@@ -82,6 +84,8 @@ def list_knowledge_points(
             subject_name=subject_map.get(kp.subject_id, ""),
             grade=kp.grade,
             semester=kp.semester,
+            version=kp.version,
+            chapter=kp.chapter,
             created_at=kp.created_at.isoformat() if kp.created_at else None,
             error_types=error_types,
         ))
@@ -127,6 +131,8 @@ def create_knowledge_point(data: KnowledgePointCreate, db: Session = Depends(get
         subject_name=subject.name,
         grade=kp.grade,
         semester=kp.semester,
+        version=kp.version,
+        chapter=kp.chapter,
         created_at=kp.created_at.isoformat() if kp.created_at else None,
         error_types=error_types,
     )
@@ -178,6 +184,8 @@ def update_knowledge_point(kp_id: int, data: KnowledgePointUpdate, db: Session =
         subject_name=subject_name,
         grade=kp.grade,
         semester=kp.semester,
+        version=kp.version,
+        chapter=kp.chapter,
         created_at=kp.created_at.isoformat() if kp.created_at else None,
         error_types=error_types,
     )

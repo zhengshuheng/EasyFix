@@ -203,7 +203,7 @@ const doImport = async () => {
     return
   }
   const tip = activeTab.value === 'ctsf'
-    ? `从在线大纲导入《${form.version} ${form.subject} ${form.grade}${form.semester}》知识点？`
+    ? `从在线大纲导入《${form.version} ${form.subject} ${form.grade}${form.semester}》知识点，并同步下载对应教材 PDF（教材库可直接按知识点对照）。`
     : selectedPdfBook.value?.local_only
       ? `《${form.version} ${form.subject} ${form.grade}${form.semester}》暂无在线资源。\n\n请手动下载教材 PDF，放到 data/textbooks/${form.version}/英语/${form.grade}${form.semester}.pdf，\n然后点「打开教材文件夹」→ 放入文件 → 「扫描本地 PDF」后再次导入。\n\n现在就打开教材文件夹？`
       : `下载并提取《${form.version} ${form.subject} ${form.grade}${form.semester}》？PDF 下载 + OCR 识别 + AI 提取约需 10~15 分钟，期间可关闭本窗口，任务会继续。`

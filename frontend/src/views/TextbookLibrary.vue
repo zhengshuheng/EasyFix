@@ -254,9 +254,16 @@ const autoOpenFromQuery = async () => {
   const q = route.query
   if (!q.subject && !q.version) return
   if (!libraryBooks.value.length) await loadLibrary()
-  const match = libraryBooks.value.find(b =>
+  const baseMatch = (b) =>
     b.subject === (q.subject || '') && b.grade === (q.grade || '') && b.semester === (q.semester || '')
-    && (!q.version || b.version === q.version))
+  // 优先精确版本匹配，其次降级到学科+年级+册次（旧数据版本名可能未规范化）
+  let match = null
+  if (q.version) {
+    match = libraryBooks.value.find(b => baseMatch(b) && b.version === q.version)
+  }
+  if (!match) {
+    match = libraryBooks.value.find(baseMatch)
+  }
   if (match) {
     await openBook(match)
     if (q.kw) {

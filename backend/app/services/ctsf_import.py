@@ -133,6 +133,50 @@ def fetch_outline(source: str, fn: str) -> dict:
     raise RuntimeError("下载知识大纲失败：" + "; ".join(errors[-3:]))
 
 
+def _load_index() -> list:
+    """教材目录（index.json books）"""
+    import os as _os
+    p = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
+                      "data", "textbooks", "index.json")
+    try:
+        with open(p, encoding="utf-8") as f:
+            return json.load(f).get("books", [])
+    except Exception:
+        return []
+
+
+def _match_index_book(subject: str, version: str, grade_cn: str, sem_cn: str) -> dict:
+    """ctsf 版本 → index.json 教材条目（精确 → token 包含 → 学科内默认）"""
+    books = _load_index()
+    cands = [b for b in books if b.get("subject") == subject
+             and b.get("grade") == grade_cn and b.get("semester") == sem_cn]
+    if not cands:
+        return {}
+    for b in cands:
+        if b.get("version") == version:
+            return b
+    tokens = [t for t in re.findall(r"[\u4e00-\u9fa5]+|[A-Za-z]+", version) if len(t) >= 2]
+    scored = [(sum(1 for tok in tokens if tok in b.get("version", "")), b) for b in cands]
+    scored = [(s, b) for s, b in scored if s > 0]
+    if scored:
+        scored.sort(key=lambda x: (-x[0], len(x[1].get("version", ""))))
+        return scored[0][1]
+    # 默认取第一条（该学科年级册次的唯一/默认版本）
+    return cands[0]
+
+
+def _download_pdf_if_possible(book: dict, task: dict) -> str:
+    """尝试下载教材 PDF（多源），失败返回错误信息（不中断知识点导入）"""
+    if not book:
+        return "目录中未找到匹配的教材条目"
+    from app.services import textbook_service
+    try:
+        textbook_service.download_book(book, task)
+        return ""
+    except Exception as e:
+        return str(e)[:200]
+
+
 def ensure_description_column() -> None:
     """knowledge_point 表加 description 列（幂等）"""
     from sqlalchemy import text as sa_text
@@ -157,6 +201,33 @@ def ensure_version_column() -> None:
             db.execute(sa_text("ALTER TABLE knowledge_point ADD COLUMN version VARCHAR(100)"))
             db.commit()
             print("[ctsf] knowledge_point 表已新增 version 列")
+    finally:
+        db.close()
+
+
+def _normalize_legacy_versions() -> None:
+    """把 knowledge_point 里 ctsf 旧版本名（统编版/人教版PEP/教科版）规范化为 index.json 版本名"""
+    from sqlalchemy import text as sa_text
+    db = SessionLocal()
+    try:
+        rows = db.query(KnowledgePoint).filter(KnowledgePoint.deleted == False,
+                                               KnowledgePoint.version.isnot(None)).all()
+        changed = 0
+        for row in rows:
+            subj_name = db.query(Subject.name).filter(Subject.id == row.subject_id).scalar()
+            if not subj_name:
+                continue
+            grade_cn = next((g for g, n in GRADE_CN.items() if n == row.grade), "")
+            sem_cn = next((s for s, n in SEMESTER_CN.items() if n == row.semester), "")
+            if not grade_cn or not sem_cn:
+                continue
+            b = _match_index_book(subj_name, row.version, grade_cn, sem_cn)
+            if b and b.get("version") and b["version"] != row.version:
+                row.version = b["version"]
+                changed += 1
+        if changed:
+            db.commit()
+            print(f"[ctsf] 已将 {changed} 条知识点的教材版本名规范化为目录版本名")
     finally:
         db.close()
 
@@ -197,6 +268,9 @@ def import_outline(subject: str, version: str, grade: int, semester: int, outlin
                         changed = True
                     if not row.description and desc:
                         row.description = desc
+                        changed = True
+                    if row.version != version:
+                        row.version = version
                         changed = True
                     updated += 1 if changed else 0
                     if not changed:
@@ -254,6 +328,8 @@ def start_ctsf_import(subject: str, version: str, grade: str, semester: str) -> 
     def _worker():
         try:
             source, subj, ver, fn, grade_n, sem_n = target
+            grade_cn = next((g for g, n in GRADE_CN.items() if n == grade_n), "")
+            sem_cn = next((s for s, n in SEMESTER_CN.items() if n == sem_n), "")
             _set_progress(task, 5, "ctsf", f"下载大纲 {fn[:30]}…")
             outline = fetch_outline(source, fn)
             _set_progress(task, 30, "ctsf", "解析知识大纲…")
@@ -261,14 +337,28 @@ def start_ctsf_import(subject: str, version: str, grade: str, semester: str) -> 
             from app.services.textbook_service import ensure_chapter_column
             ensure_chapter_column()
             ensure_version_column()
+            _normalize_legacy_versions()
             _set_progress(task, 60, "ctsf", "写入知识点…")
-            r = import_outline(subj, ver, grade_n, sem_n, outline, task)
+            # 版本规范化为 index.json 教材版本名，保证知识点↔教材库关联
+            canon_book = _match_index_book(subj, ver, grade_cn, sem_cn)
+            canon_ver = canon_book.get("version", ver) if canon_book else ver
+            r = import_outline(subj, canon_ver, grade_n, sem_n, outline, task)
+            # 同步下载教材 PDF（失败不阻塞，任务记录状态供教材库关联）
+            _set_progress(task, 80, "ctsf", "下载教材 PDF…")
+            pdf_err = _download_pdf_if_possible(canon_book, task)
             with _tasks_lock:
                 task["result"] = r
+                task["book"]["version"] = canon_ver
+                task["pdf_ok"] = not pdf_err
+                task["pdf_error"] = pdf_err or None
                 task["status"] = "done"
                 task["finished_at"] = time.strftime("%H:%M:%S")
-            _set_progress(task, 100, "done",
-                          f"完成：新增 {r['imported']}，补全 {r['updated']}，跳过 {r['skipped']}，共 {r['units']} 个单元")
+            msg = (f"完成：新增 {r['imported']}，补全 {r['updated']}，跳过 {r['skipped']}，共 {r['units']} 个单元")
+            if not pdf_err:
+                msg += "；教材 PDF 已下载，可到 📚 教材库 按知识点对照"
+            else:
+                msg += f"；教材 PDF 下载失败（{pdf_err[:60]}），可到「教材 PDF 提取」标签页重试"
+            _set_progress(task, 100, "done", msg)
         except Exception as e:
             print(f"[ctsf] 导入失败: {e}")
             with _tasks_lock:

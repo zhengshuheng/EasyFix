@@ -13,6 +13,7 @@ import os
 import re
 import threading
 import time
+import urllib.parse
 import uuid
 
 import requests
@@ -131,7 +132,7 @@ def download_book(book: dict, task: dict) -> str:
                 errors.append(f"freepep: {e}")
                 _set_progress(task, 30, "downloading", f"freepep 下载失败，尝试下一源…")
         elif source == "chinatx":
-            raw = src.get("url", "")
+            raw = urllib.parse.quote(src.get("url", ""), safe="/:")
             candidates = [raw] + [m + raw for m in GH_MIRRORS]
             for i, url in enumerate(candidates):
                 try:
