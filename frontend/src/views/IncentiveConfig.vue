@@ -1,7 +1,7 @@
 <template>
   <div class="incentive-config">
     <el-card shadow="never">
-      <el-tabs v-model="activeTab" tab-position="left" class="mgmt-tabs">
+      <el-tabs v-model="activeTab" class="mgmt-tabs">
         <!-- 行为配置 -->
         <el-tab-pane label="行为配置" name="starActions">
           <div class="tab-content">
@@ -560,33 +560,16 @@ onMounted(() => {
   color: #409eff;
 }
 
-/* 左侧子菜单竖排 */
-.mgmt-tabs {
-  display: flex;
-}
-
-.mgmt-tabs :deep(.el-tabs__header) {
-  width: 150px;
-  flex-shrink: 0;
-  margin-right: 0;
-}
-
-.mgmt-tabs :deep(.el-tabs__nav-wrap::after) {
-  display: none;
-}
-
+/* 激励配置子导航：顶部横向 tabs */
 .mgmt-tabs :deep(.el-tabs__item) {
-  height: 42px;
-  line-height: 42px;
-  text-align: left;
-  padding-left: 18px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 14px;
 }
 
 .mgmt-tabs :deep(.el-tabs__content) {
-  flex: 1;
-  min-width: 0;
-  padding: 0 0 0 18px;
-  overflow: auto;
+  padding: 12px 2px 0;
+  overflow: visible;
 }
 
 .incentive-config :deep(.el-card) {
