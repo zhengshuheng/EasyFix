@@ -328,12 +328,56 @@
               </template>
               <template v-else><span class="text-gray-400">无题目内容</span></template>
             </span>
+            <el-button
+              size="small"
+              circle
+              :type="ttsReadingId === question.question_id ? 'danger' : 'primary'"
+              plain
+              @click="speakQuestion(question)"
+              :title="ttsReadingId === question.question_id ? '停止朗读' : '语音读题'"
+            >🔊</el-button>
           </div>
-          <el-input
-            v-model="studentAnswers[question.question_id]"
-            placeholder="请输入你的作答"
-            size="default"
-          />
+          <div class="do-answer-row">
+            <el-input
+              v-model="studentAnswers[question.question_id]"
+              placeholder="请输入你的作答（可点右边麦克风语音输入）"
+              size="default"
+              @focus="onAnswerFocus(question.question_id)"
+            />
+            <el-button
+              size="small"
+              circle
+              :type="voiceInputingId === question.question_id ? 'danger' : 'success'"
+              plain
+              :disabled="!speechRecognitionSupported"
+              @click="startVoiceInput(question.question_id)"
+              :title="!speechRecognitionSupported ? '当前浏览器不支持语音输入' : '语音输入答案'"
+            >🎤</el-button>
+          </div>
+        </div>
+      </div>
+      <!-- 软键盘（点击输入框自动弹出，解决键盘字母数字模糊问题） -->
+      <div v-if="softKpVisible" class="soft-keyboard">
+        <div class="sk-header">
+          <span>软键盘 — 点击按键输入</span>
+          <el-button size="small" text type="primary" @click="softKpVisible = false">收起键盘</el-button>
+        </div>
+        <div class="sk-row">
+          <button v-for="k in ['1','2','3','4','5','6','7','8','9','0']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
+        </div>
+        <div class="sk-row">
+          <button v-for="k in ['q','w','e','r','t','y','u','i','o','p']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
+        </div>
+        <div class="sk-row">
+          <button v-for="k in ['a','s','d','f','g','h','j','k','l']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
+        </div>
+        <div class="sk-row">
+          <button v-for="k in ['z','x','c','v','b','n','m']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
+          <button type="button" class="sk-key sk-key-wide" @click="softKeyTap('⌫')">退格</button>
+        </div>
+        <div class="sk-row">
+          <button v-for="k in ['+','-','×','÷','=','.', '(', ')', '，', ' ']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k === ' ' ? '空格' : k }}</button>
+          <button type="button" class="sk-key sk-key-wide" @click="softKeyTap('清空')">清空</button>
         </div>
       </div>
       <template #footer>
@@ -1136,6 +1180,133 @@ const studentDoDialogVisible = ref(false)
 const studentAnswers = ref({}) // { questionId: 学生作答 }
 const studentDoSubmitting = ref(false)
 const currentDoPsId = ref(null)
+
+// 做题无障碍：语音读题 / 语音输入答案 / 软键盘
+const ttsReadingId = ref(null)          // 正在朗读的题目 id
+const voiceInputingId = ref(null)       // 正在语音识别的题目 id
+const softKpVisible = ref(false)        // 软键盘显示
+const activeKpQuestionId = ref(null)    // 软键盘当前作用题目
+const speechRecognitionSupported = ref(typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition))
+let recognitionInstance = null          // 语音识别实例
+
+// 中文数字转阿拉伯数字（"二十六" -> 26，语音识别结果增强）
+const convertCnToArabic = (text) => {
+  const digits = { '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 }
+  if (!/[\d]/.test(text) && !/[零一二两三四五六七八九十百千万]/.test(text)) return text
+  const parseCn = (s) => {
+    if (!/[十百千万]/.test(s)) {
+      // 纯单个数字字（如 二零一零 / 二十六以外的编号）按位拼接
+      return s.split('').map(c => (digits[c] != null ? digits[c] : c)).join('')
+    }
+    let total = 0, section = 0, num = 0
+    for (const ch of s) {
+      if (ch === '万') { section = (section + num) * 10000; total += section; section = 0; num = 0 }
+      else if (ch === '千') { section += (num || 1) * 1000; num = 0 }
+      else if (ch === '百') { section += (num || 1) * 100; num = 0 }
+      else if (ch === '十') { section += (num || 1) * 10; num = 0 }
+      else { num = digits[ch] ?? 0 }
+    }
+    return total + section + num
+  }
+  return text.replace(/[零一二两三四五六七八九十百千万]+/g, m => String(parseCn(m)))
+}
+
+// 语音读题（SpeechSynthesis 本地中文朗读）
+const getQuestionSpeakText = (q) => {
+  let t = q.original_question_text || ''
+  if (q.is_reading_question && q.option_a) {
+    t += '。选项A：' + (q.option_a || '')
+    if (q.option_b) t += '；选项B：' + q.option_b
+    if (q.option_c) t += '；选项C：' + q.option_c
+    if (q.option_d) t += '；选项D：' + q.option_d
+  }
+  return t.trim()
+}
+const speakQuestion = (q) => {
+  if (!('speechSynthesis' in window)) {
+    ElMessage.warning('当前浏览器不支持语音读题')
+    return
+  }
+  if (ttsReadingId.value === q.question_id) {
+    window.speechSynthesis.cancel()
+    ttsReadingId.value = null
+    return
+  }
+  window.speechSynthesis.cancel()
+  const text = getQuestionSpeakText(q)
+  if (!text) {
+    ElMessage.warning('该题没有可朗读的文字内容')
+    return
+  }
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'zh-CN'
+  u.rate = 0.9
+  const voices = window.speechSynthesis.getVoices()
+  const zh = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh'))
+  if (zh) u.voice = zh
+  u.onend = () => { ttsReadingId.value = null }
+  u.onerror = () => { ttsReadingId.value = null }
+  ttsReadingId.value = q.question_id
+  window.speechSynthesis.speak(u)
+}
+
+// 语音输入答案（Web Speech Recognition，需 Chrome/Edge 且可联网）
+const startVoiceInput = (qid) => {
+  if (!speechRecognitionSupported.value) {
+    ElMessage.warning('当前浏览器不支持语音输入，请使用 Chrome 或 Edge 浏览器')
+    return
+  }
+  if (voiceInputingId.value === qid) {
+    recognitionInstance && recognitionInstance.stop()
+    return
+  }
+  if (recognitionInstance) recognitionInstance.stop()
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  const rec = new SR()
+  recognitionInstance = rec
+  rec.lang = 'zh-CN'
+  rec.interimResults = true
+  rec.continuous = false
+  voiceInputingId.value = qid
+  rec.onresult = (e) => {
+    let final = ''
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript
+    }
+    if (final) {
+      const converted = convertCnToArabic(final)
+      studentAnswers.value[qid] = (studentAnswers.value[qid] || '') + converted
+    }
+  }
+  rec.onerror = (e) => {
+    voiceInputingId.value = null
+    if (e.error === 'not-allowed') ElMessage.warning('未获得麦克风权限，请在浏览器地址栏允许麦克风后重试')
+    else if (e.error === 'network') ElMessage.error('语音识别服务不可用（需联网），请改用键盘或软键盘输入')
+    else ElMessage.warning('语音识别失败：' + e.error)
+  }
+  rec.onend = () => { voiceInputingId.value = null; recognitionInstance = null }
+  try { rec.start() } catch (err) {
+    voiceInputingId.value = null
+    ElMessage.warning('语音识别启动失败，请手动输入')
+  }
+}
+
+// 软键盘：聚焦输入框弹出，按键追加到当前题答案
+const onAnswerFocus = (qid) => {
+  activeKpQuestionId.value = qid
+  softKpVisible.value = true
+}
+const softKeyTap = (key) => {
+  const qid = activeKpQuestionId.value
+  if (qid == null) return
+  if (key === '⌫') {
+    studentAnswers.value[qid] = (studentAnswers.value[qid] || '').slice(0, -1)
+  } else if (key === '清空') {
+    studentAnswers.value[qid] = ''
+  } else {
+    studentAnswers.value[qid] = (studentAnswers.value[qid] || '') + key
+  }
+}
 // 选择卷子（做题/批改入口）
 const selectPsDialogVisible = ref(false)
 const selectPsMode = ref('do') // 'do' | 'grade'
@@ -1263,6 +1434,11 @@ const openStudentDo = async (ps) => {
     const { data } = await questionApi.getPracticeSet(ps.id)
     currentPsQuestions.value = data.questions || []
     studentAnswers.value = {}
+    softKpVisible.value = false
+    activeKpQuestionId.value = null
+    ttsReadingId.value = null
+    if (recognitionInstance) { recognitionInstance.stop(); recognitionInstance = null }
+    voiceInputingId.value = null
     // 预填已保存的作答（重新做题可修改）
     currentPsQuestions.value.forEach(q => {
       if (q.student_answer) studentAnswers.value[q.question_id] = q.student_answer
@@ -2607,6 +2783,70 @@ onMounted(() => {
 
 .do-question-row:last-child {
   border-bottom: none;
+}
+
+/* 做题无障碍：语音读题 / 语音输入 / 软键盘 */
+.do-question-text {
+  flex: 1;
+  line-height: 1.6;
+}
+
+.do-answer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.soft-keyboard {
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.sk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.sk-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.sk-key {
+  flex: 1;
+  min-width: 42px;
+  height: 40px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sk-key:hover {
+  background: #ecf5ff;
+  border-color: #409eff;
+}
+
+.sk-key:active {
+  background: #d9ecff;
+}
+
+.sk-key-wide {
+  flex: 2;
+  font-size: 13px;
+  color: #606266;
 }
 
 .do-question-header {
