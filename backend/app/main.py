@@ -6,9 +6,10 @@ from pydantic import BaseModel
 import os
 
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.database import engine, Base, SessionLocal, get_db
-from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router
+from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router
 from app.config import get_settings
 from app.models.user import User
 from app.utils.auth import (
@@ -42,6 +43,55 @@ def _ensure_column(table: str, column: str, ddl: str):
         print(f"[migrate] 跳过 {table}.{column}: {e}")
 
 _ensure_column("practice_set_question", "student_answer", "student_answer TEXT")
+_ensure_column("error_book", "user_id", "user_id INTEGER")
+# 旧无主错题本自动归属第一个小孩（幂等：仅当该小孩不存在错题本归属时才执行）
+with engine.begin() as conn:
+    try:
+        conn.execute(
+            text(
+                "UPDATE error_book SET user_id = "
+                "(SELECT id FROM users WHERE role='child' ORDER BY id LIMIT 1) "
+                "WHERE user_id IS NULL"
+            )
+        )
+    except Exception as e:
+        print(f"[migrate] 跳过 error_book 旧数据归属: {e}")
+
+# ===== 单词复习按小孩隔离迁移 =====
+_ensure_column("word_review_log", "user_id", "user_id INTEGER")
+_ensure_column("word_review", "user_id", "user_id INTEGER")
+with engine.begin() as conn:
+    # 旧复习日志/场次归属第一个小孩（演示小孩）；仅处理 NULL 记录，幂等
+    try:
+        conn.execute(
+            text(
+                "UPDATE word_review_log SET user_id = "
+                "(SELECT id FROM users WHERE role='child' ORDER BY id LIMIT 1) "
+                "WHERE user_id IS NULL"
+            )
+        )
+        conn.execute(
+            text(
+                "UPDATE word_review SET user_id = "
+                "(SELECT id FROM users WHERE role='child' ORDER BY id LIMIT 1) "
+                "WHERE user_id IS NULL"
+            )
+        )
+        # 旧 Word 表复习数据迁入 WordProgress（仅当该词该小孩尚无进度时，幂等）
+        conn.execute(
+            text(
+                "INSERT OR IGNORE INTO word_progress "
+                "(word_id, user_id, review_count, correct_count, last_reviewed_at, next_review_at, "
+                " ease_factor, interval, learning_phase, updated_at) "
+                "SELECT w.id, (SELECT id FROM users WHERE role='child' ORDER BY id LIMIT 1), "
+                " w.review_count, w.correct_count, w.last_reviewed_at, w.next_review_at, "
+                " w.ease_factor, w.interval, w.learning_phase, COALESCE(w.updated_at, CURRENT_TIMESTAMP) "
+                "FROM word w "
+                "WHERE w.review_count > 0"
+            )
+        )
+    except Exception as e:
+        print(f"[migrate] 跳过单词复习按小孩迁移: {e}")
 
 # 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:
@@ -103,6 +153,7 @@ app.include_router(motivation_router)
 app.include_router(reading_router)
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(k12_router)
 
 
 @app.get("/")

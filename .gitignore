@@ -29,6 +29,9 @@ frontend/node_modules/
 # 前端构建产物（由源码构建生成，不入库）
 frontend/dist/
 
+# K12 教材知识点数据集缓存（首次导入自动下载，不入库）
+backend/data/k12/
+
 # 根目录 sqlite 占位文件
 /easyfix.db
 

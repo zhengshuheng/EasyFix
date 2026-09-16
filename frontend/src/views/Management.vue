@@ -115,6 +115,10 @@
                 <el-icon><Plus /></el-icon>
                 新增知识点
               </el-button>
+              <el-button type="success" plain @click="openK12Dialog">
+                <el-icon><Download /></el-icon>
+                从教材知识库导入
+              </el-button>
             </div>
             <div class="kp-summary">
               <span class="kp-path">{{ kpFilterText }}（共 {{ knowledgePoints.length }} 条）</span>
@@ -261,6 +265,35 @@
       </template>
     </el-dialog>
 
+    <!-- 教材知识库导入弹窗 -->
+    <el-dialog v-model="showK12Dialog" title="从教材知识库导入知识点" width="580px">
+      <el-alert type="info" :closable="false" style="margin-bottom: 16px">
+        <template #title>
+          数据来自开源 K12 知识点数据集（33,765 个知识点，按人教版/统编版教材抽取，覆盖 17 科目）。
+          选择学段和科目后，AI 会自动为该科目每个知识点判断所属年级/学期并批量录入，
+          已有同名知识点自动跳过。首次导入需联网下载数据，几千条约需 1~3 分钟。
+        </template>
+      </el-alert>
+      <el-form :model="k12Form" label-width="100px">
+        <el-form-item label="学段" required>
+          <el-select v-model="k12Form.gradeBand" placeholder="选择学段" style="width: 100%" @change="onK12BandChange">
+            <el-option label="小学" value="小学" />
+            <el-option label="初中" value="初中" />
+            <el-option label="高中" value="高中" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="科目" required>
+          <el-select v-model="k12Form.subject" placeholder="先选择学段" style="width: 100%" :disabled="!k12Form.gradeBand" filterable>
+            <el-option v-for="f in k12Subjects" :key="f.path" :label="`${f.subject}（${f.kp_count} 个知识点）`" :value="f.subject" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showK12Dialog = false" :disabled="k12Importing">取消</el-button>
+        <el-button type="primary" @click="doK12Import" :loading="k12Importing">开始导入</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 新增/编辑错题本弹窗 -->
     <el-dialog v-model="showErrorBookDialog" :title="editErrorBookData ? '编辑错题本' : '新增错题本'" width="500px">
       <el-form :model="errorBookForm" label-width="100px">
@@ -293,6 +326,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi } from '@/api/question'
+import { k12Api } from '@/api/k12'
 import { usersApi } from '@/api/users'
 import WordLibrary from './WordLibrary.vue'
 
@@ -355,6 +389,53 @@ const knowledgeForm = reactive({
   grade: null,
   semester: null
 })
+
+// 教材知识库导入（K12 数据集 + AI 分配年级学期）
+const showK12Dialog = ref(false)
+const k12Catalog = ref(null)   // 知识库索引
+const k12Subjects = ref([])    // 当前学段科目清单
+const k12Form = reactive({ gradeBand: '', subject: '' })
+const k12Importing = ref(false)
+
+const openK12Dialog = async () => {
+  showK12Dialog.value = true
+  if (!k12Catalog.value) {
+    try {
+      const { data } = await k12Api.catalog()
+      k12Catalog.value = data
+    } catch (e) {
+      ElMessage.error(e.detail || '获取知识库索引失败（需要联网）')
+    }
+  }
+}
+
+const onK12BandChange = () => {
+  k12Form.subject = ''
+  k12Subjects.value = (k12Catalog.value?.files || []).filter(f => f.grade_band === k12Form.gradeBand)
+}
+
+const doK12Import = async () => {
+  if (!k12Form.gradeBand || !k12Form.subject) {
+    ElMessage.warning('请选择学段和科目')
+    return
+  }
+  k12Importing.value = true
+  try {
+    const { data } = await k12Api.importSubject({
+      grade_band: k12Form.gradeBand,
+      subject: k12Form.subject,
+    })
+    showK12Dialog.value = false
+    ElMessage.success(
+      `导入完成：新增 ${data.imported} 条，跳过重复 ${data.skipped} 条，失败 ${data.failed + (data.llm_failed || 0)} 条`
+    )
+    fetchKpAll()
+  } catch (e) {
+    ElMessage.error(e.detail || '导入失败，请查看后端日志')
+  } finally {
+    k12Importing.value = false
+  }
+}
 
 // 错题本
 const errorBooks = ref([])
