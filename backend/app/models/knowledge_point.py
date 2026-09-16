@@ -23,6 +23,7 @@ class KnowledgePoint(Base):
     semester = Column(Integer, nullable=True)  # 学期 1-2
     chapter = Column(String(200), nullable=True)  # 教材章节/单元（教材同步导入）
     description = Column(Text, nullable=True)  # 知识点一句话说明（教材同步导入）
+    version = Column(String(100), nullable=True)  # 教材版本（教材同步导入，如 人教版/统编版）
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
     created_at = Column(DateTime, server_default=func.now())
 

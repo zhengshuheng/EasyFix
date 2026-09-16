@@ -80,6 +80,11 @@ const routes = [
     component: () => import('@/views/Words.vue'),
   },
   {
+    path: '/textbook-library',
+    name: 'TextbookLibrary',
+    component: () => import('@/views/TextbookLibrary.vue'),
+  },
+  {
     path: '/learning-reports',
     name: 'LearningReports',
     component: () => import('@/views/LearningReports.vue'),

@@ -542,3 +542,219 @@ def open_data_folder() -> str:
     except Exception:
         pass
     return DATA_DIR
+
+
+# ---------------------------------------------------------------- 教材知识库（本地预览）
+
+_PAGE_CACHE = {}  # (pdf_path, page) -> base64 png
+
+
+def _resolve_local_book(version: str, subject: str, grade: str, semester: str) -> str:
+    """按 版本/科目/年级册次 定位本地 PDF 路径（不存在返回空）"""
+    if not version or not subject:
+        return ""
+    pdf = os.path.join(DATA_DIR, version, subject, f"{grade}{semester}.pdf")
+    if os.path.exists(pdf):
+        return pdf
+    # 兜底：模糊匹配（手动放置可能文件名略有差异）
+    d = os.path.join(DATA_DIR, version, subject)
+    if os.path.isdir(d):
+        for fn in os.listdir(d):
+            if fn.lower().endswith(".pdf") and grade and semester and grade in fn and semester in fn:
+                return os.path.join(d, fn)
+    return ""
+
+
+def _txt_path_for(version: str, subject: str, grade: str, semester: str) -> str:
+    return os.path.join(DATA_DIR, version, subject, f"{grade}{semester}.txt")
+
+
+def _parse_page_marks(text: str):
+    """解析 OCR 文本的页码标记 → [(page_no, start_offset)]"""
+    marks = []
+    for m in re.finditer(r"^---\s*第\s*(\d+)\s*页\s*---", text, re.M):
+        marks.append((int(m.group(1)), m.start()))
+    return marks
+
+
+def _page_of_offset(text: str, offset: int, marks: list) -> int:
+    """由文本偏移量反查所在页号"""
+    page = 1
+    for pno, start in marks:
+        if offset < start:
+            break
+        page = pno
+    return page
+
+
+def library_catalog() -> dict:
+    """教材知识库：扫描本地已下载 PDF，返回书目列表"""
+    books = []
+    for entry in scan_local():
+        books.append({
+            "version": entry["version"], "subject": entry["subject"],
+            "grade": entry["grade"], "semester": entry["semester"],
+            "size": entry["size"],
+            "ocr": os.path.exists(_txt_path_for(entry["version"], entry["subject"],
+                                                entry["grade"], entry["semester"])),
+        })
+    return {"total": len(books), "books": books}
+
+
+def preview_page(version: str, subject: str, grade: str, semester: str, page: int) -> dict:
+    """渲染教材 PDF 指定页 → base64 PNG；page<=0 时返回第 1 页"""
+    pdf = _resolve_local_book(version, subject, grade, semester)
+    if not pdf:
+        raise RuntimeError(f"本地未找到教材 {version}/{subject}/{grade}{semester}.pdf")
+    if page < 1:
+        page = 1
+    cache_key = (pdf, page)
+    if cache_key in _PAGE_CACHE:
+        img_b64 = _PAGE_CACHE[cache_key]
+        total = _PAGE_CACHE.get(("__total__", pdf), 0)
+        if total:
+            return {"page": page, "total_pages": total, "image": img_b64}
+    import base64
+    import fitz
+    doc = fitz.open(pdf)
+    total = doc.page_count
+    _PAGE_CACHE[("__total__", pdf)] = total
+    if page > total:
+        page = total
+    cache_key = (pdf, page)
+    if cache_key in _PAGE_CACHE:
+        img_b64 = _PAGE_CACHE[cache_key]
+    else:
+        pix = doc[page - 1].get_pixmap(dpi=140)
+        img_b64 = base64.b64encode(pix.tobytes("png")).decode("ascii")
+        if len(_PAGE_CACHE) > 120:
+            _PAGE_CACHE.clear()
+            _PAGE_CACHE[("__total__", pdf)] = total
+        _PAGE_CACHE[cache_key] = img_b64
+    doc.close()
+    return {"page": page, "total_pages": total, "image": img_b64}
+
+
+def book_units(version: str, subject: str, grade: str, semester: str) -> list:
+    """从 OCR 文本提取单元标题 + 起始页码（未 OCR 返回空）"""
+    txt = _txt_path_for(version, subject, grade, semester)
+    if not os.path.exists(txt):
+        return []
+    with open(txt, encoding="utf-8") as f:
+        text = f.read()
+    marks = _parse_page_marks(text)
+    lines = text.splitlines(keepends=True)
+    offsets = []
+    for i, line in enumerate(lines):
+        if UNIT_RE.search(line) or UNIT_RE_EN.search(line):
+            offsets.append((sum(len(x) for x in lines[:i]), line.strip()))
+    units = []
+    for off, line in offsets:
+        title = re.sub(r"[-—–:：\s]+", " ", line).strip()[:80]
+        units.append({"title": title, "page": _page_of_offset(text, off, marks)})
+    return units
+
+
+def locate_keyword(version: str, subject: str, grade: str, semester: str, keyword: str) -> list:
+    """在 OCR 文本中搜索关键词（支持逗号分隔多词，取并集），返回命中页码（去重）。
+    无 OCR 文本时尝试 PDF 内嵌文本层（若 PDF 带文本）。"""
+    if not keyword or not keyword.strip():
+        return []
+    marks = []
+    text = ""
+    txt = _txt_path_for(version, subject, grade, semester)
+    if os.path.exists(txt):
+        with open(txt, encoding="utf-8") as f:
+            text = f.read()
+        marks = _parse_page_marks(text)
+    else:
+        pdf = _resolve_local_book(version, subject, grade, semester)
+        if pdf:
+            text, marks = _pdf_text_with_marks(pdf)
+    if not text:
+        return []
+    pages = []
+    for kw in keyword.split(","):
+        kw = kw.strip()
+        if not kw:
+            continue
+        for m in re.finditer(re.escape(kw), text):
+            p = _page_of_offset(text, m.start(), marks)
+            if p not in pages:
+                pages.append(p)
+    return pages[:20]
+
+
+_PDF_TEXT_CACHE = {}  # pdf_path -> (text, marks)
+
+
+def _pdf_text_with_marks(pdf: str):
+    """提取 PDF 内嵌文本层（带页码标记），带缓存"""
+    key = (pdf, os.path.getmtime(pdf))
+    if key in _PDF_TEXT_CACHE:
+        return _PDF_TEXT_CACHE[key]
+    import fitz
+    doc = fitz.open(pdf)
+    parts = []
+    marks = []
+    for i, p in enumerate(doc):
+        marks.append((i + 1, len("\n".join(parts)) + (1 if parts else 0)))
+        t = p.get_text().strip().replace("\n", " ")
+        parts.append(f"--- 第{i + 1}页 ---\n{t}")
+    doc.close()
+    text = "\n".join(parts)
+    if len(_PDF_TEXT_CACHE) > 20:
+        _PDF_TEXT_CACHE.clear()
+    _PDF_TEXT_CACHE[key] = (text, marks)
+    return text, marks
+
+
+def book_knowledge_points(version: str, subject: str, grade: str, semester: str) -> dict:
+    """该教材已导入的知识点（按章节分组），并定位每章在教材中的页码。
+    无 version 匹配时退化为 学科+年级+册次 匹配（单版本场景）。"""
+    db = SessionLocal()
+    try:
+        subj = db.query(Subject).filter(Subject.name == subject, Subject.deleted == False).first()
+        if not subj:
+            return {"chapters": [], "total": 0}
+        q = db.query(KnowledgePoint).filter(
+            KnowledgePoint.subject_id == subj.id,
+            KnowledgePoint.deleted == False)
+        if grade:
+            gno = {"一年级": 1, "二年级": 2, "三年级": 3, "四年级": 4, "五年级": 5,
+                   "六年级": 6, "初一": 7, "初二": 8, "初三": 9, "高一": 10, "高二": 11, "高三": 12}.get(grade)
+            if gno:
+                q = q.filter(KnowledgePoint.grade == gno)
+        if semester:
+            q = q.filter(KnowledgePoint.semester == (1 if semester == "上册" else 2))
+        if version:
+            rows = q.filter(KnowledgePoint.version == version).all()
+            if not rows:
+                rows = q.all()  # 退化为无版本匹配（该学科年级册次唯一导入场景）
+        else:
+            rows = q.all()
+        by_chapter = {}
+        for r in rows:
+            ch = r.chapter or "其他"
+            by_chapter.setdefault(ch, []).append(r)
+        chapters = []
+        for ch, pts in by_chapter.items():
+            page = 0
+            loc = [p for p in locate_keyword(version, subject, grade, semester, ch) if p >= 7]
+            if not loc:
+                # 简化关键词重试：取章节名中长度>=2的中文片段（去括号/破折号/数字）
+                core = re.sub(r"[^\u4e00-\u9fa5]", "", ch)
+                core = core[2:] if len(core) > 6 else core
+                if len(core) >= 2:
+                    loc = [p for p in locate_keyword(version, subject, grade, semester, core) if p >= 7]
+            if loc:
+                page = loc[0]
+            chapters.append({
+                "chapter": ch,
+                "page": page or 1,
+                "points": [{"name": p.name, "desc": p.description or ""} for p in pts],
+            })
+        chapters.sort(key=lambda c: c["page"])
+        return {"chapters": chapters, "total": sum(len(c["points"]) for c in chapters)}
+    finally:
+        db.close()

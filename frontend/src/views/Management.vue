@@ -141,9 +141,10 @@
                   {{ row.semester === 1 ? '上学期' : row.semester === 2 ? '下学期' : '未分学期' }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="180">
+              <el-table-column label="操作" width="240">
                 <template #default="{ row }">
                   <el-button type="primary" size="default" @click="editKnowledgePoint(row)">编辑</el-button>
+                  <el-button type="warning" size="default" plain @click="viewInTextbook(row)">看教材</el-button>
                   <el-button type="danger" size="default" @click="deleteKnowledgePoint(row)">删除</el-button>
                 </template>
               </el-table-column>
@@ -331,6 +332,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi } from '@/api/question'
 import { k12Api } from '@/api/k12'
@@ -345,6 +347,20 @@ const showTextbookImport = ref(false)
 const onTextbookImported = () => {
   // 刷新知识点列表
   fetchKpAll()
+}
+
+// 在教材库中对照该知识点对应的教材内容
+const viewInTextbook = (row) => {
+  const router = useRouter()
+  router.push({
+    path: '/textbook-library',
+    query: {
+      subject: row.subject_name || '',
+      grade: getGradeLabel(row.grade),
+      semester: row.semester === 1 ? '上册' : row.semester === 2 ? '下册' : '',
+      kw: [row.name, row.chapter].filter(Boolean).join(','),
+    },
+  })
 }
 
 // 年级选项

@@ -2,7 +2,7 @@ import api from './http'
 
 // 教材同步导入（内置目录 + 按需下载 + OCR + LLM 提取 / ChinaStudyFree 在线大纲）
 export const textbookApi = {
-  // 教材目录（369 本，多版本）
+  // 教材目录（381 本，多版本）
   catalog() {
     return api.get('/textbook/catalog')
   },
@@ -33,5 +33,26 @@ export const textbookApi = {
   // 从在线大纲导入（免下载/免OCR）
   ctsfImport(data) {
     return api.post('/textbook/ctsf/import', data)
+  },
+  // ---- 教材知识库（本地 PDF 在线预览） ----
+  // 本地已下载教材书目
+  library() {
+    return api.get('/textbook/library')
+  },
+  // 预览指定页（返回 base64 PNG + 总页数）
+  preview(params) {
+    return api.get('/textbook/library/preview', { params })
+  },
+  // 单元目录（标题 + 起始页码，需要已 OCR）
+  units(params) {
+    return api.get('/textbook/library/units', { params })
+  },
+  // 关键词定位页码
+  locate(params) {
+    return api.get('/textbook/library/locate', { params })
+  },
+  // 该教材已导入的知识点（章节分组 + 页码）
+  knowledgePoints(params) {
+    return api.get('/textbook/library/knowledge-points', { params })
   },
 }

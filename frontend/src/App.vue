@@ -28,10 +28,11 @@
             </template>
             <el-menu-item index="/stats" @click="navTo('/stats')">学习分析</el-menu-item>
             <el-menu-item index="/motivation" @click="navTo('/motivation')">激励中心</el-menu-item>
+            <el-menu-item index="/textbook-library" @click="navTo('/textbook-library')">📚 教材库</el-menu-item>
             <el-menu-item index="/parent-center" @click="openParentCenter">家长中心</el-menu-item>
           </el-menu>
 
-          <div v-if="!isSelectPage" class="header-user">
+          <div v-if="!isSelectPage && !isParentCenter" class="header-user">
             <!-- 学科切换：学习空间 = 小孩 + 学科（null = 全部/汇总） -->
             <el-dropdown v-if="kidStore.isKidSelected" trigger="click" @command="handleSubjectCommand">
               <span class="subject-chip">
@@ -157,6 +158,8 @@ const kids = ref([])
 
 // 选择页（选人/创建入口）不显示顶部导航与用户区
 const isSelectPage = computed(() => route.path === '/')
+// 家长中心：隐藏顶部菜单与学科/年级/小孩切换，由家长中心内部提供出口
+const isParentCenter = computed(() => route.path.startsWith('/parent-center'))
 // 家长会话：已通过家长密码验证（存在家长 token）
 const isAdminSession = computed(() => !!localStorage.getItem('easyfix_token'))
 // 顶部菜单高亮：家长中心子路由统一高亮"家长中心"
@@ -168,10 +171,11 @@ function navTo(path) {
   if (route.path !== path) router.push(path)
 }
 
-// 学科一级菜单：切换空间学科并进入学科空间页（内部 tab：错题/练习/单词/阅读/学习报告）
+// 学科一级菜单：切换空间学科并进入该学科默认功能页（错题）
+// 学科内功能导航由主菜单平铺的一级菜单（错题/练习/单词/阅读/学习报告）承担
 function openSubjectSpace(id) {
   subjectStore.select(id)
-  const path = '/space/' + id
+  const path = '/questions'
   if (route.path !== path) router.push(path)
 }
 

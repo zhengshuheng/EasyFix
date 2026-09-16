@@ -114,3 +114,50 @@ def ctsf_import_book(req: CtsfImportRequest):
         return {"task_id": task["id"], "status": task["status"], "source": "ctsf-online"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"启动导入失败：{e}")
+
+
+# ---------------------------------------------------------------- 教材知识库（本地预览）
+
+@router.get("/library")
+def library():
+    """教材知识库：列出本地已下载的教材 PDF"""
+    try:
+        return textbook_service.library_catalog()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取教材知识库失败：{e}")
+
+
+@router.get("/library/preview")
+def library_preview(version: str, subject: str, grade: str = "", semester: str = "", page: int = 1):
+    """在线预览教材 PDF 指定页（返回 base64 PNG + 总页数）"""
+    try:
+        return textbook_service.preview_page(version, subject, grade, semester, page)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/library/units")
+def library_units(version: str, subject: str, grade: str = "", semester: str = ""):
+    """从 OCR 文本提取单元目录（标题 + 起始页码）"""
+    try:
+        return {"units": textbook_service.book_units(version, subject, grade, semester)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/library/locate")
+def library_locate(version: str, subject: str, grade: str = "", semester: str = "", keyword: str = ""):
+    """按关键词在教材文本（OCR txt 或 PDF 文本层）中定位页码"""
+    try:
+        return {"pages": textbook_service.locate_keyword(version, subject, grade, semester, keyword)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/library/knowledge-points")
+def library_knowledge_points(version: str = "", subject: str = "", grade: str = "", semester: str = ""):
+    """该教材已导入的知识点（按章节分组 + 定位页码），供左侧知识点导航"""
+    try:
+        return textbook_service.book_knowledge_points(version, subject, grade, semester)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

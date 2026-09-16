@@ -147,6 +147,20 @@ def ensure_description_column() -> None:
         db.close()
 
 
+def ensure_version_column() -> None:
+    """knowledge_point 表加 version 列（幂等）"""
+    from sqlalchemy import text as sa_text
+    db = SessionLocal()
+    try:
+        cols = [row[1] for row in db.execute(sa_text("PRAGMA table_info(knowledge_point)")).fetchall()]
+        if "version" not in cols:
+            db.execute(sa_text("ALTER TABLE knowledge_point ADD COLUMN version VARCHAR(100)"))
+            db.commit()
+            print("[ctsf] knowledge_point 表已新增 version 列")
+    finally:
+        db.close()
+
+
 def import_outline(subject: str, version: str, grade: int, semester: int, outline: dict, task: dict) -> dict:
     """单本大纲入库，返回 {imported, skipped, updated, units}"""
     from app.services.textbook_service import GRADE_CN as G_CN  # 需要中文年级名
@@ -190,7 +204,8 @@ def import_outline(subject: str, version: str, grade: int, semester: int, outlin
                     continue
                 rows.append(KnowledgePoint(name=name, subject_id=subj.id,
                                            grade=grade, semester=semester,
-                                           chapter=chapter, description=desc or None))
+                                           chapter=chapter, description=desc or None,
+                                           version=version))
                 imported += 1
         if rows:
             db.add_all(rows)
@@ -245,6 +260,7 @@ def start_ctsf_import(subject: str, version: str, grade: str, semester: str) -> 
             ensure_description_column()
             from app.services.textbook_service import ensure_chapter_column
             ensure_chapter_column()
+            ensure_version_column()
             _set_progress(task, 60, "ctsf", "写入知识点…")
             r = import_outline(subj, ver, grade_n, sem_n, outline, task)
             with _tasks_lock:
