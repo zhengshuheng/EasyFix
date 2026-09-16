@@ -89,62 +89,57 @@
 
         <!-- 知识点管理 -->
         <el-tab-pane label="知识点管理" name="knowledgePoints">
-          <div class="tab-content kp-panel">
-            <div class="kp-tree">
-              <div class="kp-tree-header">
-                <span>知识库导航</span>
-                <el-button type="primary" size="small" @click="openKnowledgeDialog">
-                  <el-icon><Plus /></el-icon>新增
-                </el-button>
+          <div class="tab-content">
+            <!-- 筛选条：学科/年级/学期 平铺多选 -->
+            <div class="kp-filters">
+              <div class="kp-filter-item">
+                <span class="kp-filter-label">学科</span>
+                <el-select v-model="kpFilterSubject" multiple collapse-tags collapse-tags-tooltip placeholder="全部学科" style="width: 200px" clearable @change="applyKpFilter">
+                  <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
+                </el-select>
               </div>
-              <el-tree
-                ref="kpTreeRef"
-                :data="kpTree"
-                :props="{ label: 'label', children: 'children' }"
-                node-key="key"
-                highlight-current
-                default-expand-all
-                :expand-on-click-node="false"
-                @node-click="handleKpNodeClick"
-              >
-                <template #default="{ data }">
-                  <span class="kp-tree-node">
-                    <span>{{ data.label }}</span>
-                    <span class="kp-tree-count">{{ data.count }}</span>
-                  </span>
+              <div class="kp-filter-item">
+                <span class="kp-filter-label">年级</span>
+                <el-select v-model="kpFilterGrade" multiple collapse-tags collapse-tags-tooltip placeholder="全部年级" style="width: 200px" clearable @change="applyKpFilter">
+                  <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
+                </el-select>
+              </div>
+              <div class="kp-filter-item">
+                <span class="kp-filter-label">学期</span>
+                <el-select v-model="kpFilterSemester" multiple collapse-tags collapse-tags-tooltip placeholder="全部学期" style="width: 160px" clearable @change="applyKpFilter">
+                  <el-option label="上学期" :value="1" />
+                  <el-option label="下学期" :value="2" />
+                </el-select>
+              </div>
+              <el-button type="primary" @click="openKnowledgeDialog">
+                <el-icon><Plus /></el-icon>
+                新增知识点
+              </el-button>
+            </div>
+            <div class="kp-summary">
+              <span class="kp-path">{{ kpFilterText }}（共 {{ knowledgePoints.length }} 条）</span>
+            </div>
+            <el-table :data="knowledgePoints" stripe style="width: 100%; margin-top: 10px">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="name" label="知识点名称" />
+              <el-table-column prop="subject_name" label="学科" width="100" />
+              <el-table-column prop="grade" label="年级" width="100">
+                <template #default="{ row }">
+                  {{ getGradeLabel(row.grade) }}
                 </template>
-              </el-tree>
-            </div>
-            <div class="kp-list">
-              <div class="action-bar" style="display: flex; justify-content: space-between; align-items: center">
-                <span class="kp-path">{{ kpPathText }}（{{ knowledgePoints.length }}）</span>
-                <el-button type="primary" @click="openKnowledgeDialog">
-                  <el-icon><Plus /></el-icon>
-                  新增知识点
-                </el-button>
-              </div>
-              <el-table :data="knowledgePoints" stripe style="width: 100%; margin-top: 10px">
-                <el-table-column prop="id" label="ID" width="80" />
-                <el-table-column prop="name" label="知识点名称" />
-                <el-table-column prop="subject_name" label="学科" width="100" />
-                <el-table-column prop="grade" label="年级" width="80">
-                  <template #default="{ row }">
-                    {{ getGradeLabel(row.grade) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="semester" label="学期" width="80">
-                  <template #default="{ row }">
-                    {{ row.semester === 1 ? '上学期' : '下学期' }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="180">
-                  <template #default="{ row }">
-                    <el-button type="primary" size="default" @click="editKnowledgePoint(row)">编辑</el-button>
-                    <el-button type="danger" size="default" @click="deleteKnowledgePoint(row)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
+              </el-table-column>
+              <el-table-column prop="semester" label="学期" width="100">
+                <template #default="{ row }">
+                  {{ row.semester === 1 ? '上学期' : row.semester === 2 ? '下学期' : '未分学期' }}
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="180">
+                <template #default="{ row }">
+                  <el-button type="primary" size="default" @click="editKnowledgePoint(row)">编辑</el-button>
+                  <el-button type="danger" size="default" @click="deleteKnowledgePoint(row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
         </el-tab-pane>
 
@@ -295,7 +290,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi } from '@/api/question'
 import { usersApi } from '@/api/users'
@@ -346,13 +341,12 @@ const errorTypeForm = reactive({
   subject_id: localStorage.getItem('lastEtSubject') ? parseInt(localStorage.getItem('lastEtSubject')) : null
 })
 
-// 知识点（树形导航：学科 → 年级 → 学期）
+// 知识点（表格上方 学科/年级/学期 平铺多选筛选）
 const knowledgePoints = ref([])
-const kpAll = ref([])          // 全量知识点（构建树 + 前端过滤）
-const kpTree = ref([])         // 树形数据
-const kpTreeRef = ref(null)
-const kpCurrent = reactive({ subject_id: null, grade: null, semester: null, noSemester: false, noGrade: false })
-const kpCurrentKey = ref('all')
+const kpAll = ref([])               // 全量知识点（前端过滤）
+const kpFilterSubject = ref([])     // 学科多选
+const kpFilterGrade = ref([])       // 年级多选
+const kpFilterSemester = ref([])    // 学期多选
 const showKnowledgeDialog = ref(false)
 const editKnowledgeData = ref(null)
 const knowledgeForm = reactive({
@@ -544,7 +538,7 @@ const deleteErrorType = async (row) => {
   }
 }
 
-// 获取全量知识点并重建树
+// 获取全量知识点并应用筛选
 const fetchKpAll = async () => {
   try {
     const { data } = await questionApi.listKnowledgePoints({})
@@ -553,110 +547,32 @@ const fetchKpAll = async () => {
     console.error('获取知识点失败:', e)
     kpAll.value = []
   }
-  buildKpTree()
   applyKpFilter()
-  await nextTick()
-  kpTreeRef.value?.setCurrentKey(kpCurrentKey.value)
 }
 
-// 按 学科 → 年级 → 学期 构建树（仅包含有数据的节点）
-const buildKpTree = () => {
-  const all = kpAll.value
-  const root = { key: 'all', label: '全部知识点', count: all.length, children: [] }
-  for (const s of subjects.value) {
-    const sItems = all.filter(k => k.subject_id === s.id)
-    if (!sItems.length) continue
-    const sNode = { key: `s${s.id}`, label: s.name, count: sItems.length, children: [] }
-    for (const g of gradeOptions) {
-      const gItems = sItems.filter(k => k.grade === g.value)
-      if (!gItems.length) continue
-      const gNode = { key: `s${s.id}-g${g.value}`, label: g.label, count: gItems.length, children: [] }
-      for (const sem of [1, 2]) {
-        const semItems = gItems.filter(k => k.semester === sem)
-        if (!semItems.length) continue
-        gNode.children.push({
-          key: `s${s.id}-g${g.value}-sem${sem}`,
-          label: sem === 1 ? '上学期' : '下学期',
-          count: semItems.length,
-        })
-      }
-      const noSemItems = gItems.filter(k => k.semester == null)
-      if (noSemItems.length) {
-        gNode.children.push({ key: `s${s.id}-g${g.value}-nosem`, label: '未分学期', count: noSemItems.length })
-      }
-      if (gNode.children.length) sNode.children.push(gNode)
-    }
-    const noGradeItems = sItems.filter(k => k.grade == null)
-    if (noGradeItems.length) {
-      sNode.children.push({ key: `s${s.id}-nograde`, label: '未分年级', count: noGradeItems.length })
-    }
-    if (sNode.children.length) root.children.push(sNode)
-  }
-  kpTree.value = [root]
-}
-
-// 当前节点对应的查询条件 key
-const kpKey = () => {
-  if (!kpCurrent.subject_id) return 'all'
-  let k = `s${kpCurrent.subject_id}`
-  if (kpCurrent.noGrade) return k + '-nograde'
-  if (!kpCurrent.grade) return k
-  k += `-g${kpCurrent.grade}`
-  if (kpCurrent.noSemester) return k + '-nosem'
-  if (!kpCurrent.semester) return k
-  return k + `-sem${kpCurrent.semester}`
-}
-
-// 前端按当前节点过滤
+// 前端按多选条件过滤
 const applyKpFilter = () => {
   knowledgePoints.value = kpAll.value.filter(k => {
-    if (kpCurrent.subject_id && k.subject_id !== kpCurrent.subject_id) return false
-    if (kpCurrent.noGrade && k.grade != null) return false
-    if (kpCurrent.grade && k.grade !== kpCurrent.grade) return false
-    if (kpCurrent.noSemester && k.semester != null) return false
-    if (kpCurrent.semester && k.semester !== kpCurrent.semester) return false
+    if (kpFilterSubject.value.length && !kpFilterSubject.value.includes(k.subject_id)) return false
+    if (kpFilterGrade.value.length && !kpFilterGrade.value.includes(k.grade)) return false
+    if (kpFilterSemester.value.length && !kpFilterSemester.value.includes(k.semester)) return false
     return true
   })
 }
 
-// 树节点点击：设置当前节点并过滤
-const handleKpNodeClick = (data) => {
-  kpCurrent.subject_id = null
-  kpCurrent.grade = null
-  kpCurrent.semester = null
-  kpCurrent.noSemester = false
-  kpCurrent.noGrade = false
-  if (data.key !== 'all') {
-    const m = data.key.match(/^s(\d+)(?:-g(\d+))?(?:-sem(\d+))?$/)
-    if (m) {
-      kpCurrent.subject_id = m[1] ? parseInt(m[1]) : null
-      kpCurrent.grade = m[2] ? parseInt(m[2]) : null
-      kpCurrent.semester = m[3] ? parseInt(m[3]) : null
-    } else if (data.key.endsWith('-nosem')) {
-      const mm = data.key.match(/^s(\d+)-g(\d+)-nosem$/)
-      kpCurrent.subject_id = parseInt(mm[1])
-      kpCurrent.grade = parseInt(mm[2])
-      kpCurrent.noSemester = true
-    } else if (data.key.endsWith('-nograde')) {
-      const mm = data.key.match(/^s(\d+)-nograde$/)
-      kpCurrent.subject_id = parseInt(mm[1])
-      kpCurrent.noGrade = true
-    }
+// 当前筛选条件文本
+const kpFilterText = computed(() => {
+  const parts = []
+  if (kpFilterSubject.value.length) {
+    parts.push(kpFilterSubject.value.map(id => subjects.value.find(x => x.id === id)?.name || `学科${id}`).join('、'))
   }
-  kpCurrentKey.value = data.key
-  applyKpFilter()
-}
-
-// 当前导航路径文本
-const kpPathText = computed(() => {
-  if (!kpCurrent.subject_id) return '全部知识点'
-  const s = subjects.value.find(x => x.id === kpCurrent.subject_id)
-  let p = s ? s.name : `学科${kpCurrent.subject_id}`
-  if (kpCurrent.noGrade) return p + ' > 未分年级'
-  if (kpCurrent.grade) p += ' > ' + getGradeLabel(kpCurrent.grade)
-  if (kpCurrent.noSemester) return p + ' > 未分学期'
-  if (kpCurrent.semester) p += ' > ' + (kpCurrent.semester === 1 ? '上学期' : '下学期')
-  return p
+  if (kpFilterGrade.value.length) {
+    parts.push(kpFilterGrade.value.map(g => getGradeLabel(g)).join('、'))
+  }
+  if (kpFilterSemester.value.length) {
+    parts.push(kpFilterSemester.value.map(s => s === 1 ? '上学期' : '下学期').join('、'))
+  }
+  return parts.length ? '筛选：' + parts.join(' · ') : '全部知识点'
 })
 
 // 创建/编辑知识点
@@ -694,13 +610,13 @@ const createKnowledgePoint = async () => {
   }
 }
 
-// 打开新增知识点弹窗（默认带入当前树节点）
+// 打开新增知识点弹窗（默认带入单选筛选条件）
 const openKnowledgeDialog = () => {
   editKnowledgeData.value = null
   knowledgeForm.name = ''
-  knowledgeForm.subject_id = kpCurrent.subject_id || null
-  knowledgeForm.grade = kpCurrent.grade || null
-  knowledgeForm.semester = kpCurrent.semester || null
+  knowledgeForm.subject_id = kpFilterSubject.value.length === 1 ? kpFilterSubject.value[0] : null
+  knowledgeForm.grade = kpFilterGrade.value.length === 1 ? kpFilterGrade.value[0] : null
+  knowledgeForm.semester = kpFilterSemester.value.length === 1 ? kpFilterSemester.value[0] : null
   showKnowledgeDialog.value = true
 }
 
@@ -860,73 +776,33 @@ onMounted(() => {
   padding: 10px 0;
 }
 
-/* 知识点管理：左树 + 右列表 */
-.kp-panel {
+/* 知识点管理：表格上方 学科/年级/学期 平铺多选筛选 */
+.kp-filters {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.kp-tree {
-  width: 250px;
-  flex-shrink: 0;
-  border: 1px solid #ebeef5;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px 14px;
+  background: #f5f7fa;
   border-radius: 8px;
-  padding: 10px;
-  background: #fafbfc;
-  max-height: 560px;
-  overflow: auto;
 }
 
-.kp-tree-header {
+.kp-filter-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 2px 4px 10px;
-  font-weight: bold;
-  color: #303133;
+  gap: 6px;
 }
 
-.kp-tree :deep(.el-tree-node__content) {
-  height: 34px;
-  border-radius: 4px;
-}
-
-.kp-tree :deep(.el-tree-node__content:hover) {
-  background: #f0f2f5;
-}
-
-.kp-tree-node {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding-right: 6px;
+.kp-filter-label {
+  color: #606266;
   font-size: 13px;
+  white-space: nowrap;
 }
 
-.kp-tree-count {
-  font-size: 12px;
-  color: #909399;
-  background: #ebeef5;
-  border-radius: 8px;
-  padding: 0 7px;
-  line-height: 16px;
-}
-
-.kp-tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background: #ecf5ff;
-  color: #409eff;
-}
-
-.kp-tree :deep(.el-tree-node.is-current > .el-tree-node__content .kp-tree-count) {
-  background: #d9ecff;
-  color: #409eff;
-}
-
-.kp-list {
-  flex: 1;
-  min-width: 0;
+.kp-summary {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
 }
 
 .kp-path {
