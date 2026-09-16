@@ -135,6 +135,9 @@ def assign_grades_llm(items: List[dict], subject_name: str, grade_band: str, bat
                 model=llm._get_config("model", "claude-sonnet-4-20250514"),
                 max_tokens=2000,
                 temperature=0,
+                # DeepSeek-flash 等推理模型默认深度思考会耗尽 max_tokens 导致空输出；
+                # 通过 extra_body 关闭思考（OpenAI 兼容接口透传，anthropic 接口忽略）
+                extra_body={"thinking": {"type": "disabled"}},
                 system="你只输出JSON，不输出其他内容。",
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -221,24 +224,23 @@ def _import_subject_locked(grade_band: str, subject: str, confidence_min: float,
         llm_failed = result["failed"]
 
         # 已存在的 (name) 集合（该学科下）
-        existing_names = {
-            row.name for row in db.query(KnowledgePoint.name).filter(
+        existing_rows = {
+            row.name: row for row in db.query(KnowledgePoint).filter(
                 KnowledgePoint.subject_id == subj.id, KnowledgePoint.deleted == False
             ).all()
         }
+        existing_names = set(existing_rows.keys())
 
         imported = 0
         skipped = 0
         failed = 0
+        updated = 0
         batch_rows = []
         seen = set()
         for idx, it in enumerate(filtered):
             name = (it.get("canonical_name") or it.get("title") or "").strip()
             if not name:
                 failed += 1
-                continue
-            if name in existing_names or name in seen:
-                skipped += 1
                 continue
             g = grades.get(idx, {}).get("grade") if idx in grades else None
             s = grades.get(idx, {}).get("semester") if idx in grades else None
@@ -249,6 +251,16 @@ def _import_subject_locked(grade_band: str, subject: str, confidence_min: float,
                 g = None
             if grade_band == "高中" and g is not None and not (10 <= g <= 12):
                 g = None
+            if name in existing_names or name in seen:
+                # 已存在：若该行暂无年级且本次 LLM 已给出，则补年级（幂等修复旧导入）
+                row = existing_rows.get(name)
+                if row is not None and row.grade is None and g is not None:
+                    row.grade = g
+                    row.semester = s
+                    updated += 1
+                else:
+                    skipped += 1
+                continue
             row = KnowledgePoint(name=name, subject_id=subj.id, grade=g, semester=s if g else None)
             batch_rows.append(row)
             seen.add(name)
@@ -265,6 +277,7 @@ def _import_subject_locked(grade_band: str, subject: str, confidence_min: float,
             "skipped": skipped,
             "failed": failed,
             "llm_failed": llm_failed,
+            "updated": updated,
             "subject_id": subj.id,
             "subject_name": subj.name,
         }

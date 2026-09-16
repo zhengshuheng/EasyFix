@@ -453,6 +453,7 @@ class LLMService:
                 raise Exception(self._format_llm_error(e, kwargs)) from e
 
         try:
+            kwargs.pop("extra_body", None)  # anthropic 协议无此参数
             return self._client.messages.create(**kwargs)
         except TypeError as e:
             if "thinking" in str(e):
@@ -473,6 +474,10 @@ class LLMService:
         for key in ("model", "max_tokens", "temperature", "timeout"):
             if key in kwargs:
                 params[key] = kwargs[key]
+        # 透传 extra_body（如 DeepSeek 关闭思考 thinking={"type":"disabled"}）；
+        # 不支持的接口可能报错，由上游 _call_messages_create 统一格式化
+        if kwargs.get("extra_body"):
+            params["extra_body"] = kwargs["extra_body"]
 
         messages: list = []
         if kwargs.get("system"):
