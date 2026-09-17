@@ -44,6 +44,9 @@ def _ensure_column(table: str, column: str, ddl: str):
 
 _ensure_column("practice_set_question", "student_answer", "student_answer TEXT")
 _ensure_column("error_book", "user_id", "user_id INTEGER")
+# AI 出题维度：题型（choice/fill/judge/calc/...）/ 类型（basic/scene/comprehensive/thinking）
+_ensure_column("question", "question_type", "question_type VARCHAR(50)")
+_ensure_column("question", "question_category", "question_category VARCHAR(50)")
 # 旧无主错题本自动归属第一个小孩（幂等：仅当该小孩不存在错题本归属时才执行）
 with engine.begin() as conn:
     try:

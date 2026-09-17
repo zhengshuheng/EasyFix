@@ -309,52 +309,60 @@
         请逐题作答，完成后点「提交作答」。提交后家长可在「批改」中查看并确认结果。
       </div>
       <div class="do-question-list">
-        <div
-          v-for="(question, index) in currentPsQuestions"
-          :key="question.question_id"
-          class="do-question-row"
-        >
-          <div class="do-question-header">
-            <span class="do-question-number">{{ index + 1 }}.</span>
-            <span class="do-question-text">
-              <template v-if="question.original_question_text">{{ question.original_question_text }}</template>
-              <template v-else-if="question.original_image">
-                <el-image
-                  :src="'/uploads/' + question.original_image"
-                  fit="contain"
-                  style="max-width: 120px; max-height: 120px; cursor: pointer;"
-                  @click="previewImage(question.original_image)"
-                />
-              </template>
-              <template v-else><span class="text-gray-400">无题目内容</span></template>
-            </span>
-            <el-button
-              size="small"
-              circle
-              :type="ttsReadingId === question.question_id ? 'danger' : 'primary'"
-              plain
-              @click="speakQuestion(question)"
-              :title="ttsReadingId === question.question_id ? '停止朗读' : '语音读题'"
-            >🔊</el-button>
+        <template v-for="(group, gi) in groupedQuestions" :key="'group-' + gi">
+          <!-- 试卷式大题标题：一、选择题（共2题，每题3分） -->
+          <div v-if="group.name" class="do-question-group-header">
+            <span class="do-group-title">{{ group.name }}</span>
+            <span class="do-group-meta">共{{ group.items.length }}题<template v-if="group.score">，每题{{ group.score }}分</template></span>
           </div>
-          <div class="do-answer-row">
-            <el-input
-              v-model="studentAnswers[question.question_id]"
-              placeholder="请输入你的作答（可点右边麦克风语音输入）"
-              size="default"
-              @focus="onAnswerFocus(question.question_id)"
-            />
-            <el-button
-              size="small"
-              circle
-              :type="voiceInputingId === question.question_id ? 'danger' : 'success'"
-              plain
-              :disabled="!speechRecognitionSupported"
-              @click="startVoiceInput(question.question_id)"
-              :title="!speechRecognitionSupported ? '当前浏览器不支持语音输入' : '语音输入答案'"
-            >🎤</el-button>
+          <div
+            v-for="(question, index) in group.items"
+            :key="question.question_id"
+            class="do-question-row"
+          >
+            <div class="do-question-header">
+              <span class="do-question-number">{{ question.globalIndex }}.</span>
+              <span v-if="group.score" class="do-question-score">({{ group.score }}分)</span>
+              <span class="do-question-text">
+                <template v-if="question.original_question_text">{{ question.original_question_text }}</template>
+                <template v-else-if="question.original_image">
+                  <el-image
+                    :src="'/uploads/' + question.original_image"
+                    fit="contain"
+                    style="max-width: 120px; max-height: 120px; cursor: pointer;"
+                    @click="previewImage(question.original_image)"
+                  />
+                </template>
+                <template v-else><span class="text-gray-400">无题目内容</span></template>
+              </span>
+              <el-button
+                size="small"
+                circle
+                :type="ttsReadingId === question.question_id ? 'danger' : 'primary'"
+                plain
+                @click="speakQuestion(question)"
+                :title="ttsReadingId === question.question_id ? '停止朗读' : '语音读题'"
+              >🔊</el-button>
+            </div>
+            <div class="do-answer-row">
+              <el-input
+                v-model="studentAnswers[question.question_id]"
+                placeholder="请输入你的作答（可点右边麦克风语音输入）"
+                size="default"
+                @focus="onAnswerFocus(question.question_id)"
+              />
+              <el-button
+                size="small"
+                circle
+                :type="voiceInputingId === question.question_id ? 'danger' : 'success'"
+                plain
+                :disabled="!speechRecognitionSupported"
+                @click="startVoiceInput(question.question_id)"
+                :title="!speechRecognitionSupported ? '当前浏览器不支持语音输入' : '语音输入答案'"
+              >🎤</el-button>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
       <!-- 软键盘（点击输入框自动弹出，解决键盘字母数字模糊问题） -->
       <div v-if="softKpVisible" class="soft-keyboard">
@@ -588,49 +596,57 @@
                 <div class="card-header-blue">题目列表</div>
                 <div class="card-content">
                   <div class="question-cards">
-                    <div
-                      v-for="(row, idx) in detailData.questions"
-                      :key="row.id"
-                      :class="['question-card', row.is_correct === true ? 'card-correct' : row.is_correct === false ? 'card-wrong' : 'card-pending']"
-                    >
-                      <div class="card-header-small">
-                        <span class="card-index">{{ idx + 1 }}</span>
-                        <el-tag :type="row.is_correct === true ? 'success' : row.is_correct === false ? 'danger' : 'info'" size="small">
-                          {{ row.is_correct === true ? '正确' : row.is_correct === false ? '错误' : '未作答' }}
-                        </el-tag>
+                    <!-- 按题型分组（试卷式），无题型则平铺 -->
+                    <template v-for="(group, gi) in groupedDetailQuestions" :key="'dg-' + gi">
+                      <div v-if="group.name" class="detail-question-group-header">
+                        <span class="detail-group-title">{{ group.name }}</span>
+                        <span class="detail-group-meta">共{{ group.items.length }}题<template v-if="group.score">，每题{{ group.score }}分</template></span>
                       </div>
-                      <div class="card-body">
-                        <div class="question-info">
-                          <div class="info-row">
-                            <span class="label">原题：</span>
-                            <span class="value">{{ row.original_question_text?.substring(0, 100) || '无' }}</span>
+                      <div
+                        v-for="row in group.items"
+                        :key="row.id"
+                        :class="['question-card', row.is_correct === true ? 'card-correct' : row.is_correct === false ? 'card-wrong' : 'card-pending']"
+                      >
+                        <div class="card-header-small">
+                          <span class="card-index">{{ row.globalIndex }}</span>
+                          <span v-if="group.score" class="card-score">({{ group.score }}分)</span>
+                          <el-tag :type="row.is_correct === true ? 'success' : row.is_correct === false ? 'danger' : 'info'" size="small">
+                            {{ row.is_correct === true ? '正确' : row.is_correct === false ? '错误' : '未作答' }}
+                          </el-tag>
+                        </div>
+                        <div class="card-body">
+                          <div class="question-info">
+                            <div class="info-row">
+                              <span class="label">原题：</span>
+                              <span class="value">{{ row.original_question_text?.substring(0, 100) || '无' }}</span>
+                            </div>
+                            <!-- 阅读理解选项 -->
+                            <div v-if="row.is_reading_question" class="reading-options">
+                              <div class="option-row">{{ formatOption('A', row.option_a) }}</div>
+                              <div class="option-row">{{ formatOption('B', row.option_b) }}</div>
+                              <div class="option-row">{{ formatOption('C', row.option_c) }}</div>
+                              <div class="option-row">{{ formatOption('D', row.option_d) }}</div>
+                            </div>
+                            <div class="info-row">
+                              <span class="label">答案：</span>
+                              <span class="value answer">{{ row.original_answer || '-' }}</span>
+                            </div>
+                            <div v-if="row.explanation" class="info-row">
+                              <span class="label">解析：</span>
+                              <span class="value explanation">{{ row.explanation }}</span>
+                            </div>
                           </div>
-                          <!-- 阅读理解选项 -->
-                          <div v-if="row.is_reading_question" class="reading-options">
-                            <div class="option-row">{{ formatOption('A', row.option_a) }}</div>
-                            <div class="option-row">{{ formatOption('B', row.option_b) }}</div>
-                            <div class="option-row">{{ formatOption('C', row.option_c) }}</div>
-                            <div class="option-row">{{ formatOption('D', row.option_d) }}</div>
-                          </div>
-                          <div class="info-row">
-                            <span class="label">答案：</span>
-                            <span class="value answer">{{ row.original_answer || '-' }}</span>
-                          </div>
-                          <div v-if="row.explanation" class="info-row">
-                            <span class="label">解析：</span>
-                            <span class="value explanation">{{ row.explanation }}</span>
+                          <div v-if="row.original_image" class="question-image">
+                            <el-image
+                              :src="'/uploads/' + row.original_image"
+                              fit="contain"
+                              style="width: 60px; height: 60px; cursor: pointer;"
+                              @click="previewImage(row.original_image)"
+                            />
                           </div>
                         </div>
-                        <div v-if="row.original_image" class="question-image">
-                          <el-image
-                            :src="'/uploads/' + row.original_image"
-                            fit="contain"
-                            style="width: 60px; height: 60px; cursor: pointer;"
-                            @click="previewImage(row.original_image)"
-                          />
-                        </div>
                       </div>
-                    </div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -799,6 +815,68 @@
                 <el-option label="困难" :value="5" />
               </el-select>
             </el-form-item>
+            <el-form-item label="试卷结构">
+              <div style="width: 100%">
+                <el-radio-group v-model="aiPaperStructure" @change="applyPaperStructure" style="display: flex; flex-direction: column; gap: 6px; align-items: stretch">
+                  <el-radio v-for="(s, key) in PAPER_STRUCTURES" :key="key" :value="key" style="margin-right: 0; height: auto; line-height: 1.4; white-space: normal">
+                    <span style="font-weight: 600">{{ s.label }}</span>
+                    <span style="color: #909399; font-size: 12px; margin-left: 6px">{{ s.desc }}</span>
+                  </el-radio>
+                </el-radio-group>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px">
+                  <span style="color: #c0c4cc; font-size: 12px">一键预设 题型+类型+难度，可再微调</span>
+                  <el-link v-if="aiPaperStructure" type="primary" :underline="false" style="font-size: 12px" @click="clearPaperStructure">清除预设</el-link>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item label="题型">
+              <div style="width: 100%">
+                <el-checkbox-group v-model="aiGenerateForm.question_types" style="display: flex; flex-wrap: wrap; gap: 4px 12px">
+                  <el-checkbox
+                    v-for="t in filteredQuestionTypes"
+                    :key="t.value"
+                    :value="t.value"
+                    style="margin-right: 0"
+                  >{{ t.label }}</el-checkbox>
+                </el-checkbox-group>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px">
+                  <span style="color: #c0c4cc; font-size: 12px">不选 = 混合出题</span>
+                  <el-link
+                    v-if="aiGenerateForm.question_types.length"
+                    type="primary"
+                    :underline="false"
+                    style="font-size: 12px"
+                    @click="aiGenerateForm.question_types = []"
+                  >清空</el-link>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item label="类型">
+              <div style="width: 100%">
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <el-checkbox-group v-model="aiGenerateForm.question_categories" style="display: flex; flex-direction: column; gap: 6px">
+                    <el-checkbox
+                      v-for="c in QUESTION_CATEGORIES"
+                      :key="c.value"
+                      :value="c.value"
+                    >
+                      <span style="font-weight: 600">{{ c.label }}</span>
+                      <span style="color: #909399; font-size: 12px; margin-left: 6px">{{ c.desc }}</span>
+                    </el-checkbox>
+                  </el-checkbox-group>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px">
+                  <span style="color: #c0c4cc; font-size: 12px">不选 = 按课标梯度（基础→情境→综合→拓展）编排</span>
+                  <el-link
+                    v-if="aiGenerateForm.question_categories.length"
+                    type="primary"
+                    :underline="false"
+                    style="font-size: 12px"
+                    @click="aiGenerateForm.question_categories = []"
+                  >清空</el-link>
+                </div>
+              </div>
+            </el-form-item>
           </el-form>
         </el-tab-pane>
       </el-tabs>
@@ -896,6 +974,105 @@ const aiGenerateForm = reactive({
   selected_kp_ids: [],    // 从知识点库选择的 id 列表
   count: 5,
   difficulty: null,
+  question_types: [],       // 题型多选（空=混合）
+  question_categories: [],  // 类型多选（空=混合）
+})
+const aiPaperStructure = ref('') // 试卷结构预设：basic/standard/advanced
+function clearPaperStructure() {
+  aiPaperStructure.value = ''
+}
+
+// 题型配置（按学科过滤显示）：value -> 中文名
+const QUESTION_TYPES = [
+  { value: 'choice', label: '选择题' },
+  { value: 'fill', label: '填空题' },
+  { value: 'judge', label: '判断题' },
+  { value: 'calc', label: '计算题' },
+  { value: 'application', label: '应用题' },
+  { value: 'operation', label: '操作实践题' },
+  { value: 'reading', label: '阅读理解' },
+  { value: 'writing', label: '写话·习作' },
+  { value: 'sentence', label: '连词成句' },
+]
+// 题型按学科过滤
+const filteredQuestionTypes = computed(() => {
+  const sub = subjects.value.find(s => s.id === aiGenerateForm.subject_id)
+  const name = sub ? (sub.name || '') : ''
+  if (name.includes('语文')) return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'reading', 'writing'].includes(t.value))
+  if (name.includes('英语')) return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'sentence', 'reading'].includes(t.value))
+  return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'calc', 'application', 'operation'].includes(t.value))
+})
+// 类型配置（对齐课标"四基四能"与核心素养）
+const QUESTION_CATEGORIES = [
+  { value: 'basic', label: '基础巩固', desc: '概念·公式·法则直接考查（四基）' },
+  { value: 'scene', label: '情境应用', desc: '生活真实情境解决问题（四能·情景设计）' },
+  { value: 'comprehensive', label: '综合提升', desc: '跨知识点·多步综合运用（综合与实践）' },
+  { value: 'thinking', label: '思维拓展', desc: '开放探究·规律推理（素养导向）' },
+]
+
+// 题型分值/名称/大题顺序（与后端 PDF 一致，参考学校试卷）
+const QUESTION_TYPE_SCORES = { choice: 3, fill: 3, judge: 2, calc: 4, application: 6, operation: 5, reading: 4, writing: 10, sentence: 2 }
+const QUESTION_TYPE_NAMES = { choice: '选择题', fill: '填空题', judge: '判断题', calc: '计算题', application: '应用题', operation: '操作实践题', reading: '阅读理解', writing: '写话·习作', sentence: '连词成句' }
+const QUESTION_TYPE_ORDER = ['choice', 'fill', 'judge', 'calc', 'application', 'operation', 'reading', 'writing', 'sentence']
+
+// 试卷结构预设（一键填充 题型+类型+难度）
+const PAPER_STRUCTURES = {
+  basic: { label: '基础卷', desc: '基础巩固为主（计算+填空，对应课标"四基"）', types: ['fill', 'calc', 'choice', 'application'], categories: ['basic'], difficulty: 2 },
+  standard: { label: '标准卷', desc: '均衡结构（模拟学校单元/期末卷，7:2:1 梯度）', types: ['fill', 'calc', 'choice', 'application'], categories: ['basic', 'scene'], difficulty: 3 },
+  advanced: { label: '拓展卷', desc: '素养拓展（应用+操作+思维，对应课标"四能"）', types: ['application', 'choice', 'fill', 'operation'], categories: ['comprehensive', 'thinking'], difficulty: 4 },
+}
+function applyPaperStructure(key) {
+  const s = PAPER_STRUCTURES[key]
+  if (!s) return
+  aiGenerateForm.question_types = [...s.types]
+  aiGenerateForm.question_categories = [...s.categories]
+  aiGenerateForm.difficulty = s.difficulty
+}
+
+// 题目按题型分组（做题/详情展示，试卷式大题结构）
+const groupedQuestions = computed(() => {
+  const qs = currentPsQuestions.value || []
+  const hasType = qs.some(q => q.question_type)
+  if (!hasType) return [{ key: '', name: '', score: null, items: qs.map((q, i) => ({ ...q, globalIndex: i + 1 })) }]
+  const groups = {}
+  for (const q of qs) {
+    const t = q.question_type || '__other'
+    if (!groups[t]) groups[t] = []
+    groups[t].push(q)
+  }
+  const keys = Object.keys(groups).sort((a, b) => {
+    const oa = a === '__other' ? 99 : QUESTION_TYPE_ORDER.indexOf(a) === -1 ? 98 : QUESTION_TYPE_ORDER.indexOf(a)
+    const ob = b === '__other' ? 99 : QUESTION_TYPE_ORDER.indexOf(b) === -1 ? 98 : QUESTION_TYPE_ORDER.indexOf(b)
+    return oa - ob
+  })
+  let gi = 1
+  return keys.map(k => {
+    const items = groups[k].map(q => ({ ...q, globalIndex: gi++ }))
+    return { key: k, name: QUESTION_TYPE_NAMES[k] || '其他', score: QUESTION_TYPE_SCORES[k] || null, items }
+  })
+})
+
+// 详情弹窗题目分组（基于 detailData.questions）
+const groupedDetailQuestions = computed(() => {
+  const qs = (detailData.questions || []).filter(q => !q.is_reading_question)
+  const hasType = qs.some(q => q.question_type)
+  if (!hasType) return [{ key: '', name: '', score: null, items: qs.map((q, i) => ({ ...q, globalIndex: i + 1 })) }]
+  const groups = {}
+  for (const q of qs) {
+    const t = q.question_type || '__other'
+    if (!groups[t]) groups[t] = []
+    groups[t].push(q)
+  }
+  const keys = Object.keys(groups).sort((a, b) => {
+    const oa = a === '__other' ? 99 : QUESTION_TYPE_ORDER.indexOf(a) === -1 ? 98 : QUESTION_TYPE_ORDER.indexOf(a)
+    const ob = b === '__other' ? 99 : QUESTION_TYPE_ORDER.indexOf(b) === -1 ? 98 : QUESTION_TYPE_ORDER.indexOf(b)
+    return oa - ob
+  })
+  let gi = 1
+  return keys.map(k => {
+    const items = groups[k].map(q => ({ ...q, globalIndex: gi++ }))
+    return { key: k, name: QUESTION_TYPE_NAMES[k] || '其他', score: QUESTION_TYPE_SCORES[k] || null, items }
+  })
 })
 // AI 出题知识点库（按学科+年级加载，按单元分组）
 const aiKpAll = ref([])
@@ -1001,6 +1178,9 @@ const showGenerateDialog = () => {
   aiGenerateForm.selected_kp_ids = []
   aiGenerateForm.count = 5
   aiGenerateForm.difficulty = null
+  aiGenerateForm.question_types = []
+  aiGenerateForm.question_categories = []
+  aiPaperStructure.value = ''
   generateTab.value = 'pool'
   generateDialogVisible.value = true
   if (defaultSubjectId) {
@@ -1068,6 +1248,8 @@ const generateAiPractice = async () => {
       knowledge_points,
       count: aiGenerateForm.count,
       difficulty: aiGenerateForm.difficulty,
+      question_types: aiGenerateForm.question_types,
+      question_categories: aiGenerateForm.question_categories,
     })
     ElMessage.success(`AI 已生成 ${data.total_questions} 道题，练习集已创建`)
     generateDialogVisible.value = false
@@ -2783,6 +2965,36 @@ onMounted(() => {
 
 .do-question-row:last-child {
   border-bottom: none;
+}
+
+/* 试卷式大题分组标题（做题/详情） */
+.do-question-group-header,
+.detail-question-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 6px 10px;
+  background: #f0faf9;
+  border-left: 4px solid #4ECDC4;
+  border-radius: 4px;
+}
+.do-group-title,
+.detail-group-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #303133;
+}
+.do-group-meta,
+.detail-group-meta {
+  font-size: 12px;
+  color: #909399;
+}
+.do-question-score,
+.card-score {
+  color: #e6a23c;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* 做题无障碍：语音读题 / 语音输入 / 软键盘 */

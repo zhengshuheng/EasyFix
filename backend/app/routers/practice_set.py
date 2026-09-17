@@ -69,6 +69,7 @@ class PracticeSetQuestionResponse(BaseModel):
     original_answer: Optional[str] = None
     original_image: Optional[str] = None
     student_answer: Optional[str] = None  # 学生作答（做题环节提交）
+    question_type: Optional[str] = None  # 题型：choice/fill/judge/calc/application/operation/reading/writing/sentence
     # 阅读理解额外字段
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -280,6 +281,8 @@ class GenerateAIRequest(BaseModel):
     knowledge_points: List[str] = []  # 手动指定知识点；为空则自动统计薄弱知识点
     count: int = 5  # 题数
     difficulty: Optional[int] = None  # 难度 1-5
+    question_types: List[str] = []  # 题型：choice/fill/judge/calc/application/operation/reading/writing/sentence；空=混合
+    question_categories: List[str] = []  # 类型：basic/scene/comprehensive/thinking；空=混合
 
 
 @router.post("/generate-ai", response_model=PracticeSetResponse, status_code=201)
@@ -295,6 +298,12 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
         raise HTTPException(status_code=400, detail="题数需在 1-20 之间")
     if data.difficulty is not None and (data.difficulty < 1 or data.difficulty > 5):
         raise HTTPException(status_code=400, detail="难度需在 1-5 之间")
+
+    # 题型/类型白名单校验
+    VALID_TYPES = {"choice", "fill", "judge", "calc", "application", "operation", "reading", "writing", "sentence"}
+    VALID_CATEGORIES = {"basic", "scene", "comprehensive", "thinking"}
+    question_types = [t for t in data.question_types if t in VALID_TYPES]
+    question_categories = [c for c in data.question_categories if c in VALID_CATEGORIES]
 
     # 1. 确定知识点：手动指定 > 自动统计薄弱知识点
     knowledge_points = [kp.strip() for kp in data.knowledge_points if kp and kp.strip()]
@@ -324,12 +333,48 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
         grade=data.grade,
         count=data.count,
         difficulty=data.difficulty,
+        question_types=question_types,
+        question_categories=question_categories,
     )
     if result.get("error"):
         raise HTTPException(status_code=502, detail=result["error"])
     ai_questions = result.get("questions", [])
     if not ai_questions:
         raise HTTPException(status_code=502, detail="AI 没有生成可用题目")
+
+    # 2.1 生成后校验：用户明确指定的题型必须出现；缺失时补一轮只生成缺失题型
+    if question_types:
+        missing_types = [t for t in question_types if not any(
+            (q.get("question_type") or "") == t for q in ai_questions
+        )]
+        if missing_types and data.count < 20:
+            try:
+                fill_count = max(len(ai_questions) // 2, 1)  # 补题量不超过现有的一半
+                result2 = llm_service.generate_questions_by_knowledge(
+                    knowledge_points=knowledge_points,
+                    subject=subject.name,
+                    grade=data.grade,
+                    count=fill_count,
+                    difficulty=data.difficulty,
+                    question_types=missing_types,
+                    question_categories=question_categories,
+                )
+                extra = result2.get("questions", [])
+                # 只接收缺失题型的题目，且不重复
+                seen_q = {q["question"] for q in ai_questions}
+                for q in extra:
+                    if q["question"] in seen_q:
+                        continue
+                    if (q.get("question_type") or "") in missing_types:
+                        ai_questions.append(q)
+                        seen_q.add(q["question"])
+            except Exception as e:
+                print(f"AI出题 缺失题型补生成失败: {e}")
+
+    # 2.2 按试卷大题顺序排序（选择→填空→判断→计算→应用→操作→阅读→写作）
+    TYPE_ORDER = {"choice": 1, "fill": 2, "judge": 3, "calc": 4, "application": 5,
+                  "operation": 6, "reading": 7, "writing": 8, "sentence": 9}
+    ai_questions.sort(key=lambda q: TYPE_ORDER.get(q.get("question_type") or "", 99))
 
     # 3. 题目入库（Question 表，后续抽题/复习可复用）
     new_questions = []
@@ -344,6 +389,8 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             knowledge_point=item.get("knowledge_point") or knowledge_points[0],
             difficulty=data.difficulty or 3,
             error_type="",
+            question_type=item.get("question_type") or (question_types[0] if len(question_types) == 1 else None),
+            question_category=item.get("question_category") or (question_categories[0] if len(question_categories) == 1 else None),
         )
         db.add(q)
         new_questions.append(q)
@@ -367,7 +414,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             display_order=idx,
         ))
 
-    # 5. 生成 PDF
+    # 5. 生成 PDF（按题型分组，试卷式排版 + 分值）
     pdf_url = None
     try:
         questions_data = [{
@@ -376,6 +423,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             "id": q.id,
             "knowledge_point": q.knowledge_point or "",
             "error_type": q.error_type or "",
+            "question_type": q.question_type or "",
         } for q in new_questions]
         pdf_path = generate_practice_set_pdf(practice_set.name, questions_data)
         practice_set.pdf_path = pdf_path
@@ -851,6 +899,7 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "original_answer": question.answer or "",
                 "original_image": question.original_image or None,
                 "student_answer": psq.student_answer or "",
+                "question_type": question.question_type or "",
             })
 
     return {

@@ -63,7 +63,20 @@ def generate_practice_set_pdf(
 
 
 class PracticeSetPDF(FPDF):
-    """练习集PDF生成器"""
+    """练习集PDF生成器（按题型分组，试卷式排版）"""
+
+    # 题型单题分值（内置默认，参考学校试卷：计算/填空占大头，主观题分高）
+    TYPE_SCORES = {
+        "choice": 3, "fill": 3, "judge": 2, "calc": 4, "application": 6,
+        "operation": 5, "reading": 4, "writing": 10, "sentence": 2,
+    }
+    TYPE_NAMES = {
+        "choice": "选择题", "fill": "填空题", "judge": "判断题", "calc": "计算题",
+        "application": "应用题", "operation": "操作实践题", "reading": "阅读理解题",
+        "writing": "写话/习作题", "sentence": "连词成句题",
+    }
+    TYPE_ORDER = {"choice": 1, "fill": 2, "judge": 3, "calc": 4, "application": 5,
+                  "operation": 6, "reading": 7, "writing": 8, "sentence": 9}
 
     # 颜色常量
     EMPTY_STAR_COLOR = (220, 223, 230)
@@ -110,9 +123,36 @@ class PracticeSetPDF(FPDF):
         self.set_text_color(*self.GRAY_TEXT_COLOR)
         self.cell(0, 10, f'第 {self.page_no()} 页', align='C')
 
+    def add_section_header(self, section_index: str, type_key: str, count: int, score_per: int):
+        """添加试卷式大题标题：一、选择题（共2题，每题3分，共6分）"""
+        cn_num = "一二三四五六七八九十"
+        prefix = f"{cn_num[section_index - 1]}、" if section_index <= len(cn_num) else f"{section_index}、"
+        total = count * score_per
+        title = f"{prefix}{self.TYPE_NAMES.get(type_key, '题目')}（共{count}题，每题{score_per}分，共{total}分）"
+        self.ln(4)
+        self.set_font('chinese_b', size=12)
+        self.set_text_color(*self.THEME_COLOR)
+        self.cell(0, 8, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
+        self.set_text_color(*self.TEXT_COLOR)
+        self.set_draw_color(*self.THEME_COLOR)
+        self.set_line_width(0.4)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.ln(5)
+
+    def add_total_score(self, questions: List[Dict[str, Any]]):
+        """卷头显示总分（按题型单题分值折算）"""
+        total = 0
+        for q in questions:
+            t = q.get('question_type')
+            total += self.TYPE_SCORES.get(t, 3)
+        self.set_font('chinese', size=10)
+        self.set_text_color(*self.METADATA_TEXT_COLOR)
+        self.cell(0, 8, f'（满分 {total} 分，共 {len(questions)} 题）', new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+        self.set_text_color(*self.TEXT_COLOR)
+
     def add_question(self, index: int, question_text: str, difficulty: int, question_id: int = None,
-                  knowledge_point: str = None, error_type: str = None, review_count: int = None):
-        """添加一道题目（新版布局：无答题框，有表头信息）"""
+                  knowledge_point: str = None, error_type: str = None, review_count: int = None, score: int = None):
+        """添加一道题目（组内编号连续，题头带分值）"""
         # ===== 第一行：[ID:xxx]  第{index}题  ★★★★★ =====
 
         # ID标签（如果有）
@@ -127,6 +167,12 @@ class PracticeSetPDF(FPDF):
         self.set_fill_color(*self.THEME_COLOR)  # #4ECDC4
         self.set_text_color(255, 255, 255)
         self.cell(22, 8, f'第{index}题', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C', fill=True)
+
+        # 分值（如有）
+        if score:
+            self.set_font('chinese', size=10)
+            self.set_text_color(*self.METADATA_TEXT_COLOR)
+            self.cell(18, 8, f'({score}分)', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
 
         # 难度星级（彩色填充 + 灰色空星）
         difficulty = max(1, min(5, difficulty))
@@ -275,21 +321,46 @@ class PracticeSetPDF(FPDF):
                     q.get('option_d'),
                 )
         else:
-            # 普通练习集模式
+            # 普通练习集模式：按题型分组（试卷式排版）
             self.add_page()
-            for idx, q in enumerate(self.questions, 1):
-                question_text = q.get('question_text', '')
-                difficulty = q.get('difficulty', 3)
-                question_id = q.get('id')
-                knowledge_point = q.get('knowledge_point')
-                error_type = q.get('error_type')
-                review_count = q.get('review_count')
+            self.add_total_score(self.questions)
 
-                # 检查是否需要新页面
-                if self.get_y() > 220:
+            from collections import OrderedDict
+            groups = OrderedDict()
+            for q in self.questions:
+                t = q.get('question_type') or ''
+                groups.setdefault(t, []).append(q)
+
+            ordered_groups = sorted(
+                groups.items(),
+                key=lambda kv: self.TYPE_ORDER.get(kv[0], 99) if kv[0] else 99,
+            )
+
+            global_idx = 1
+            for section_idx, (type_key, qs) in enumerate(ordered_groups, 1):
+                if self.get_y() > 200:
                     self.add_page()
+                score_per = self.TYPE_SCORES.get(type_key, 3)
+                if type_key:
+                    self.add_section_header(section_idx, type_key, len(qs), score_per)
+                for q in qs:
+                    question_text = q.get('question_text', '')
+                    difficulty = q.get('difficulty', 3)
+                    question_id = q.get('id')
+                    knowledge_point = q.get('knowledge_point')
+                    error_type = q.get('error_type')
+                    review_count = q.get('review_count')
 
-                self.add_question(idx, question_text, difficulty, question_id, knowledge_point, error_type, review_count)
+                    # 检查是否需要新页面
+                    if self.get_y() > 220:
+                        self.add_page()
+
+                    self.add_question(
+                        global_idx, question_text, difficulty, question_id,
+                        knowledge_point, error_type, review_count,
+                        score=score_per if type_key else None,
+                    )
+                    global_idx += 1
 
         # 输出到文件
         self.output(output_path)

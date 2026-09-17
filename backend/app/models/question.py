@@ -20,6 +20,8 @@ class Question(Base):
     analysis_image = Column(String(500), nullable=True)  # 答案解析图片
     difficulty = Column(Integer, default=3)
     error_type = Column(String(50), nullable=True)  # 计算/概念/审题/其他
+    question_type = Column(String(50), nullable=True)  # 题型：choice/fill/judge/calc/application/operation/reading/writing/sentence
+    question_category = Column(String(50), nullable=True)  # 类型：basic/scene/comprehensive/thinking
     knowledge_point = Column(String(200), nullable=True)
     review_count = Column(Integer, default=0, nullable=False)  # 复习次数
     correct_count = Column(Integer, default=0, nullable=False)  # 正确次数

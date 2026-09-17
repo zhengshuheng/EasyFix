@@ -500,6 +500,9 @@ class LLMService:
         text = ""
         if response.choices:
             text = response.choices[0].message.content or ""
+            if not text:
+                # DeepSeek 等推理模型偶发 content 为空（思考在 reasoning_content），兜底取思考内容
+                text = getattr(response.choices[0].message, "reasoning_content", None) or ""
         return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
 
     def _format_llm_error(self, e: Exception, kwargs: dict) -> str:
@@ -908,9 +911,11 @@ class LLMService:
         grade: int = None,
         count: int = 5,
         difficulty: int = None,
+        question_types: List[str] = None,
+        question_categories: List[str] = None,
     ) -> dict:
         """
-        AI 结合知识点出题
+        AI 结合知识点出题（依据义务教育课程标准 2022 版设计）
 
         Args:
             knowledge_points: 知识点列表（如 ["分数加减法", "乘法分配律"]）
@@ -918,9 +923,11 @@ class LLMService:
             grade: 年级（1-6）
             count: 题目总数
             difficulty: 难度（1-5）
+            question_types: 题型列表（choice/fill/judge/calc/application/operation/reading/writing/sentence），空=混合
+            question_categories: 类型列表（basic/scene/comprehensive/thinking），空=混合
 
         Returns:
-            dict: {"questions": [{"question", "answer", "explanation", "knowledge_point"}]}
+            dict: {"questions": [{"question", "answer", "explanation", "knowledge_point", "question_type", "question_category"}]}
         """
         # 重新加载配置
         self._config = load_llm_config()
@@ -934,33 +941,122 @@ class LLMService:
             return {"error": "缺少知识点", "questions": []}
 
         model = self._get_config("model", "claude-sonnet-4-20250514")
-        prompt = self._build_question_gen_prompt(knowledge_points, subject, grade, count, difficulty)
+        prompt = self._build_question_gen_prompt(
+            knowledge_points, subject, grade, count, difficulty,
+            question_types=question_types or [],
+            question_categories=question_categories or [],
+        )
 
-        try:
-            response = self._retry_on_rate_limit(
-                self._call_messages_create,
-                model=model,
-                max_tokens=4000,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=90,
-                # 禁用思考块，避免MiniMax返回纯思考内容
-                thinking={"type": "disabled"},
-            )
+        # 推理模型偶发返回空/思考文本，自动重试最多 3 次（轮换关闭思考的参数写法）
+        # 注意：_call_openai_compat 只透传 extra_body 中的参数，thinking 必须以 extra_body 传递
+        thinking_variants = [
+            {"extra_body": {"thinking": {"type": "disabled"}}},
+            {"extra_body": {"enable_thinking": False}},
+            {},
+        ]
+        last_error = None
+        for attempt in range(3):
+            try:
+                call_kwargs = {
+                    "model": model,
+                    "max_tokens": 4000,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "timeout": 120,
+                }
+                call_kwargs.update(thinking_variants[attempt % len(thinking_variants)])
 
-            content = ""
-            for block in response.content:
-                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
-                    content = block.text
-                    break
+                response = self._retry_on_rate_limit(
+                    self._call_messages_create,
+                    **call_kwargs,
+                )
 
-            if not content:
-                return {"error": "LLM返回内容为空或仅包含思考过程", "questions": []}
+                content = ""
+                for block in response.content:
+                    if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                        content = block.text
+                        break
 
-            return self._parse_question_gen_response(content)
-        except anthropic.RateLimitError as e:
-            return {"error": f"API速率限制，请稍后再试: {str(e)}", "questions": []}
-        except Exception as e:
-            return {"error": f"LLM调用失败: {str(e)}", "questions": []}
+                if not content:
+                    last_error = "LLM返回内容为空"
+                    continue
+
+                parsed = self._parse_question_gen_response(content, subject)
+                if parsed.get("questions"):
+                    return parsed
+                last_error = parsed.get("error", "解析失败")
+            except anthropic.RateLimitError as e:
+                return {"error": f"API速率限制，请稍后再试: {str(e)}", "questions": []}
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        return {"error": f"AI出题多次重试仍失败：{last_error}", "questions": []}
+
+    # 题型定义（按学科）：value -> 中文名 + 出题要点
+    QUESTION_TYPE_SPECS = {
+        "choice": "选择题（4个选项，其中1个正确，其余为易错干扰项，考查概念辨析）",
+        "fill": "填空题（直接填写结果，考查基础概念与简单计算）",
+        "judge": "判断题（对/错并简要说明理由，考查概念正误辨析）",
+        "calc": "计算题（直接写得数/竖式计算/脱式计算/简便运算，考查运算能力）",
+        "application": "应用题（解决实际问题，需列式解答，考查数量关系与问题解决）",
+        "operation": "操作实践题（画图、测量、统计等动手操作，考查几何直观与实践能力）",
+        "reading": "阅读理解题（短文阅读后作答，考查阅读理解与分析能力）",
+        "writing": "写话/习作题（看图写话、小练笔等，考查书面表达与交流）",
+        "sentence": "连词成句/句型转换题（组织语言，考查句法结构与表达能力）",
+    }
+    # 类型定义（对齐课标"四基四能"与核心素养）
+    QUESTION_CATEGORY_SPECS = {
+        "basic": "基础巩固：直接考查该知识点的概念、公式、法则（对应课标'四基'中的基础知识和基本技能）",
+        "scene": "情境应用：把知识点放到生活真实情境中解决实际问题，题目要有现实背景（对应课标'四能'与'强化情景设计'要求）",
+        "comprehensive": "综合提升：跨知识点/多步骤综合运用，需要两步以上思考（对应课标'综合与实践'领域）",
+        "thinking": "思维拓展：开放题、规律探究、一题多解、变式推理，培养创新意识和推理意识（对应课标核心素养导向）",
+    }
+    # 题型默认配额权重（参考真实学校试卷：计算/口算占最大头，其次填空，再次应用，选择少量）
+    # 一年级期末卷100分示例：口算20+竖式12（计算32%）、填空32%、应用23%、选择6%、操作7%
+    DEFAULT_TYPE_WEIGHTS = {
+        "calc": 0.32,
+        "fill": 0.28,
+        "application": 0.18,
+        "choice": 0.12,
+        "operation": 0.10,
+    }
+    # 各学科默认题型池（未指定题型时按此池分配配额）
+    DEFAULT_TYPE_POOL = {
+        "数学": ["calc", "fill", "choice", "application", "operation"],
+        "语文": ["fill", "choice", "judge", "reading", "writing"],
+        "英语": ["fill", "choice", "judge", "sentence", "reading"],
+    }
+
+    def _build_type_quota(self, count: int, question_types: List[str], subject: str) -> str:
+        """
+        根据题型池/权重生成"题型配额"指令文本（参考学校试卷结构）。
+        返回类似：选择题2道、填空题2道、计算题4道、应用题2道
+        """
+        if question_types:
+            pool = [t for t in question_types if t in self.QUESTION_TYPE_SPECS]
+            if not pool:
+                pool = ["choice", "fill", "application"]
+        else:
+            pool = self.DEFAULT_TYPE_POOL.get(subject, self.DEFAULT_TYPE_POOL["数学"])
+
+        # 计算每类题数：按权重分配，余数补给出题性价比高/学校占比较大的题型
+        weights = {t: self.DEFAULT_TYPE_WEIGHTS.get(t, 0.1) for t in pool}
+        total_w = sum(weights.values())
+        counts = {t: max(0, int(count * w / total_w)) for t, w in weights.items()}
+        remaining = count - sum(counts.values())
+        # 学校卷填空/计算是主体，优先补这两种；其次应用
+        priority = [t for t in ("fill", "calc", "application", "choice", "operation") if t in counts]
+        i = 0
+        while remaining > 0:
+            counts[priority[i % len(priority)]] += 1
+            remaining -= 1
+            i += 1
+
+        names = {"choice": "选择题", "fill": "填空题", "judge": "判断题", "calc": "计算题",
+                 "application": "应用题", "operation": "操作实践题", "reading": "阅读理解题",
+                 "writing": "写话/习作题", "sentence": "连词成句题"}
+        parts = [f"{names[t]} {counts[t]} 道" for t in pool if counts.get(t, 0) > 0]
+        return "、".join(parts)
 
     def _build_question_gen_prompt(
         self,
@@ -969,6 +1065,8 @@ class LLMService:
         grade: int,
         count: int,
         difficulty: int,
+        question_types: List[str] = None,
+        question_categories: List[str] = None,
     ) -> str:
         grade_info = f"小学{grade}年级" if grade else "小学"
         diff_desc = {
@@ -981,56 +1079,167 @@ class LLMService:
         diff_info = f"难度：{diff_desc.get(difficulty, '中等')}（满分5，当前{difficulty}）" if difficulty else "难度：中等偏基础，适合日常练习"
 
         kp_text = "、".join(knowledge_points)
-        # 每个知识点大致题数，平均分配后补余
         per = max(1, count // len(knowledge_points))
 
-        return f"""你是一位经验丰富的{grade_info}{subject}老师，请围绕以下知识点出一套练习题：
+        # 题型约束（显式配额，参考学校试卷结构，解决"混合模式不出选择题"问题）
+        quota_text = self._build_type_quota(count, question_types or [], subject)
+        if question_types:
+            type_names = "、".join(self.QUESTION_TYPE_SPECS[t] for t in question_types if t in self.QUESTION_TYPE_SPECS)
+            type_info = f"题型要求：本套题只使用以下题型，按配额出题，不得使用其他题型：\n- {type_names}\n- 题型配额（共 {count} 题，必须严格按此数量）：{quota_text}"
+        else:
+            type_info = f"题型要求：按学校试卷常见结构混合出题，题型配额（共 {count} 题，必须严格按此数量）：{quota_text}"
+
+        # 类型约束
+        if question_categories:
+            cat_names = "、".join(self.QUESTION_CATEGORY_SPECS[c] for c in question_categories if c in self.QUESTION_CATEGORY_SPECS)
+            cat_info = f"类型要求：本套题请覆盖以下考查类型（均衡分配）：\n- {cat_names}"
+        else:
+            cat_info = "类型要求：按'基础巩固→情境应用→综合提升→思维拓展'梯度递进编排，多数为基础巩固与情境应用，少量综合提升与思维拓展"
+
+        subject_guide = ""
+        if "数学" in subject:
+            subject_guide = (
+                "课标导向：\n"
+                "- 考查小学数学核心素养：数感、量感、符号意识、运算能力、几何直观、空间观念、推理意识、数据意识、模型意识、应用意识、创新意识\n"
+                "- 情境题必须来自儿童真实生活（购物、时间、长度测量、校园活动等），体现'会用数学的眼光观察现实世界'\n"
+                "- 答案必须唯一且可验算；应用题要体现数量关系（加法模型/乘法模型）\n"
+                "- 计算题数字要适合口算或竖式范围，避免超纲"
+            )
+        elif "语文" in subject:
+            subject_guide = (
+                "课标导向：\n"
+                "- 考查语文核心素养：语言运用、思维能力、审美创造、文化自信\n"
+                "- 阅读/写话情境贴近儿童生活，体现'识字与写字、阅读与鉴赏、表达与交流'等语文实践活动\n"
+                "- 字词句训练要结合语境，避免死记硬背"
+            )
+        elif "英语" in subject:
+            subject_guide = (
+                "课标导向：\n"
+                "- 考查英语核心素养：语言能力、文化意识、思维品质、学习能力\n"
+                "- 情境贴近小学生生活（学校、家庭、动物、颜色、数字等话题），体现真实语言运用\n"
+                "- 词汇句法不超纲，与课本话题一致"
+            )
+
+        return f"""你是一位经验丰富的{grade_info}{subject}老师，请依据《义务教育课程标准（2022年版）》围绕以下知识点出一套练习题：
 知识点：{kp_text}
 
 出题要求：
 - 共 {count} 道题，围绕知识点出题，每个知识点至少 {per} 道
 - {diff_info}
-- 题干要表述清晰完整，适合{grade_info}学生作答
-- 计算题答案必须准确，可自行验算
-- 每道题必须给出：题目、正确答案、简要解析、所属知识点
+- {type_info}
+- {cat_info}
+- 题干要表述清晰完整，适合{grade_info}学生作答，题目要有区分度
+- 计算题答案必须准确，可自行验算；应用题须给出完整算式与单位
+{subject_guide}
+- 每道题必须给出：题目、正确答案、简要解析、所属知识点、题型（choice/fill/judge/calc/application/operation/reading/writing/sentence）、类型（basic/scene/comprehensive/thinking）
 
 请严格按以下JSON数组格式返回，只返回数组本身，不要包含多余文字：
 [
-  {{"question": "题目内容", "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点"}}
+  {{"question": "题目内容", "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "choice", "question_category": "basic"}}
 ]
 """
 
-    def _parse_question_gen_response(self, content: str) -> dict:
-        """解析AI出题结果"""
+    def _parse_question_gen_response(self, content: str, subject: str = "") -> dict:
+        """解析AI出题结果（容忍思考文本/截断等杂讯，尽力提取JSON数组）"""
         import json
         import re
 
         text = content.strip()
+        # 1) 优先提取 ```json ... ``` 代码块
         json_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.DOTALL)
         if json_match:
             text = json_match.group(1)
         else:
+            # 2) 从文本中截取从第一个 [ 到最后一个 ] 的部分
             start = text.find("[")
             end = text.rfind("]")
-            if start != -1 and end != -1:
+            if start != -1 and end != -1 and end > start:
                 text = text[start : end + 1]
+
+        data = None
         try:
             data = json.loads(text)
-            questions = []
+        except Exception:
+            # 3) 逐个提取 { ... } 对象（容忍对象之间的杂讯/截断）
+            objects = re.findall(r"\{[^{}]*\}", text, re.DOTALL)
+            if objects:
+                data = []
+                for obj in objects:
+                    try:
+                        data.append(json.loads(obj))
+                    except Exception:
+                        continue
+
+        questions = []
+        if isinstance(data, list):
             for item in data:
+                if not isinstance(item, dict):
+                    continue
                 q = {
                     "question": str(item.get("question", "")).strip(),
                     "answer": str(item.get("answer", "")).strip(),
                     "explanation": str(item.get("explanation", "")).strip(),
                     "knowledge_point": str(item.get("knowledge_point", "")).strip(),
+                    "question_type": str(item.get("question_type", "")).strip(),
+                    "question_category": str(item.get("question_category", "")).strip(),
                 }
+                # 题型/类型兜底：模型可能省略字段，按题目内容特征推断
+                if q["question_type"] not in self.QUESTION_TYPE_SPECS:
+                    q["question_type"] = self._infer_question_type(q["question"], q["answer"], subject)
+                if q["question_category"] not in self.QUESTION_CATEGORY_SPECS:
+                    q["question_category"] = "basic"
                 if q["question"] and q["answer"]:
                     questions.append(q)
-            if not questions:
-                return {"error": "AI生成的题目为空或格式不正确", "questions": []}
-            return {"questions": questions}
-        except Exception:
-            return {"error": "出题结果解析失败，请重试", "questions": []}
+        elif isinstance(data, dict):
+            # 单个对象也接受
+            q = {
+                "question": str(data.get("question", "")).strip(),
+                "answer": str(data.get("answer", "")).strip(),
+                "explanation": str(data.get("explanation", "")).strip(),
+                "knowledge_point": str(data.get("knowledge_point", "")).strip(),
+                "question_type": str(data.get("question_type", "")).strip(),
+                "question_category": str(data.get("question_category", "")).strip(),
+            }
+            if q["question_type"] not in self.QUESTION_TYPE_SPECS:
+                q["question_type"] = self._infer_question_type(q["question"], q["answer"], subject)
+            if q["question_category"] not in self.QUESTION_CATEGORY_SPECS:
+                q["question_category"] = "basic"
+            if q["question"] and q["answer"]:
+                questions.append(q)
+
+        if not questions:
+            return {"error": "AI生成的题目为空或格式不正确", "questions": []}
+        return {"questions": questions}
+
+    def _infer_question_type(self, question: str, answer: str, subject: str = "") -> str:
+        """按题目内容特征推断题型（模型省略 question_type 时的兜底）"""
+        import re
+        q = question or ""
+        a = answer or ""
+        # 1) 选择题：带 A. B. C. D. 选项
+        if re.search(r"[A-Da-d]\s*[.、．)）]\s*", q):
+            return "choice"
+        # 2) 判断题：答案是对/错/√/×
+        if any(k in a for k in ["√", "×", "对", "错", "正确", "错误"]):
+            return "judge"
+        # 3) 填空题：括号/横线
+        if any(k in q for k in ["（ ）", "（  ）", "( )", "（  ）", "____", "____", "○", "填一填"]):
+            return "fill"
+        # 4) 计算题：纯算式（数字+运算符）
+        cleaned = re.sub(r"[\s=＝（）()]", "", q)
+        if cleaned and re.fullmatch(r"[\d\+\-\×\÷\*/\.]+", cleaned):
+            return "calc"
+        # 5) 学科特征
+        if subject == "语文":
+            if "阅读" in q or len(q) > 100:
+                return "reading"
+            if "写" in q and ("话" in q or "作" in q):
+                return "writing"
+        if subject == "英语":
+            if "连词成句" in q or "排序" in q:
+                return "sentence"
+        # 6) 默认：应用题（解决实际问题）
+        return "application"
 
 
 # 全局单例
