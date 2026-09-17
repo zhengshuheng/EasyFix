@@ -1054,7 +1054,7 @@ const groupedQuestions = computed(() => {
 
 // 详情弹窗题目分组（基于 detailData.questions）
 const groupedDetailQuestions = computed(() => {
-  const qs = (detailData.questions || []).filter(q => !q.is_reading_question)
+  const qs = detailData.value.questions || []
   const hasType = qs.some(q => q.question_type)
   if (!hasType) return [{ key: '', name: '', score: null, items: qs.map((q, i) => ({ ...q, globalIndex: i + 1 })) }]
   const groups = {}

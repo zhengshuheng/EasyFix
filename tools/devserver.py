@@ -163,14 +163,20 @@ async def dev_enter_app(path='/practice-sets', user='小红'):
     """（异步）打开应用；若停在"今天谁学习"首页则自动点小孩卡片，最后跳到 path"""
     p = await dev_open('/')
     obs = await p.snapshot()
-    if '今天谁学习' in obs.text and user in obs.text:
+    if '今天谁学习' in obs.text:
+        # 注意：点"名字"文字无效（点击区在 .kid-card 上），必须点卡片本身
         try:
-            bb = await p.get_by_text(user).first.bounding_box()
-            if bb:
-                await p.mouse.click(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2)
-                await p.wait_for_timeout(900)
+            card = p.locator(f'.kid-card:has-text("{user}")')
+            if await card.count() == 0:
+                card = p.locator('.kid-card')
+            if await card.count():
+                await card.first.click()
+                await p.wait_for_timeout(1200)
         except Exception as exc:
             print(f'[devserver] 点小孩卡片失败: {exc}')
+        surf = await p.current_surface()
+        if surf.url.rstrip('/') == DEV_BASE.rstrip('/'):
+            print('[devserver] 警告: 仍在选择小孩页，未进入学习空间')
     if path and path != '/':
         await p.goto(DEV_BASE + path)
     return p
