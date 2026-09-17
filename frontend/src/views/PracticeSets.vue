@@ -1281,6 +1281,19 @@ const generateAiPractice = async () => {
     })
     ElMessage.success(`AI 已生成 ${data.total_questions} 道题，练习集已创建`)
     generateDialogVisible.value = false
+    // 列表按「学习空间」的学科/年级过滤：空间不是"全部"且与新卷不一致时会看不到新卷 → 自动切过去
+    const newGrade = aiGenerateForm.grade
+    const newSubject = aiGenerateForm.subject_id
+    let switched = false
+    if (newGrade && subjectStore.activeGrade !== null && subjectStore.activeGrade !== newGrade) {
+      subjectStore.setGrade(newGrade)
+      switched = true
+    }
+    if (newSubject && subjectStore.activeSubjectId !== null && subjectStore.activeSubjectId !== newSubject) {
+      subjectStore.select(newSubject)
+      switched = true
+    }
+    if (switched) ElMessage.info('已切换到新卷所在的学科/年级，方便查看')
     await fetchPracticeSets()
     if (data.id) {
       showDetail(data)

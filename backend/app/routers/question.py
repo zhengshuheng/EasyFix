@@ -27,6 +27,7 @@ def list_questions(
     tag_ids: Optional[str] = Query(None, description="标签ID，多个用逗号分隔"),
     knowledge_point: Optional[str] = Query(None, description="知识点搜索"),
     accuracy_range: Optional[str] = Query(None, description="正确率区间筛选，如 '0-30','30-60','60-80','80-100'"),
+    include_ai: bool = Query(False, description="是否包含 AI 出题生成的练习题（默认不包含，练习题不是错题）"),
     db: Session = Depends(get_db),
 ):
     # 过滤已删除的记录，使用 eager loading 避免 N+1 查询
@@ -34,6 +35,10 @@ def list_questions(
         joinedload(Question.tags),
         joinedload(Question.similar_questions)
     ).filter(Question.deleted == False)
+
+    # AI 出题生成的练习题默认不计入错题列表
+    if not include_ai:
+        query = query.filter(Question.exclude_ai_filter())
 
     if error_book_id:
         query = query.filter(Question.error_book_id == error_book_id)

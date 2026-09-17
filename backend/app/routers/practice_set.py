@@ -156,10 +156,11 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     """
     import random
 
-    # 构建基础查询
+    # 构建基础查询（错题组卷：只从错题池抽题，不含 AI 出题生成的练习题）
     query = db.query(Question).filter(
         Question.subject_id == data.subject_id,
-        Question.deleted == False
+        Question.deleted == False,
+        Question.exclude_ai_filter(),
     )
     if data.grade:
         query = query.filter(Question.grade == data.grade)
@@ -319,6 +320,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
         ).filter(
             Question.subject_id == data.subject_id,
             Question.deleted == False,
+            Question.exclude_ai_filter(),  # 只统计错题，AI 生成的练习题不算薄弱知识点来源
             Question.knowledge_point.isnot(None),
             Question.knowledge_point != "",
         ).group_by(Question.knowledge_point).order_by(func.sum(Question.error_count).desc()).limit(3).all()
@@ -409,6 +411,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             error_type="",
             question_type=item.get("question_type") or (question_types[0] if len(question_types) == 1 else None),
             question_category=item.get("question_category") or (question_categories[0] if len(question_categories) == 1 else None),
+            source="ai",  # AI 出题生成：属于练习题，不计入错题列表
             option_a=opts[0] if len(opts) > 0 else None,
             option_b=opts[1] if len(opts) > 1 else None,
             option_c=opts[2] if len(opts) > 2 else None,
@@ -1409,6 +1412,20 @@ def delete_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
     # 单词练习：回滚单词复习计数，避免已删除练习继续计入复习统计
     if ps.source_type == "word":
         _revert_word_review_for_practice(ps, db)
+
+    # AI 出题的题目只属于该卷（不出现在错题列表）：删卷时一并软删除，避免残留看不见的练习题
+    if ps.source_type == "ai":
+        qids = [
+            row.question_id
+            for row in db.query(PracticeSetQuestion.question_id)
+            .filter(PracticeSetQuestion.practice_set_id == ps.id)
+            .all()
+        ]
+        if qids:
+            db.query(Question).filter(
+                Question.id.in_(qids),
+                Question.source == "ai",
+            ).update({"deleted": True}, synchronize_session=False)
 
     ps.deleted = True
     db.commit()

@@ -52,6 +52,22 @@ _ensure_column("question", "option_a", "option_a TEXT")
 _ensure_column("question", "option_b", "option_b TEXT")
 _ensure_column("question", "option_c", "option_c TEXT")
 _ensure_column("question", "option_d", "option_d TEXT")
+# 题目来源：'ai'=AI 出题生成的练习题（不属于错题，不出现在错题列表）
+_ensure_column("question", "source", "source VARCHAR(20)")
+# 回填历史 AI 出题的题目（幂等：只处理 source 为空且挂在 AI 练习集下的题）
+with engine.begin() as conn:
+    try:
+        from sqlalchemy import text
+        res = conn.execute(text(
+            "UPDATE question SET source = 'ai' WHERE source IS NULL AND id IN ("
+            "  SELECT psq.question_id FROM practice_set_question psq"
+            "  JOIN practice_set ps ON ps.id = psq.practice_set_id"
+            "  WHERE ps.source_type = 'ai')"
+        ))
+        if res.rowcount:
+            print(f"[migrate] 标记 {res.rowcount} 道历史 AI 出题题目 source='ai'")
+    except Exception as e:
+        print(f"[migrate] 跳过 AI 题目来源回填: {e}")
 # 旧无主错题本自动归属第一个小孩（幂等：仅当该小孩不存在错题本归属时才执行）
 with engine.begin() as conn:
     try:

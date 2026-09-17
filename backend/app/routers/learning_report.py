@@ -159,8 +159,11 @@ def generate_report(
             raise HTTPException(status_code=404, detail="学科不存在")
         subject_name = subject.name
 
-    # 收集错题数据
-    question_query = db.query(Question).filter(Question.deleted == False)
+    # 收集错题数据（排除 AI 出题生成的练习题）
+    question_query = db.query(Question).filter(
+        Question.deleted == False,
+        Question.exclude_ai_filter(),
+    )
     if request.subject_id:
         question_query = question_query.filter(Question.subject_id == request.subject_id)
     if request.grade:

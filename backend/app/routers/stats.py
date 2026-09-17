@@ -29,8 +29,11 @@ def get_stats_summary(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     db: Session = Depends(get_db),
 ):
-    """获取统计概览（只统计未删除的记录；可按年级/学科过滤）"""
-    q_base = db.query(Question).filter(Question.deleted == False)
+    """获取统计概览（只统计未删除的记录；不含 AI 出题生成的练习题；可按年级/学科过滤）"""
+    q_base = db.query(Question).filter(
+        Question.deleted == False,
+        Question.exclude_ai_filter(),
+    )
     w_base = db.query(Word).filter(Word.deleted == False)
     if grade is not None:
         q_base = q_base.filter(Question.grade == grade)
@@ -51,7 +54,7 @@ def get_stats_summary(
 
     difficulty_query = (
         db.query(Question.difficulty, func.count(Question.id))
-        .filter(Question.deleted == False)
+        .filter(Question.deleted == False, Question.exclude_ai_filter())
     )
     if grade is not None:
         difficulty_query = difficulty_query.filter(Question.grade == grade)

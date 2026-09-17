@@ -22,6 +22,7 @@ class Question(Base):
     error_type = Column(String(50), nullable=True)  # 计算/概念/审题/其他
     question_type = Column(String(50), nullable=True)  # 题型：choice/fill/judge/calc/application/operation/reading/writing/sentence
     question_category = Column(String(50), nullable=True)  # 类型：basic/scene/comprehensive/thinking
+    source = Column(String(20), nullable=True)  # 来源：'ai'=AI 出题生成（不算错题），NULL=错题录入
     # 选择题选项（AI 出题的选择题独立存选项，前端据此渲染可点选项）
     option_a = Column(Text, nullable=True)
     option_b = Column(Text, nullable=True)
@@ -43,6 +44,11 @@ class Question(Base):
     # Relationships
     error_book = relationship("ErrorBook", back_populates="questions")
     subject = relationship("Subject", back_populates="questions")
+
+    @staticmethod
+    def exclude_ai_filter():
+        """排除 AI 出题生成的练习题（练习题不属于错题；source 为 NULL 的老数据保留）"""
+        return Question.source.is_(None) | (Question.source != "ai")
     tags = relationship("Tag", secondary="question_tag", back_populates="questions")
     similar_questions = relationship("SimilarQuestion", back_populates="source_question")
     practice_set_questions = relationship("PracticeSetQuestion", back_populates="question")
