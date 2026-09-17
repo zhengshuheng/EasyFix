@@ -244,6 +244,11 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
             "id": question.id,
             "knowledge_point": question.knowledge_point or "",
             "error_type": question.error_type or "",
+            "question_type": question.question_type or "",
+            "option_a": question.option_a,
+            "option_b": question.option_b,
+            "option_c": question.option_c,
+            "option_d": question.option_d,
         })
 
     # 生成PDF
@@ -344,9 +349,17 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
 
     # 2.1 生成后校验：用户明确指定的题型必须出现；缺失时补一轮只生成缺失题型
     if question_types:
-        missing_types = [t for t in question_types if not any(
-            (q.get("question_type") or "") == t for q in ai_questions
-        )]
+        def _type_satisfied(t: str) -> bool:
+            for q in ai_questions:
+                if (q.get("question_type") or "") != t:
+                    continue
+                # 选择题必须真的带 ≥2 个选项才算数（避免"标了 choice 其实是填空题"）
+                if t == "choice" and len(q.get("options") or []) < 2:
+                    continue
+                return True
+            return False
+
+        missing_types = [t for t in question_types if not _type_satisfied(t)]
         if missing_types and data.count < 20:
             try:
                 fill_count = max(len(ai_questions) // 2, 1)  # 补题量不超过现有的一半
@@ -365,9 +378,13 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
                 for q in extra:
                     if q["question"] in seen_q:
                         continue
-                    if (q.get("question_type") or "") in missing_types:
-                        ai_questions.append(q)
-                        seen_q.add(q["question"])
+                    qt = q.get("question_type") or ""
+                    if qt not in missing_types:
+                        continue
+                    if qt == "choice" and len(q.get("options") or []) < 2:
+                        continue  # 补出来的"选择题"没有选项，不收
+                    ai_questions.append(q)
+                    seen_q.add(q["question"])
             except Exception as e:
                 print(f"AI出题 缺失题型补生成失败: {e}")
 
@@ -379,6 +396,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
     # 3. 题目入库（Question 表，后续抽题/复习可复用）
     new_questions = []
     for item in ai_questions:
+        opts = list(item.get("options") or [])[:4]
         q = Question(
             subject_id=data.subject_id,
             grade=data.grade,
@@ -391,6 +409,10 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             error_type="",
             question_type=item.get("question_type") or (question_types[0] if len(question_types) == 1 else None),
             question_category=item.get("question_category") or (question_categories[0] if len(question_categories) == 1 else None),
+            option_a=opts[0] if len(opts) > 0 else None,
+            option_b=opts[1] if len(opts) > 1 else None,
+            option_c=opts[2] if len(opts) > 2 else None,
+            option_d=opts[3] if len(opts) > 3 else None,
         )
         db.add(q)
         new_questions.append(q)
@@ -883,6 +905,22 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 question_text = question.parsed_question or question.original_text or ""
                 answer = question.answer or ""
 
+            # 旧数据兜底：早期 AI 题把选项塞在题干里、或把填空题错标成 choice
+            q_type = question.question_type or ""
+            opt_a, opt_b, opt_c, opt_d = question.option_a, question.option_b, question.option_c, question.option_d
+            if q_type == "choice" and not opt_a:
+                from app.services.llm import extract_inline_options, infer_question_type
+                cleaned, inline_opts = extract_inline_options(question_text)
+                if len(inline_opts) >= 2:
+                    question_text = cleaned
+                    opt_a = inline_opts[0]
+                    opt_b = inline_opts[1] if len(inline_opts) > 1 else None
+                    opt_c = inline_opts[2] if len(inline_opts) > 2 else None
+                    opt_d = inline_opts[3] if len(inline_opts) > 3 else None
+                else:
+                    # 根本没有选项 → 不是选择题，按内容纠正（仅影响展示）
+                    q_type = infer_question_type(question_text, answer, subject_name, allow_choice=False)
+
             questions.append({
                 "id": psq.id,
                 "question_id": psq.question_id,
@@ -895,11 +933,18 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "error_type": question.error_type or "",
                 "review_count": question.review_count or 0,
                 "is_correct": psq.is_correct,
-                "original_question_text": question.parsed_question or question.original_text or "",
+                "original_question_text": question_text,
                 "original_answer": question.answer or "",
                 "original_image": question.original_image or None,
                 "student_answer": psq.student_answer or "",
-                "question_type": question.question_type or "",
+                "question_type": q_type,
+                # 选择题选项（AI 出题时独立存储；旧数据在读取时从题干切分）
+                "option_a": opt_a or None,
+                "option_b": opt_b or None,
+                "option_c": opt_c or None,
+                "option_d": opt_d or None,
+                "explanation": question.analysis or None,
+                "is_reading_question": False,
             })
 
     return {
@@ -1042,6 +1087,11 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
                 "knowledge_point": question.knowledge_point or "",
                 "error_type": question.error_type or "",
                 "review_count": question.review_count or 0,
+                "question_type": question.question_type or "",
+                "option_a": question.option_a,
+                "option_b": question.option_b,
+                "option_c": question.option_c,
+                "option_d": question.option_d,
             })
 
     if not questions_data:

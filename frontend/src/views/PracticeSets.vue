@@ -345,21 +345,49 @@
               >🔊</el-button>
             </div>
             <div class="do-answer-row">
-              <el-input
-                v-model="studentAnswers[question.question_id]"
-                placeholder="请输入你的作答（可点右边麦克风语音输入）"
-                size="default"
-                @focus="onAnswerFocus(question.question_id)"
-              />
-              <el-button
-                size="small"
-                circle
-                :type="voiceInputingId === question.question_id ? 'danger' : 'success'"
-                plain
-                :disabled="!speechRecognitionSupported"
-                @click="startVoiceInput(question.question_id)"
-                :title="!speechRecognitionSupported ? '当前浏览器不支持语音输入' : '语音输入答案'"
-              >🎤</el-button>
+              <!-- 选择题：直接点选项作答（一年级也能操作，无需键盘） -->
+              <div v-if="getQuestionOptions(question).length" class="do-option-list">
+                <button
+                  v-for="opt in getQuestionOptions(question)"
+                  :key="opt.letter"
+                  type="button"
+                  :class="['do-option-btn', { active: studentAnswers[question.question_id] === opt.letter }]"
+                  @click="pickOption(question.question_id, opt.letter)"
+                >
+                  <span class="do-option-letter">{{ opt.letter }}.</span>
+                  <span class="do-option-text">{{ opt.text }}</span>
+                </button>
+              </div>
+              <!-- 判断题：对/错一键选择 -->
+              <div v-else-if="question.question_type === 'judge'" class="do-option-list judge">
+                <button
+                  type="button"
+                  :class="['do-option-btn judge', { active: studentAnswers[question.question_id] === '对' }]"
+                  @click="pickOption(question.question_id, '对')"
+                >✓ 对</button>
+                <button
+                  type="button"
+                  :class="['do-option-btn judge', { active: studentAnswers[question.question_id] === '错' }]"
+                  @click="pickOption(question.question_id, '错')"
+                >× 错</button>
+              </div>
+              <template v-else>
+                <el-input
+                  v-model="studentAnswers[question.question_id]"
+                  placeholder="请输入你的作答（可点右边麦克风语音输入）"
+                  size="default"
+                  @focus="onAnswerFocus(question.question_id)"
+                />
+                <el-button
+                  size="small"
+                  circle
+                  :type="voiceInputingId === question.question_id ? 'danger' : 'success'"
+                  plain
+                  :disabled="!speechRecognitionSupported"
+                  @click="startVoiceInput(question.question_id)"
+                  :title="!speechRecognitionSupported ? '当前浏览器不支持语音输入' : '语音输入答案'"
+                >🎤</el-button>
+              </template>
             </div>
           </div>
         </template>
@@ -620,8 +648,8 @@
                               <span class="label">原题：</span>
                               <span class="value">{{ row.original_question_text?.substring(0, 100) || '无' }}</span>
                             </div>
-                            <!-- 阅读理解选项 -->
-                            <div v-if="row.is_reading_question" class="reading-options">
+                            <!-- 选项：阅读理解题 / 选择题（AI 出题的选择题选项独立存储） -->
+                            <div v-if="row.is_reading_question || row.option_a" class="reading-options">
                               <div class="option-row">{{ formatOption('A', row.option_a) }}</div>
                               <div class="option-row">{{ formatOption('B', row.option_b) }}</div>
                               <div class="option-row">{{ formatOption('C', row.option_c) }}</div>
@@ -1396,7 +1424,7 @@ const convertCnToArabic = (text) => {
 // 语音读题（SpeechSynthesis 本地中文朗读）
 const getQuestionSpeakText = (q) => {
   let t = q.original_question_text || ''
-  if (q.is_reading_question && q.option_a) {
+  if (q.option_a) {
     t += '。选项A：' + (q.option_a || '')
     if (q.option_b) t += '；选项B：' + q.option_b
     if (q.option_c) t += '；选项C：' + q.option_c
@@ -1471,6 +1499,18 @@ const startVoiceInput = (qid) => {
     voiceInputingId.value = null
     ElMessage.warning('语音识别启动失败，请手动输入')
   }
+}
+
+// 选择题选项（AI 出题的选择题选项独立返回；无选项返回空数组）
+const getQuestionOptions = (q) => {
+  const letters = ['A', 'B', 'C', 'D']
+  return [q.option_a, q.option_b, q.option_c, q.option_d]
+    .map((text, i) => ({ letter: letters[i], text }))
+    .filter(o => o.text)
+}
+// 点选作答（选择题点选项、判断题点对错；再点一次取消）
+const pickOption = (qid, value) => {
+  studentAnswers.value[qid] = studentAnswers.value[qid] === value ? '' : value
 }
 
 // 软键盘：聚焦输入框弹出，按键追加到当前题答案
@@ -3009,6 +3049,51 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   margin-top: 6px;
+}
+
+/* 选择题点选作答（无需键盘） */
+.do-option-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.do-option-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 130px;
+  padding: 10px 14px;
+  font-size: 16px;
+  text-align: left;
+  background: #fff;
+  border: 2px solid #dcdfe6;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.do-option-btn:hover {
+  border-color: #4ECDC4;
+  background: #f0fffd;
+}
+
+.do-option-btn.active {
+  border-color: #4ECDC4;
+  background: #e6fffb;
+  box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.25);
+}
+
+.do-option-letter {
+  font-weight: 700;
+  color: #4ECDC4;
+}
+
+.do-option-btn.judge {
+  min-width: 90px;
+  justify-content: center;
+  font-weight: 600;
 }
 
 .soft-keyboard {

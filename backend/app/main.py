@@ -47,6 +47,11 @@ _ensure_column("error_book", "user_id", "user_id INTEGER")
 # AI 出题维度：题型（choice/fill/judge/calc/...）/ 类型（basic/scene/comprehensive/thinking）
 _ensure_column("question", "question_type", "question_type VARCHAR(50)")
 _ensure_column("question", "question_category", "question_category VARCHAR(50)")
+# 选择题独立选项（AI 出题的选择题不再把选项塞进题干）
+_ensure_column("question", "option_a", "option_a TEXT")
+_ensure_column("question", "option_b", "option_b TEXT")
+_ensure_column("question", "option_c", "option_c TEXT")
+_ensure_column("question", "option_d", "option_d TEXT")
 # 旧无主错题本自动归属第一个小孩（幂等：仅当该小孩不存在错题本归属时才执行）
 with engine.begin() as conn:
     try:

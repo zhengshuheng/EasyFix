@@ -151,7 +151,8 @@ class PracticeSetPDF(FPDF):
         self.set_text_color(*self.TEXT_COLOR)
 
     def add_question(self, index: int, question_text: str, difficulty: int, question_id: int = None,
-                  knowledge_point: str = None, error_type: str = None, review_count: int = None, score: int = None):
+                  knowledge_point: str = None, error_type: str = None, review_count: int = None,
+                  score: int = None, options: List[str] = None):
         """添加一道题目（组内编号连续，题头带分值）"""
         # ===== 第一行：[ID:xxx]  第{index}题  ★★★★★ =====
 
@@ -220,6 +221,19 @@ class PracticeSetPDF(FPDF):
         safe_text = decode_html(question_text) if question_text else '暂无题目内容'
         self.multi_cell(0, 6, safe_text, fill=True)
         self.ln(8)
+
+        # ===== 选项（选择题）=====
+        if options:
+            letters = "ABCD"
+            for i, opt in enumerate(options[:4]):
+                if not opt:
+                    continue
+                self.set_font('chinese_b', size=10)
+                self.cell(12, 6, f'{letters[i]}.', new_x=XPos.RIGHT, new_y=YPos.TOP)
+                self.set_font('chinese', size=10)
+                self.multi_cell(0, 6, str(opt))
+                self.ln(1)
+            self.ln(4)
 
     def add_reading_passage(self, title: str, content: str):
         """添加阅读短文"""
@@ -359,6 +373,8 @@ class PracticeSetPDF(FPDF):
                         global_idx, question_text, difficulty, question_id,
                         knowledge_point, error_type, review_count,
                         score=score_per if type_key else None,
+                        options=[q.get('option_a'), q.get('option_b'), q.get('option_c'), q.get('option_d')]
+                        if (q.get('option_a') or q.get('option_b')) else None,
                     )
                     global_idx += 1
 

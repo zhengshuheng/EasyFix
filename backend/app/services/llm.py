@@ -1131,11 +1131,15 @@ class LLMService:
 - 题干要表述清晰完整，适合{grade_info}学生作答，题目要有区分度
 - 计算题答案必须准确，可自行验算；应用题须给出完整算式与单位
 {subject_guide}
-- 每道题必须给出：题目、正确答案、简要解析、所属知识点、题型（choice/fill/judge/calc/application/operation/reading/writing/sentence）、类型（basic/scene/comprehensive/thinking）
+- 每道题必须给出：题目、选项、正确答案、简要解析、所属知识点、题型（choice/fill/judge/calc/application/operation/reading/writing/sentence）、类型（basic/scene/comprehensive/thinking）
+- 【选择题硬性要求】choice 题必须真的给 4 个选项：题干只写问题本身（如"下面说法正确的是（　）"），四个选项放进 options 数组，不带"A."/"A、"/"A）"等字母前缀，且只有 1 个正确答案；answer 只填正确选项的字母（如 "B"）
+- 【非选择题】options 一律返回空数组 []
+- 【题型必须与内容一致】严禁为了凑配额把填空题/问答题贴上 choice 标签：没有 4 个选项的题不许标 choice；题干留括号横线的标 fill；纯算式标 calc；可判断对错的陈述句标 judge；解决实际问题的标 application。凑不齐某题型时宁可少出，也不要错标
 
 请严格按以下JSON数组格式返回，只返回数组本身，不要包含多余文字：
 [
-  {{"question": "题目内容", "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "choice", "question_category": "basic"}}
+  {{"question": "题目内容", "options": ["选项一", "选项二", "选项三", "选项四"], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "choice", "question_category": "basic"}},
+  {{"question": "填空/计算/应用题内容", "options": [], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "fill", "question_category": "basic"}}
 ]
 """
 
@@ -1177,15 +1181,15 @@ class LLMService:
                     continue
                 q = {
                     "question": str(item.get("question", "")).strip(),
+                    "options": item.get("options"),
                     "answer": str(item.get("answer", "")).strip(),
                     "explanation": str(item.get("explanation", "")).strip(),
                     "knowledge_point": str(item.get("knowledge_point", "")).strip(),
                     "question_type": str(item.get("question_type", "")).strip(),
                     "question_category": str(item.get("question_category", "")).strip(),
                 }
-                # 题型/类型兜底：模型可能省略字段，按题目内容特征推断
-                if q["question_type"] not in self.QUESTION_TYPE_SPECS:
-                    q["question_type"] = self._infer_question_type(q["question"], q["answer"], subject)
+                # 题型/选项校验：choice 必须带 ≥2 个选项（否则按内容重判题型）
+                self._finalize_question(q, subject)
                 if q["question_category"] not in self.QUESTION_CATEGORY_SPECS:
                     q["question_category"] = "basic"
                 if q["question"] and q["answer"]:
@@ -1194,14 +1198,14 @@ class LLMService:
             # 单个对象也接受
             q = {
                 "question": str(data.get("question", "")).strip(),
+                "options": data.get("options"),
                 "answer": str(data.get("answer", "")).strip(),
                 "explanation": str(data.get("explanation", "")).strip(),
                 "knowledge_point": str(data.get("knowledge_point", "")).strip(),
                 "question_type": str(data.get("question_type", "")).strip(),
                 "question_category": str(data.get("question_category", "")).strip(),
             }
-            if q["question_type"] not in self.QUESTION_TYPE_SPECS:
-                q["question_type"] = self._infer_question_type(q["question"], q["answer"], subject)
+            self._finalize_question(q, subject)
             if q["question_category"] not in self.QUESTION_CATEGORY_SPECS:
                 q["question_category"] = "basic"
             if q["question"] and q["answer"]:
@@ -1211,14 +1215,108 @@ class LLMService:
             return {"error": "AI生成的题目为空或格式不正确", "questions": []}
         return {"questions": questions}
 
-    def _infer_question_type(self, question: str, answer: str, subject: str = "") -> str:
+    def _normalize_options(self, raw) -> List[str]:
+        """规整选项：支持数组/单个字符串，剥离 "A."/"（A）" 等前缀"""
+        import re
+        if not raw:
+            return []
+        if isinstance(raw, str):
+            _, extracted = self._extract_options_from_text(raw)
+            if extracted:
+                return extracted
+            raw = [s for s in re.split(r"[\n;；]+", raw) if s.strip()]
+        if not isinstance(raw, list):
+            return []
+        out = []
+        for o in raw:
+            s = str(o if o is not None else "").strip()
+            s = re.sub(r"^[（(]?\s*[A-Da-d]\s*[)）.、．:：]\s*", "", s).strip()
+            if s:
+                out.append(s)
+        return out
+
+    def _extract_options_from_text(self, text: str):
+        """从题干里切出内嵌选项（形如 "A. xx B. xx C. xx D. xx"），返回 (去选项的题干, 选项列表)"""
+        import re
+        t = text or ""
+        # 取"从 A 开始、字母连续递增"的标签序列，避免把"点A、点B"当成选项
+        marks = list(re.finditer(r"([A-Da-d])\s*[.、．)）]\s*", t))
+        seq = []
+        expected = "A"
+        for m in marks:
+            if m.group(1).upper() == expected:
+                seq.append(m)
+                expected = chr(ord(expected) + 1)
+                if expected > "D":
+                    break
+        if len(seq) < 2:
+            return t, []
+        opts = []
+        for i, m in enumerate(seq):
+            end = seq[i + 1].start() if i + 1 < len(seq) else len(t)
+            opts.append(t[m.end():end].strip(" 　"))
+        stem = t[: seq[0].start()].strip()
+        if len(stem) < 4 or any(not o for o in opts):
+            return t, []
+        return stem, opts
+
+    def _finalize_question(self, q: dict, subject: str = "") -> None:
+        """校验并纠正题型与选项：确保 choice 一定带 ≥2 个选项，其余题型不带选项"""
+        import re
+        text = (q.get("question") or "").strip()
+        answer = (q.get("answer") or "").strip()
+        opts = self._normalize_options(q.get("options"))
+        # 模型没按 options 字段返回时，尝试从题干里切出内嵌选项
+        if len(opts) < 2:
+            cleaned, extracted = self._extract_options_from_text(text)
+            if len(extracted) >= 2:
+                opts, text = extracted, cleaned
+        declared = (q.get("question_type") or "").strip()
+        if len(opts) >= 2:
+            # 有 4 个选项就是选择题（不论模型标成什么）
+            qtype = "choice"
+        elif declared in self.QUESTION_TYPE_SPECS and declared != "choice":
+            qtype = declared
+        else:
+            # 声明为 choice 却没有选项 → 不是选择题，按内容重判
+            qtype = self._infer_question_type(text, answer, subject, allow_choice=False)
+        if qtype == "choice" and opts:
+            letters = "ABCD"
+            m = re.match(r"^\s*([A-Da-d])[.、．)）]\s*", answer)
+            if m:
+                answer = m.group(1).upper()
+            else:
+                for i, o in enumerate(opts[:4]):
+                    if answer and answer.strip() == o.strip():
+                        answer = letters[i]
+                        break
+            if not re.fullmatch(r"[A-D]", answer):
+                # 兜底：题干末尾形如 "（ B ）" 的答案
+                m2 = re.search(r"[（(]\s*([A-Da-d])\s*[)）]", text)
+                if m2:
+                    answer = m2.group(1).upper()
+        q["question"] = text
+        q["answer"] = answer
+        q["question_type"] = qtype
+        q["options"] = opts[:4] if qtype == "choice" else []
+
+    def _infer_question_type(self, question: str, answer: str, subject: str = "", allow_choice: bool = True) -> str:
         """按题目内容特征推断题型（模型省略 question_type 时的兜底）"""
         import re
         q = question or ""
         a = answer or ""
-        # 1) 选择题：带 A. B. C. D. 选项
-        if re.search(r"[A-Da-d]\s*[.、．)）]\s*", q):
-            return "choice"
+        # 1) 选择题：选项标签从 A 起连续出现（≥3 个；或 ≥2 个且题干有"下列/正确的是"等选择句式）
+        if allow_choice:
+            letters = [m.group(1).upper() for m in re.finditer(r"([A-Da-d])\s*[.、．)）]\s*", q)]
+            seq = 0
+            for L in ("A", "B", "C", "D"):
+                if L in letters:
+                    seq += 1
+                else:
+                    break
+            strong = any(k in q for k in ("下列", "正确的是", "错误的是", "哪个", "哪一个", "（ ）", "（）", "( )"))
+            if seq >= 3 or (seq >= 2 and strong):
+                return "choice"
         # 2) 判断题：答案是对/错/√/×
         if any(k in a for k in ["√", "×", "对", "错", "正确", "错误"]):
             return "judge"
@@ -1244,3 +1342,13 @@ class LLMService:
 
 # 全局单例
 llm_service = LLMService()
+
+
+def extract_inline_options(text: str):
+    """从题干里切出内嵌选项（旧数据兜底，供接口层复用）"""
+    return llm_service._extract_options_from_text(text)
+
+
+def infer_question_type(question: str, answer: str = "", subject: str = "", allow_choice: bool = True) -> str:
+    """推断题型（旧数据纠偏，供接口层复用）"""
+    return llm_service._infer_question_type(question, answer, subject, allow_choice)
