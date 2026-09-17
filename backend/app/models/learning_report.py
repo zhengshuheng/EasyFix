@@ -9,6 +9,7 @@ class LearningReport(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)  # 报告标题
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 归属小孩（数据隔离）
     # 筛选条件
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=True)  # 学科筛选，可为空表示全科
     grade = Column(Integer, nullable=True)  # 年级筛选，可为空表示全部

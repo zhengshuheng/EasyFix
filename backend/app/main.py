@@ -44,6 +44,11 @@ def _ensure_column(table: str, column: str, ddl: str):
 
 _ensure_column("practice_set_question", "student_answer", "student_answer TEXT")
 _ensure_column("error_book", "user_id", "user_id INTEGER")
+_ensure_column("learning_report", "user_id", "user_id INTEGER")
+# 错题/练习分表 + 按小孩隔离（新表由 create_all 建，这里补结构变更列）
+_ensure_column("practice_set", "user_id", "user_id INTEGER")
+_ensure_column("practice_set_question", "practice_question_id", "practice_question_id INTEGER")
+_ensure_column("word_review_session", "user_id", "user_id INTEGER")
 # AI 出题维度：题型（choice/fill/judge/calc/...）/ 类型（basic/scene/comprehensive/thinking）
 _ensure_column("question", "question_type", "question_type VARCHAR(50)")
 _ensure_column("question", "question_category", "question_category VARCHAR(50)")
@@ -54,20 +59,7 @@ _ensure_column("question", "option_c", "option_c TEXT")
 _ensure_column("question", "option_d", "option_d TEXT")
 # 题目来源：'ai'=AI 出题生成的练习题（不属于错题，不出现在错题列表）
 _ensure_column("question", "source", "source VARCHAR(20)")
-# 回填历史 AI 出题的题目（幂等：只处理 source 为空且挂在 AI 练习集下的题）
-with engine.begin() as conn:
-    try:
-        from sqlalchemy import text
-        res = conn.execute(text(
-            "UPDATE question SET source = 'ai' WHERE source IS NULL AND id IN ("
-            "  SELECT psq.question_id FROM practice_set_question psq"
-            "  JOIN practice_set ps ON ps.id = psq.practice_set_id"
-            "  WHERE ps.source_type = 'ai')"
-        ))
-        if res.rowcount:
-            print(f"[migrate] 标记 {res.rowcount} 道历史 AI 出题题目 source='ai'")
-    except Exception as e:
-        print(f"[migrate] 跳过 AI 题目来源回填: {e}")
+# 注：question 表已废弃（错题 → error_question，练习题目 → practice_question），无需 AI 题目来源回填
 # 旧无主错题本自动归属第一个小孩（幂等：仅当该小孩不存在错题本归属时才执行）
 with engine.begin() as conn:
     try:
@@ -131,8 +123,10 @@ with SessionLocal() as db:
         ))
         db.commit()
 
-    # 演示小孩与演示学习数据（demo 账号不存在时创建）
-    init_demo_data(db)
+    # 演示数据初始化已停用：旧演示数据基于 question/practice_set 旧模型，
+    # 已随「错题派生 + 按小孩隔离」重构清空（见 tools/migrate_kid_refactor.py）。
+    # 待按新架构重建演示数据后再恢复；当前数据由真实使用流程产生。
+    # init_demo_data(db)
     init_preset_data(db)
     init_achievement_progress(db)
     init_star_records_from_existing_data(db)

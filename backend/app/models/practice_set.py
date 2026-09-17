@@ -10,6 +10,7 @@ class PracticeSet(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(200), nullable=False)  # 练习集名称
     notes = Column(Text, nullable=True)  # 备注
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # 归属小孩（数据隔离）
     subject_id = Column(Integer, ForeignKey("subject.id"), nullable=False)  # 所属学科
     source_type = Column(String(20), default="question")  # question=来自错题, word=来自单词复习, reading=阅读理解, ai=AI出题
     question_type = Column(String(20), default="original")  # original=原题, similar=相似题
@@ -31,20 +32,18 @@ class PracticeSet(Base):
 
 
 class PracticeSetQuestion(Base):
-    """练习集-题目关联表"""
+    """练习集-题目关联表（作答结果存 practice_attempt，不再落在这里）"""
     __tablename__ = "practice_set_question"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     practice_set_id = Column(Integer, ForeignKey("practice_set.id"), nullable=False)
-    question_id = Column(Integer, ForeignKey("question.id"), nullable=False)
+    practice_question_id = Column(Integer, ForeignKey("practice_question.id"), nullable=False)
     similar_question_id = Column(Integer, ForeignKey("similar_question.id"), nullable=True)  # 相似题ID，可为null
-    is_correct = Column(Boolean, nullable=True)  # 批改是否正确
     display_order = Column(Integer, default=0)  # 显示顺序
-    student_answer = Column(Text, nullable=True)  # 学生作答（做题环节提交）
 
     # Relationships
     practice_set = relationship("PracticeSet", back_populates="practice_set_questions")
-    question = relationship("Question")
+    practice_question = relationship("PracticeQuestion")
     similar_question = relationship("SimilarQuestion")
 
 
@@ -54,6 +53,7 @@ class WordReviewSession(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     practice_set_id = Column(Integer, ForeignKey("practice_set.id"), nullable=True)  # 关联练习集
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # 归属小孩（数据隔离）
     session_id = Column(Integer, nullable=False)  # WordReview的session_id
     total_count = Column(Integer, default=0)  # 总单词数
     correct_count = Column(Integer, default=0)  # 正确数

@@ -1,6 +1,9 @@
 from app.models.subject import Subject
 from app.models.error_book import ErrorBook
 from app.models.question import Question
+from app.models.error_question import ErrorQuestion
+from app.models.practice_question import PracticeQuestion
+from app.models.practice_attempt import PracticeAttempt
 from app.models.tag import Tag, QuestionTag
 from app.models.similar_question import SimilarQuestion
 from app.models.operation_log import OperationLog, OperationType, OperationStatus
@@ -19,6 +22,9 @@ __all__ = [
     "Subject",
     "ErrorBook",
     "Question",
+    "ErrorQuestion",
+    "PracticeQuestion",
+    "PracticeAttempt",
     "Tag",
     "QuestionTag",
     "SimilarQuestion",

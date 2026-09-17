@@ -49,6 +49,6 @@ class Question(Base):
     def exclude_ai_filter():
         """排除 AI 出题生成的练习题（练习题不属于错题；source 为 NULL 的老数据保留）"""
         return Question.source.is_(None) | (Question.source != "ai")
+
     tags = relationship("Tag", secondary="question_tag", back_populates="questions")
     similar_questions = relationship("SimilarQuestion", back_populates="source_question")
-    practice_set_questions = relationship("PracticeSetQuestion", back_populates="question")

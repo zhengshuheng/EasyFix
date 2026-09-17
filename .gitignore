@@ -67,3 +67,4 @@ browser_screenshot_*.png
 # OS
 Thumbs.db
 .DS_Store
+*.db.pre-kid-refactor-* 
