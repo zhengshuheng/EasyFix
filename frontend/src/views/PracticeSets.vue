@@ -1281,7 +1281,10 @@ const generateAiPractice = async () => {
     })
     ElMessage.success(`AI 已生成 ${data.total_questions} 道题，练习集已创建`)
     generateDialogVisible.value = false
-    // 列表按「学习空间」的学科/年级过滤：空间不是"全部"且与新卷不一致时会看不到新卷 → 自动切过去
+    // 新卷刚创建，任何筛选都可能把它挡在列表外（日期范围、复习状态、学习空间的学科/年级）
+    // → 生成后主动清掉筛选并对齐空间，保证用户马上能在列表里看到它
+    filters.date_range = null
+    filters.reviewed = null
     const newGrade = aiGenerateForm.grade
     const newSubject = aiGenerateForm.subject_id
     let switched = false
@@ -1295,6 +1298,10 @@ const generateAiPractice = async () => {
     }
     if (switched) ElMessage.info('已切换到新卷所在的学科/年级，方便查看')
     await fetchPracticeSets()
+    // 兜底提示：新卷仍不在列表里时明确告知，避免“生成完却不见了”
+    if (data.id && !practiceSets.value.some((x) => x.id === data.id)) {
+      ElMessage.warning(`新卷「${data.name}」已生成，但当前筛选条件下没显示出来，请检查列表筛选`)
+    }
     if (data.id) {
       showDetail(data)
     }
