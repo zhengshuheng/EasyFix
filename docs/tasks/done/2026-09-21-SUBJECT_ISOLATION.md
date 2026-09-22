@@ -1,0 +1,12 @@
+# SUBJECT_ISOLATION — 学习空间学科数据隔离
+- [x] 后端 stats.py：/stats/summary 加 subject_id（Question 过滤 + 单词英语判断 + by_subject 只含该学科）
+- [x] 后端 stats.py：/stats/overview + get_date_stats 加 subject_id
+- [x] 后端 stats.py：/stats/knowledge-points 加 subject_id
+- [x] 后端 stats.py：/stats/analysis/full 传 subject_id 给 LearningAnalysisService
+- [x] 后端 learning_analysis.py：service 支持 subject_id（question/practice 过滤 + word 英语判断）
+- [x] 后端 word.py：/words/stats/summary 加 subject_id（非英语学科返回零值）
+- [x] 后端冒烟测试通过（数学17题/0词、英语6题/30词、practice-sets 按学科）
+- [x] 前端 Home.vue：loadAllStats 传 subjectStore.activeSubjectId
+- [x] 前端 PracticeSets.vue：指定学科隐藏学科过滤下拉、列表跟随、生成弹窗默认学科
+- [x] 前端 Stats.vue：loadAll 各接口传 subject_id
+- [x] 验证：vite build 通过；提交 483f94a

@@ -1,0 +1,12 @@
+# LOCAL_TIME — 统一后端生成本地时间（修出题时间少 8 小时）
+- [x] 定位：模型列 `server_default=func.now()` = SQLite CURRENT_TIMESTAMP = UTC；前端不传时间（无 toISOString 上传），时间全由后端/DB 生成
+- [x] 依据：practice_set 名称内嵌本地时间（AI练习_20260917224725）而 created_at=14:47:25，差 8h
+- [x] 新增 `backend/app/utils/timeutil.py` 的 `now_local()`
+- [x] 17 个模型文件 25 处 `server_default=func.now()` → 加 `default=now_local`
+- [x] 7 个模型文件 `onupdate=func.now()` → `onupdate=now_local`
+- [x] 前端 `LearningAnalysis.vue` 热力图日期由 UTC(toISOString) 改为本地日期
+- [x] 临时库验证：create/update 都是本地时间（差 0.0h）
+- [x] 真实服务验证：POST /api/knowledge-points → created_at 23:24:14 = 本地；测试行已删除
+- [x] 前端重建 + 8016 重启
+- [ ] 历史数据回填（旧行仍是 UTC）：待用户确认
+- [ ] 提交（待用户确认）

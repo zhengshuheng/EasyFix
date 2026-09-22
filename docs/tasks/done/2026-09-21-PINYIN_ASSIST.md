@@ -1,0 +1,22 @@
+# PINYIN_ASSIST — 低年级中文辅助（拼音+朗读+读题配置）+ 联想口诀下线
+- [x] 后端 /api/zh/pinyin 接口（pypinyin 本地转换 + 内存缓存），注册 router
+- [x] Words.vue 设置弹窗加「🔉 低年级辅助」区（🔡中文显示拼音 / 🔊中文可朗读，按小孩 localStorage）
+- [x] 列表中文列：中文 + 🔊朗读按钮 + 拼音小字
+- [x] 详情弹窗：中文 + 🔊 + 拼音
+- [x] 复习题选项（英-中/听音选中文/新学词）选项加拼音
+- [x] 说得题（中→英）中文加拼音
+- [x] 进入题目/下一题时批量补拼音（fetchPinyin）
+- [x] onMounted 顺序修正：loadDimConfig 先于 fetchWords
+- [x] 样式：.cn-pinyin/.zh-speak-btn/.opt-cn/.cn-wrap/.dc-check-row
+- [x] 8016 实测：接口、列表、详情、复习选项、说得题、刷新持久化均通过
+- [x] 修复：说得题中文旁加🔊、认得/听得/新学词选项各加🔊(@click.stop不误选)
+- [x] 修复：提示文字「认一认/听发音，选出对应的中文意思」加🔊朗读题目
+- [x] 联想口诀下线：word.py:1489 enhance prompt 去掉 mnemonic、phonetic_rule 改逐字母组合结构化拆解、word_root 基础词改词源简史；Words.vue 详情/新词卡/构建函数删 mnemonic 展示；WordLibrary.vue 删联想口诀行+文案；语法 Grammar 口诀保留不动
+- [x] 学习模式（先学后练）：Words.vue 加 learnWords/learnIndex/learnMode 状态 + buildLearnWords 去重 + openLearnPage 列表学习 + startLearnPractice；openDailyTask 改为先进入 reviewStep='learn' 学词卡流，抽 startDailyQuestion 启动测验计时；学习卡含英文🔊/音标/中文🔊+拼音/拼读规律/词根词源/联想词(playAudioByEnglish)；卡头加「学习本页」按钮
+- [x] 自动带读（老师带学）：dimConfigForm 加 autoRead（默认开，设置弹窗📖自动带读开关）；speakZh 改造返回 Promise+force 参数；autoTeach 串行朗读 英语(playWordAudio await)→中文(speakZh force)→词根词源，teachToken 防串扰；watch learnIndex 切卡自动带读；打开学习流 500ms 后带读第一张；进练习/关弹窗 cancel
+- [x] 8016 实测：学习流打开后自动请求 /api/words/19/audio（英文带读触发），中文带读走 speechSynthesis（真机可听）
+- [x] 新词学习题自动带读：watch(currentQuestion) 当 is_new 且 autoRead 时 600ms 后 autoTeach（英语→中文→词根）；实测进入新词题自动请求 /api/words/36/audio
+- [x] 前端构建成功（built in 26.93s），产物已更新
+- [ ] 待用户验收：8010 重启后端（word.py prompt 生效）+ Ctrl+F5
+- [ ] 待拍板：做题页（PracticeSets）是否也加题干拼音/自动读题
+- [ ] 待拍板：自然拼读是否独立成 /phonics 栏目（方案A）

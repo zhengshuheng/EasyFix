@@ -1,0 +1,16 @@
+# TEXTBOOK_IMPORT — EasyFix 教材同步知识点导入（内置目录+按需下载+OCR+LLM提取）
+- [x] 调研：数据源（ChinaTextbook 多版本 PDF / FreePEP 人教版 / RapidOCR 就绪）
+- [x] 教材目录生成脚本：FreePEP 小学全册 + ChinaTextbook 目录 → backend/data/textbooks/index.json（381 本）
+- [x] textbook_service：目录读取 + 下载器（多源容错 + 分卷合并 + 进度回调）
+- [x] textbook_service：RapidOCR 单例 + PDF→文本缓存（data/textbooks/...txt）
+- [x] textbook_service：LLM 按单元提取知识点（chapter 归属）→ 入库
+- [x] knowledge_point 表加 chapter 列（迁移脚本）+ description 列
+- [x] 后端路由 textbook.py：/api/textbook/catalog + 任务式 import（task_id + 轮询进度）
+- [x] main.py 挂载 + .gitignore 补教材缓存
+- [x] 前端 Management.vue：教材同步 tab（学段/学科/版本/年级/册次 + 下载并提取 + 进度轮询 + 手动放置兜底）
+- [x] 端到端验证：人教版数学三年级上册（下载→OCR→提取→入库→清理）
+- [x] ChinaStudyFree 在线大纲导入（4科44本免下载，数学三上 32知识点秒级入库）——commit 89192c9
+- [x] 深圳沪教版（一年级起点）12 本手动放置兜底——commit 89192c9
+- [x] 提交（89192c9；OCR 流程仍可走 /textbook/import）
+- [ ] 可选：ChinaStudyFree quizzes 单元题库导入 question 表
+- [ ] 可选：README 教材版权声明（教材版权归出版社；ChinaStudyFree 数据 MIT）

@@ -1,0 +1,12 @@
+# EASYFIX_ROLES — 阶段1：本地角色系统
+- [x] 1. models/user.py + __init__ 注册
+- [x] 2. utils/auth.py（哈希/HMAC token/依赖/宽松模式）
+- [x] 3. routers/auth.py（login/me/verify-password 兼容）
+- [x] 4. routers/users.py（CRUD/数量限制/保护）
+- [x] 5. main.py 集成 + 默认家长初始化 + config_router 权限加固
+- [x] 6. 验证：登录/严格模式/数量限制 —— 28/28 全通过（httpx ASGITransport 直连，2026-09-15）
+- [x] 7. 修复 app/routers/__init__.py 未导出 auth_router/users_router
+- [x] 8. 前端角色登录系统：Login.vue + auth store + 路由守卫 + axios token 拦截 + 角色菜单；vite 降级 4.5.x 兼容 Node16
+- [x] 9. 账号管理页 UserManage.vue：建小孩/家长、改密码/PIN、启用禁用、删除保护
+- [x] 10. 小孩优先体验重构：SelectKid 选人页 + 首次创建入口(宽松模式直建) + 家长中心密码门(ParentLockDialog 复用组件) + kids 公开接口 + 路由守卫改 kid 会话 + 切换小孩
+- [ ] 11. 用户本地体验验证：选人页→xiaomin 进入→家长中心(32167)→账号管理；首次创建流程待真干净库验证

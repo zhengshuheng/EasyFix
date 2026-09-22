@@ -1,0 +1,11 @@
+# GIT_DEV_BRANCH — 关联 GitHub 仓库并创建本地 dev 分支
+- [x] 1. 侦察：git 可用性、远程可达、仓库结构、F盘前端源码
+- [x] 2. 备份本地修改文件（源码全部保留在 E 盘工作目录）
+- [x] 3. git init -b dev1.0 + remote origin
+- [x] 4. 前端源码从 F 盘整合（src/package.json/vite.config.js，排除 node_modules/dist）
+- [x] 5. gitignore 完善（.venv/node_modules/dist/uploads/数据库/TODO）
+- [x] 6. 清理临时文件（_verify_roles.py、pip_out.txt、uploads PDF）
+- [x] 7. 提交 bc464a9 到 dev1.0 并验证
+- [x] 8. 推送 dev1.0 到 fork（SSH 方案，绕过 GCM/token；公钥 id_ed25519 已在 GitHub 生效）
+- [ ] 9. 接历史：git fetch origin + merge origin/main --allow-unrelated-histories（冲突保留本地）【待用户确认】
+- [ ] 10. 开 PR：mine/dev1.0 → origin(Kucleer)/main

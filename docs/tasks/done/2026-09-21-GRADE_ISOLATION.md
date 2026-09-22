@@ -1,0 +1,14 @@
+# GRADE_ISOLATION — 学习空间学科+年级双维度隔离
+- [x] 后端：/stats/knowledge-points 加 grade
+- [x] 后端：/stats/analysis/full + LearningAnalysisService 加 grade（Question/Word 过滤 + 趋势 join 题目年级）
+- [x] 后端：/words/stats/summary 加 grade（Word.grade 过滤）
+- [x] 后端：/practice-sets 按练习集内题目年级过滤（join PracticeSetQuestion→Question）
+- [x] 后端：/filter-options 加 grade
+- [x] 前端：subject store 加 activeGrade/setGrade/isAllGrade + 持久化
+- [x] 前端：App.vue 顶栏加年级下拉（handleGradeCommand）
+- [x] 前端：Home.vue selectedGrade 双向绑定 store.activeGrade（含"全部年级"）
+- [x] 前端：Stats.vue / Questions.vue / LearningReports.vue 请求带 grade
+- [x] 前端：PracticeSets.vue 生成弹窗年级默认空间年级
+- [x] 验证：后端冒烟 + vite build
+- [x] 指定年级后隐藏年级选项：Home 年级栏 / Words 列表+复习+打印 / Reading 列表+生成弹窗禁用
+- [x] 首页空间标题：指定年级 = "XXX的X年级学习空间"
