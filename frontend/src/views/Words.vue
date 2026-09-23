@@ -881,8 +881,9 @@ const visibleSentences = (word) => {
 const sentenceZhVisible = () => dimConfigForm.learnMode !== 'advanced' || dimConfigForm.showSentenceZh
 
 // 自动带读：学习卡自动依次朗读 英语 → 中文 → 词根词源 → 例句（老师带学，可配置次数/关闭）
+// opts.noZh=true 用于复习做题场景：只读英语+例句，不读中文（防止泄题）
 let teachToken = 0
-async function autoTeach(word) {
+async function autoTeach(word, opts = {}) {
   if (!dimConfigForm.autoRead || !word?.english) return
   const token = ++teachToken
   const times = dimConfigForm.autoReadTimes || 1
@@ -892,11 +893,13 @@ async function autoTeach(word) {
     try {
       await playWordAudio(word.word_id) // 1. 英语
       if (token !== teachToken) return
-      await speakZh(word.chinese, { force: true }) // 2. 中文
-      if (token !== teachToken) return
-      if (word.word_root) { // 3. 词根词源
-        await speakZh(word.word_root, { force: true })
+      if (!opts.noZh) { // 2-3. 中文/词根（复习题不读，读=报答案）
+        await speakZh(word.chinese, { force: true })
         if (token !== teachToken) return
+        if (word.word_root) {
+          await speakZh(word.word_root, { force: true })
+          if (token !== teachToken) return
+        }
       }
       const sentences = visibleSentences(word) // 4. 例句（英语句子，数量跟随学习模式）
       for (const s of sentences) {
@@ -1240,7 +1243,8 @@ const currentQuestion = ref({})
 // 新词学习题：进入时自动带读（英语→中文→词根词源），同学习卡带读
 watch(currentQuestion, (q) => {
   if (q && q.is_new && reviewStep.value === 'question' && dimConfigForm.autoRead) {
-    setTimeout(() => autoTeach(q), 600)
+    // 复习做题场景：只读英语+例句，不读中文（读中文=报答案，失去复习效果）
+    setTimeout(() => autoTeach(q, { noZh: true }), 600)
   }
 })
 const tableRef = ref()
