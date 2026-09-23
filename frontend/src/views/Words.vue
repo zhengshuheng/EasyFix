@@ -555,9 +555,18 @@
           <div class="dc-check-row">
             <el-checkbox v-model="dimConfigForm.showPinyin">🔡 中文显示拼音</el-checkbox>
             <el-checkbox v-model="dimConfigForm.zhReadAloud">🔊 中文可朗读（点中文旁喇叭）</el-checkbox>
-            <el-checkbox v-model="dimConfigForm.autoRead">📖 自动带读（学习时自动朗读 英语→中文→词根）</el-checkbox>
+            <el-checkbox v-model="dimConfigForm.autoRead">📖 自动带读（学习时自动朗读 英语→中文→词根→例句）</el-checkbox>
           </div>
-          <div class="dc-hint">不认识的字看拼音、点喇叭听读音；自动带读像老师一样带着读一遍</div>
+          <div class="dc-hint">不认识的字看拼音、点喇叭听读音；自动带读像老师一样带着读</div>
+          <div v-if="dimConfigForm.autoRead" class="dc-sub-row">
+            <span class="dc-label">🔁 带读次数</span>
+            <el-radio-group v-model="dimConfigForm.autoReadTimes">
+              <el-radio :value="1">1 遍</el-radio>
+              <el-radio :value="2">2 遍（推荐）</el-radio>
+              <el-radio :value="3">3 遍</el-radio>
+            </el-radio-group>
+            <div class="dc-hint">整轮读满次数自动结束；想再听随时点 🔊 喇叭</div>
+          </div>
         </div>
         <div class="dim-config-item dim-config-row">
           <span class="dc-label">📚 学习模式（例句深浅）</span>
@@ -794,7 +803,7 @@ const DIMENSION_NAMES = { recognize: '认得', listen: '听得', speak: '说得'
 const DIM_TYPE = { recognize: 2, listen: 4, speak: 1, write: 3 } // 维度 → 复习题型
 const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'] })
 const dimConfigVisible = ref(false)
-const dimConfigForm = reactive({ recognize: true, listen: true, speak: true, write: true, perWordDims: 1, categoryCap: 15, showPinyin: false, zhReadAloud: false, autoRead: true, learnMode: 'standard', showSentenceZh: true })
+const dimConfigForm = reactive({ recognize: true, listen: true, speak: true, write: true, perWordDims: 1, categoryCap: 15, showPinyin: false, zhReadAloud: false, autoRead: true, autoReadTimes: 2, learnMode: 'standard', showSentenceZh: true })
 // 低年级辅助：中文 → 拼音缓存映射
 const pinyinMap = reactive({})
 const zhSpeaking = ref('') // 正在朗读的中文
@@ -844,16 +853,21 @@ function speakZh(text, opts = {}) {
 }
 
 // 英文朗读（SpeechSynthesis en-US；例句发音用，不走 TTS 文件缓存，避免污染 audio_dir）
+// 返回 Promise，供自动带读顺序等待；点击喇叭时 fire-and-forget 不受影响
 function speakEn(text) {
-  if (!text || !('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
-  u.rate = 0.85
-  const voices = window.speechSynthesis.getVoices()
-  const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
-  if (en) u.voice = en
-  window.speechSynthesis.speak(u)
+  return new Promise((resolve) => {
+    if (!text || !('speechSynthesis' in window)) return resolve()
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'en-US'
+    u.rate = 0.85
+    const voices = window.speechSynthesis.getVoices()
+    const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
+    if (en) u.voice = en
+    u.onend = () => resolve()
+    u.onerror = () => resolve()
+    window.speechSynthesis.speak(u)
+  })
 }
 
 // 按学习模式取可见例句：入门=无、标准=1 条、进阶=2 条
@@ -866,19 +880,31 @@ const visibleSentences = (word) => {
 // 例句中文翻译显示：进阶模式可独立关掉（只看英文练理解）
 const sentenceZhVisible = () => dimConfigForm.learnMode !== 'advanced' || dimConfigForm.showSentenceZh
 
-// 自动带读：学习卡自动依次朗读 英语 → 中文 → 词根词源（老师带学，可配置关闭）
+// 自动带读：学习卡自动依次朗读 英语 → 中文 → 词根词源 → 例句（老师带学，可配置次数/关闭）
 let teachToken = 0
 async function autoTeach(word) {
   if (!dimConfigForm.autoRead || !word?.english) return
   const token = ++teachToken
-  window.speechSynthesis.cancel()
-  try {
-    await playWordAudio(word.word_id) // 1. 英语
+  const times = dimConfigForm.autoReadTimes || 1
+  for (let t = 0; t < times; t++) {
     if (token !== teachToken) return
-    await speakZh(word.chinese, { force: true }) // 2. 中文
-    if (token !== teachToken) return
-    if (word.word_root) await speakZh(word.word_root, { force: true }) // 3. 词根词源
-  } catch (e) { /* 带读失败不打断学习 */ }
+    window.speechSynthesis.cancel()
+    try {
+      await playWordAudio(word.word_id) // 1. 英语
+      if (token !== teachToken) return
+      await speakZh(word.chinese, { force: true }) // 2. 中文
+      if (token !== teachToken) return
+      if (word.word_root) { // 3. 词根词源
+        await speakZh(word.word_root, { force: true })
+        if (token !== teachToken) return
+      }
+      const sentences = visibleSentences(word) // 4. 例句（英语句子，数量跟随学习模式）
+      for (const s of sentences) {
+        await speakEn(s.en)
+        if (token !== teachToken) return
+      }
+    } catch (e) { /* 带读失败不打断学习 */ }
+  }
 }
 
 // 当前小孩的维度配置（localStorage 按小孩存）
@@ -896,6 +922,7 @@ function loadDimConfig() {
       dimConfigForm.showPinyin = !!saved.showPinyin
       dimConfigForm.zhReadAloud = !!saved.zhReadAloud
       dimConfigForm.autoRead = saved.autoRead !== false
+      dimConfigForm.autoReadTimes = saved.autoReadTimes || 2
       dimConfigForm.learnMode = saved.learnMode || 'standard'
       dimConfigForm.showSentenceZh = saved.showSentenceZh !== false
     }
@@ -924,6 +951,7 @@ const saveDimConfig = () => {
       showPinyin: dimConfigForm.showPinyin,
       zhReadAloud: dimConfigForm.zhReadAloud,
       autoRead: dimConfigForm.autoRead,
+      autoReadTimes: dimConfigForm.autoReadTimes,
       learnMode: dimConfigForm.learnMode,
       showSentenceZh: dimConfigForm.showSentenceZh,
     }))
@@ -2279,6 +2307,18 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 18px;
   align-items: center;
+}
+.dc-sub-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #eef2f7;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dc-sub-row .dc-label {
+  margin-bottom: 0;
 }
 /* 低年级辅助：中文拼音小字 */
 .cn-wrap {
