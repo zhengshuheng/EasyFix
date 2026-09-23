@@ -1,7 +1,8 @@
 """
 单词相关 Pydantic Schemas
 """
-from pydantic import BaseModel, Field
+import json
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -13,6 +14,13 @@ class WordBase(BaseModel):
     phonetic: Optional[str] = Field(None, max_length=100)
     grade: Optional[int] = Field(None, ge=1, le=12)
     semester: Optional[int] = Field(None, ge=1, le=2)
+    unit: Optional[int] = Field(None, ge=1, le=99)
+    unit_title: Optional[str] = Field(None, max_length=200)
+    phonetic_rule: Optional[str] = None  # 拼读规则
+    mnemonic: Optional[str] = None  # 联想口诀
+    word_root: Optional[str] = None  # 词根词缀
+    related_words: Optional[List] = None  # 相关词 [{en,cn}]
+    example_sentences: Optional[List] = None  # 语境例句 [{en,zh}]（单词融入句子）
 
 
 class WordCreate(WordBase):
@@ -27,7 +35,24 @@ class WordUpdate(BaseModel):
     phonetic: Optional[str] = Field(None, max_length=100)
     grade: Optional[int] = Field(None, ge=1, le=12)
     semester: Optional[int] = Field(None, ge=1, le=2)
+    unit: Optional[int] = Field(None, ge=1, le=99)
+    unit_title: Optional[str] = Field(None, max_length=200)
+    phonetic_rule: Optional[str] = None  # 拼读规则
+    mnemonic: Optional[str] = None  # 联想口诀
+    word_root: Optional[str] = None  # 词根词缀
+    related_words: Optional[List] = None  # 相关词 [{en,cn}]
+    example_sentences: Optional[List] = None  # 语境例句 [{en,zh}]
     tag_ids: Optional[List[int]] = None
+
+
+class WordAIGenerateRequest(BaseModel):
+    """AI 智能导入：大模型直接生成单词表"""
+    mode: str = Field("custom", description="textbook=按教材下拉生成；custom=按自然语言指令生成")
+    subject: Optional[str] = Field(None, max_length=50)
+    version: Optional[str] = Field(None, max_length=100)
+    grade: Optional[int] = Field(None, ge=1, le=12)
+    semester: Optional[int] = Field(None, ge=1, le=2)
+    instruction: Optional[str] = Field(None, max_length=500)
 
 
 class TagResponse(BaseModel):
@@ -49,6 +74,30 @@ class WordResponse(WordBase):
     next_review_at: Optional[datetime] = None
     tags: List[TagResponse] = []
     created_at: datetime
+
+    @field_validator("related_words", mode="before")
+    @classmethod
+    def _parse_related_words(cls, v):
+        """DB 里 related_words 是 JSON 字符串列；响应时解析成 List，兼容已入库的 '[]'"""
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except Exception:
+                return []
+        return v
+
+    @field_validator("example_sentences", mode="before")
+    @classmethod
+    def _parse_example_sentences(cls, v):
+        """DB 里 example_sentences 是 JSON 字符串列；响应时解析成 List"""
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except Exception:
+                return []
+        return v
 
     class Config:
         from_attributes = True

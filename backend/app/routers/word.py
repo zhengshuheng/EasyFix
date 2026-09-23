@@ -1,7 +1,7 @@
 """
 单词路由 - 管理单词的录入、复习、统计等功能
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import Optional, List
@@ -10,19 +10,44 @@ import random
 import json
 from datetime import datetime, timedelta
 from app.database import get_db
-from app.models import Word, Tag, WordReviewLog, WordReview
+from app.models import Word, Tag, WordReviewLog, WordReview, WordAttempt
 from app.models.word import WordProgress
 from app.models.user import User
 from app.schemas.word import (
     WordCreate, WordUpdate, WordResponse, WordListResponse,
     WordStatsResponse, ReviewSessionSubmit, ReviewStartResponse, ReviewQuestion,
-    MemoryCurveResponse
+    MemoryCurveResponse, WordAIGenerateRequest
 )
+from app.services.textbook_service import _llm_json
+import re
+import threading
+import time
 
 router = APIRouter(prefix="/api/words", tags=["单词"])
 
 # 默认用户ID
 DEFAULT_USER_ID = 1
+
+
+def _dump_json(v) -> str:
+    """List/dict → JSON 字符串（空值 → '[]'）"""
+    if v is None:
+        return '[]'
+    try:
+        return json.dumps(v, ensure_ascii=False)
+    except Exception:
+        return '[]'
+
+
+def _parse_json_list(raw) -> list:
+    """JSON 字符串 → list（解析失败返回空列表）"""
+    if not raw:
+        return []
+    try:
+        v = json.loads(raw)
+        return v if isinstance(v, list) else []
+    except Exception:
+        return []
 
 
 def _resolve_user_id(db: Session, user_id: Optional[int]) -> int:
@@ -31,6 +56,68 @@ def _resolve_user_id(db: Session, user_id: Optional[int]) -> int:
         return user_id
     kid = db.query(User.id).filter(User.role == "child").order_by(User.id).first()
     return kid[0] if kid else DEFAULT_USER_ID
+
+
+# ===== 四维记忆模型 =====
+# 题型 → 记忆维度：1=中-英(说得) 2=英-中(认得) 3=听写(写得) 4=听音选中文(听得) 5=记忆模式(说得)
+_DIMENSION_BY_REVIEW_TYPE = {1: "speak", 2: "recognize", 3: "write", 4: "listen", 5: "speak"}
+# 维度 → word_progress 计数列名
+_DIMENSION_FIELDS = {
+    "recognize": ("recognize_count", "recognize_correct"),
+    "listen": ("listen_count", "listen_correct"),
+    "speak": ("speak_count", "speak_correct"),
+    "write": ("write_count", "write_correct"),
+}
+
+
+def _dimension_for_review_type(review_type: int) -> str:
+    return _DIMENSION_BY_REVIEW_TYPE.get(review_type, "recognize")
+
+
+def _upsert_word_attempt(db: Session, word: Word, user_id: int, dimension: str, source: str = "review"):
+    """答错 → 词入记忆错题池（同一 word+dimension 覆盖并累计答错次数）"""
+    try:
+        row = db.query(WordAttempt).filter(
+            WordAttempt.word_id == word.id,
+            WordAttempt.user_id == user_id,
+            WordAttempt.dimension == dimension,
+        ).first()
+        now = datetime.now()
+        if row:
+            row.english = word.english
+            row.chinese = word.chinese
+            row.phonetic = word.phonetic
+            row.wrong_count = (row.wrong_count or 1) + 1
+            row.updated_at = now
+        else:
+            db.add(WordAttempt(
+                word_id=word.id,
+                user_id=user_id,
+                dimension=dimension,
+                source=source,
+                english=word.english,
+                chinese=word.chinese,
+                phonetic=word.phonetic,
+                wrong_count=1,
+                created_at=now,
+                updated_at=now,
+            ))
+    except Exception:
+        pass  # 错词池异常不影响主流程
+
+
+def _clear_word_attempt(db: Session, word_id: int, user_id: int, dimension: str):
+    """答对 → 移出记忆错题池（掌握即出池）"""
+    try:
+        rows = db.query(WordAttempt).filter(
+            WordAttempt.word_id == word_id,
+            WordAttempt.user_id == user_id,
+            WordAttempt.dimension == dimension,
+        ).all()
+        for r in rows:
+            db.delete(r)
+    except Exception:
+        pass
 
 
 def _get_progress(db: Session, word_id: int, user_id: int) -> WordProgress:
@@ -176,6 +263,13 @@ def list_words(
             "phonetic": item.phonetic,
             "grade": item.grade,
             "semester": item.semester,
+            "unit": item.unit,
+            "unit_title": item.unit_title,
+            "phonetic_rule": item.phonetic_rule,
+            "mnemonic": item.mnemonic,
+            "word_root": item.word_root,
+            "related_words": _parse_json_list(item.related_words),
+            "example_sentences": _parse_json_list(item.example_sentences),
             "review_count": (p.review_count if p else 0) or 0,
             "correct_count": (p.correct_count if p else 0) or 0,
             "accuracy": x['accuracy'],
@@ -280,6 +374,157 @@ def get_memory_curve(word_id: int, user_id: Optional[int] = Query(None, descript
     }
 
 
+# ==================== 今日任务（四维记忆调度） ====================
+
+_DIMENSION_NAMES = {"recognize": "认得", "listen": "听得", "speak": "说得", "write": "写得"}
+
+
+@router.get("/daily-task")
+def daily_task(
+    user_id: Optional[int] = Query(None, description="小孩ID（不传则默认第一个小孩）"),
+    grade: Optional[int] = Query(None, description="按年级筛选"),
+    dimensions: Optional[str] = Query(None, description="启用的维度，逗号分隔（默认全部：recognize,listen,speak,write）"),
+    new_quota: int = Query(5, ge=0, le=20, description="新学词配额"),
+    per_word_dims: int = Query(1, ge=1, le=4, description="每个词每轮最多练几个维度（科学记忆：间隔轮转>集中轰炸，默认1）"),
+    category_cap: int = Query(15, ge=1, le=100, description="错题练习/到期复习单类最多词数（控制单次练习量）"),
+    db: Session = Depends(get_db),
+):
+    """今日任务：到期词（记忆曲线）+ 记忆错词池 + 新学词配额
+
+    科学记忆设计：
+    - 间隔效应：每个词每轮只练最弱 1 个维度（per_word_dims），四维靠多轮轮转覆盖；
+    - 轮转顺序按日期偏移，避免天天练同一维度；
+    - 错池维度（in_pool）永远优先（针对性补弱）；
+    - 单类词数受 category_cap 限制，避免一次任务过重让孩子失去兴趣。
+    """
+    uid = _resolve_user_id(db, user_id)
+    enabled = [d.strip() for d in (dimensions or "recognize,listen,speak,write").split(",") if d.strip() in _DIMENSION_NAMES]
+    if not enabled:
+        enabled = list(_DIMENSION_NAMES)
+
+    now = datetime.now()
+    # 轮转顺序：按年内天数偏移，让不同天优先练不同维度
+    rotation = now.timetuple().tm_yday % len(enabled)
+    rotation_order = enabled[rotation:] + enabled[:rotation]
+
+    query = db.query(Word).filter(Word.deleted == False)  # noqa: E712
+    if grade:
+        query = query.filter(Word.grade == grade)
+    words = query.all()
+
+    progress_map = {
+        p.word_id: p for p in db.query(WordProgress).filter(
+            WordProgress.user_id == uid,
+            WordProgress.word_id.in_([w.id for w in words]),
+        ).all()
+    }
+    # 错词池（该小孩）：词级去重（任一维度在池即算记忆错词）
+    attempts = db.query(WordAttempt).filter(WordAttempt.user_id == uid).all()
+    attempt_map = {}
+    for a in attempts:
+        attempt_map.setdefault(a.word_id, []).append(a)
+
+    due_words = []   # 到期词（有进度且到期，或低正确率；已在错词池的词归错题练习，不重复计）
+    new_words = []   # 新学词（无进度）
+    for w in words:
+        p = progress_map.get(w.id)
+        if p is None or (p.review_count or 0) == 0:
+            new_words.append(w)
+            continue
+        if attempt_map.get(w.id):
+            continue  # 错池词优先归「错题练习」，不重复出现在到期复习
+        due = (p.next_review_at and p.next_review_at <= now) or (p.learning_phase in ("遗忘点", "在途") and (p.correct_count or 0) < (p.review_count or 0) * 0.6)
+        if due:
+            due_words.append((w, p))
+
+    # 错池词（按词去重，与到期词合并；错池优先；受单类上限控制）
+    wrong_words = [w for w in words if attempt_map.get(w.id)][:category_cap]
+    due_words = sorted(due_words, key=lambda x: x[1].next_review_at or now)[:category_cap]
+
+    # 今日任务词 = 错池 ∪ 到期（按优先级排序：错池 > 到期 > 低正确率）
+    task_words = []
+    seen = set()
+    for w in wrong_words:
+        if w.id not in seen:
+            task_words.append(w)
+            seen.add(w.id)
+    for w, _p in due_words:
+        if w.id not in seen:
+            task_words.append(w)
+            seen.add(w.id)
+
+    items = []
+    for w in task_words:
+        p = progress_map.get(w.id)
+        dims = {}
+        pool_dims = []
+        weak_ordered = []
+        for d in rotation_order:  # 按轮转顺序评估，保证不同天优先不同维度
+            c_field, ok_field = _DIMENSION_FIELDS[d]
+            count = getattr(p, c_field, 0) if p else 0
+            correct = getattr(p, ok_field, 0) if p else 0
+            acc = round(correct * 100.0 / count, 0) if count else 0
+            # 薄弱：练过且正确率<60%，或在该维有错池记录
+            in_pool = any(a.dimension == d for a in attempt_map.get(w.id, []))
+            weak = (count > 0 and acc < 60) or in_pool or count == 0
+            dims[d] = {"count": count, "correct": correct, "accuracy": acc, "weak": weak, "in_pool": in_pool}
+            if in_pool:
+                pool_dims.append(d)
+            if weak and d not in pool_dims:
+                weak_ordered.append(d)
+        # 推荐维度 = 错池维度优先 + 薄弱维度（轮转序），按每词维度数截断
+        recommended = (pool_dims + weak_ordered)[:per_word_dims]
+        if not recommended:
+            recommended = rotation_order[:per_word_dims]  # 全达标也轮转练 1 个保持熟悉
+        items.append({
+            "word_id": w.id,
+            "english": w.english,
+            "chinese": w.chinese,
+            "phonetic": w.phonetic,
+            "mnemonic": w.mnemonic,
+            "example_sentences": _parse_json_list(w.example_sentences),
+            "learning_phase": p.learning_phase if p else "新学",
+            "in_attempt": bool(attempt_map.get(w.id)),
+            "dimensions": dims,
+            "recommended_dimensions": recommended,
+            "wrong_total": sum(a.wrong_count or 1 for a in attempt_map.get(w.id, [])),
+        })
+
+    # 新学词配额（取无进度中未在今日任务里的，优先带记忆增强的）
+    quota = min(new_quota, len(new_words))
+    new_items = []
+    for w in new_words:
+        if w.id in seen:
+            continue
+        new_items.append({
+            "word_id": w.id,
+            "english": w.english,
+            "chinese": w.chinese,
+            "phonetic": w.phonetic,
+            "mnemonic": w.mnemonic,
+            "example_sentences": _parse_json_list(w.example_sentences),
+            "learning_phase": "新学",
+            "dimensions": {d: {"count": 0, "correct": 0, "accuracy": 0, "weak": True, "in_pool": False} for d in enabled},
+            "recommended_dimensions": [enabled[rotation % len(enabled)]],
+        })
+        if len(new_items) >= quota:
+            break
+
+    return {
+        "date": now.strftime("%Y-%m-%d"),
+        "enabled_dimensions": enabled,
+        "per_word_dims": per_word_dims,
+        "category_cap": category_cap,
+        "due_count": len(due_words),
+        "wrong_count": len(wrong_words),
+        "new_quota": quota,
+        "new_count": len(new_items),
+        "total": len(items) + len(new_items),
+        "task": items,
+        "new_words": new_items,
+    }
+
+
 @router.get("/{word_id}", response_model=WordResponse)
 def get_word(word_id: int, user_id: Optional[int] = Query(None, description="小孩ID，不传则默认第一个小孩"), db: Session = Depends(get_db)):
     """获取单词详情（复习字段按小孩隔离）"""
@@ -295,6 +540,11 @@ def get_word(word_id: int, user_id: Optional[int] = Query(None, description="小
         "phonetic": word.phonetic,
         "grade": word.grade,
         "semester": word.semester,
+        "phonetic_rule": word.phonetic_rule,
+        "mnemonic": word.mnemonic,
+        "word_root": word.word_root,
+        "related_words": _parse_json_list(word.related_words),
+        "example_sentences": _parse_json_list(word.example_sentences),
         "review_count": progress.review_count or 0,
         "correct_count": progress.correct_count or 0,
         "last_reviewed_at": progress.last_reviewed_at,
@@ -313,6 +563,13 @@ def create_word(data: WordCreate, db: Session = Depends(get_db)):
         phonetic=data.phonetic,
         grade=data.grade,
         semester=data.semester,
+        unit=data.unit,
+        unit_title=data.unit_title,
+        phonetic_rule=data.phonetic_rule,
+        mnemonic=data.mnemonic,
+        word_root=data.word_root,
+        related_words=_dump_json(data.related_words),
+        example_sentences=_dump_json(data.example_sentences),
     )
     db.add(word)
     db.commit()
@@ -324,6 +581,10 @@ def create_word(data: WordCreate, db: Session = Depends(get_db)):
         word.tags = tags
         db.commit()
         db.refresh(word)
+
+    # 自动附带记忆增强（拼读规则/词根词源/相关词）：后台生成，不阻塞创建
+    if _needs_enhance(word):
+        _schedule_auto_enhance([word.id])
 
     # 异步预生成音频 + 获取音标
     import threading
@@ -358,12 +619,120 @@ class WordBatchCreate(BaseModel):
     tag_ids: Optional[List[int]] = []
 
 
+@router.post("/extract-from-textbook")
+async def extract_from_textbook(
+    files: List[UploadFile] = File(...),
+    grade: Optional[int] = Form(None),
+    semester: Optional[int] = Form(None),
+):
+    """教材单词表提取（松耦合：独立于教材同步的知识点提取）。
+
+    接收教材单词表页的照片 / PDF（可混合多份）→ 本地 RapidOCR → LLM 按单词表版式
+    提取 {english, chinese, phonetic} → 按 english+grade+semester 标记已存在。
+    照片/PDF 仅存临时目录，任务结束即删；不写入教材库。
+    """
+    import os
+    import tempfile
+    import threading
+    from app.services import textbook_service
+
+    tmpdir = tempfile.mkdtemp(prefix="word_extract_")
+    try:
+        pages = []  # (来源名, 文本)
+        for f in files:
+            if not f.filename:
+                continue
+            safe = os.path.basename(f.filename or "upload")
+            path = os.path.join(tmpdir, safe)
+            with open(path, "wb") as out:
+                out.write(await f.read())
+            ext = os.path.splitext(safe)[1].lower()
+            if ext == ".pdf":
+                import fitz
+                ocr = textbook_service._get_ocr()
+                doc = fitz.open(path)
+                for i, page in enumerate(doc):
+                    text = textbook_service._page_to_text(ocr, page)
+                    if text.strip():
+                        pages.append((f"{safe} 第{i + 1}页", text))
+                doc.close()
+            elif ext in (".jpg", ".jpeg", ".png", ".bmp", ".webp"):
+                text = textbook_service.image_to_text(path)
+                if text.strip():
+                    pages.append((safe, text))
+        if not pages:
+            return {"words": [], "detail": "未能从图片/PDF 中识别出文字，请确认上传的是教材单词表页"}
+
+        # LLM 按单词表版式提取
+        combined = "\n".join(f"【{name}】\n{body}" for name, body in pages)
+        if len(combined) > 30000:
+            combined = combined[:24000] + "\n……（中略）……\n" + combined[-6000:]
+        grade_cn = {1: "一年级", 2: "二年级", 3: "三年级", 4: "四年级", 5: "五年级", 6: "六年级",
+                    7: "初一", 8: "初二", 9: "初三", 10: "高一", 11: "高二", 12: "高三"}.get(grade, "")
+        sem_cn = {1: "上学期", 2: "下学期"}.get(semester, "")
+        prompt = (
+            "你是小学英语老师。以下是一本小学英语教材的【单元单词表】OCR 识别文本"
+            "（可能含单词、音标、中文释义，扫描件识别可能有少量错字/排版错乱，请自行判断）。\n"
+            f"教材年级：{grade_cn or '未知'}；学期：{sem_cn or '未知'}。\n"
+            "请提取该单词表里的核心单词：\n"
+            "1. 只列单词表中真实出现的词条，宁缺毋滥，不要臆造；\n"
+            "2. 跳过页码、标题、装饰性文字、人名地名专有名词（除非是教材要求掌握的词）；\n"
+            "3. 音标没有就留空字符串；中文释义从单词表/正文语义判断，一个词条一句话；\n"
+            "4. 数量不超过 40 个。\n"
+            "只输出 JSON：{\"words\":[{\"en\":\"apple\",\"cn\":\"苹果\",\"phonetic\":\"/ˈæpl/\"}]}\n"
+            f"OCR 文本：\n{combined}"
+        )
+        content = textbook_service._llm_json(prompt, max_tokens=3000)
+        data = textbook_service._parse_json(content)
+        raw_words = data.get("words", []) if isinstance(data, dict) else []
+
+        # 查重（english + grade + semester 全匹配才算已存在）
+        from app.database import SessionLocal
+        db = SessionLocal()
+        try:
+            results = []
+            seen = set()
+            for w in raw_words:
+                en = str(w.get("en", "")).strip()
+                cn = str(w.get("cn", "")).strip()
+                if not en or en.lower() in seen:
+                    continue
+                seen.add(en.lower())
+                existing = db.query(Word).filter(
+                    Word.deleted == False,
+                    func.lower(Word.english) == en.lower(),
+                )
+                if grade is not None:
+                    existing = existing.filter(Word.grade == grade)
+                if semester is not None:
+                    existing = existing.filter(Word.semester == semester)
+                exists = existing.first() is not None
+                results.append({
+                    "english": en,
+                    "chinese": cn,
+                    "phonetic": str(w.get("phonetic", "") or "").strip(),
+                    "grade": grade,
+                    "semester": semester,
+                    "existing": exists,
+                })
+        finally:
+            db.close()
+        return {"words": results, "detail": f"识别到 {len(results)} 个单词（已存在 {sum(1 for r in results if r['existing'])} 个）"}
+    finally:
+        # 照片/PDF 仅临时使用，即用即删
+        def _cleanup():
+            import shutil
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        threading.Thread(target=_cleanup, daemon=True).start()
+
+
 @router.post("/batch")
 def batch_create_words(data: WordBatchCreate, db: Session = Depends(get_db)):
     """批量创建单词"""
     success_count = 0
     fail_count = 0
     results = []
+    created_ids = []
 
     for word_data in data.words:
         try:
@@ -373,6 +742,13 @@ def batch_create_words(data: WordBatchCreate, db: Session = Depends(get_db)):
                 phonetic=word_data.get('phonetic'),
                 grade=word_data.get('grade') or data.grade,
                 semester=word_data.get('semester') or data.semester,
+                unit=word_data.get('unit'),
+                unit_title=word_data.get('unit_title'),
+                phonetic_rule=word_data.get('phonetic_rule'),
+                mnemonic=word_data.get('mnemonic'),
+                word_root=word_data.get('word_root'),
+                related_words=_dump_json(word_data.get('related_words')),
+                example_sentences=_dump_json(word_data.get('example_sentences')),
             )
             db.add(word)
             db.commit()
@@ -385,11 +761,17 @@ def batch_create_words(data: WordBatchCreate, db: Session = Depends(get_db)):
                 word.tags = tags
                 db.commit()
 
+            # 自动附带记忆增强：整批合并后台生成
+            if _needs_enhance(word):
+                created_ids.append(word.id)
+
             success_count += 1
             results.append({"english": word.english, "id": word.id, "success": True})
         except Exception as e:
             fail_count += 1
             results.append({"english": word_data.get('english', ''), "success": False, "error": str(e)})
+
+    _schedule_auto_enhance(created_ids)
 
     # 异步预生成音频缓存
     import threading
@@ -422,6 +804,12 @@ def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
 
     update_data = data.model_dump(exclude_unset=True)
     tag_ids = update_data.pop('tag_ids', None)
+
+    # related_words / example_sentences 是 JSON 文本列：List → 序列化
+    if 'related_words' in update_data:
+        update_data['related_words'] = _dump_json(update_data['related_words'])
+    if 'example_sentences' in update_data:
+        update_data['example_sentences'] = _dump_json(update_data['example_sentences'])
 
     for key, value in update_data.items():
         setattr(word, key, value)
@@ -806,6 +1194,16 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         # 增加复习次数（每次复习都要增加）
         progress.review_count = (progress.review_count or 0) + 1
 
+        # 四维记忆：按题型归类更新对应维度计数 + 记忆错词池
+        dim = _dimension_for_review_type(result.review_type)
+        dim_count, dim_correct = _DIMENSION_FIELDS[dim]
+        setattr(progress, dim_count, (getattr(progress, dim_count) or 0) + 1)
+        if result.is_correct:
+            setattr(progress, dim_correct, (getattr(progress, dim_correct) or 0) + 1)
+            _clear_word_attempt(db, result.word_id, uid, dim)  # 答对 → 移出记忆错词池
+        else:
+            _upsert_word_attempt(db, word, uid, dim, "review")
+
         # 更新间隔和阶段
         if result.is_correct:
             progress.correct_count = (progress.correct_count or 0) + 1
@@ -845,9 +1243,11 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
     from app.services.motivation import MotivationService
     try:
         service = MotivationService(db)
+        # 背单词：每次复习场次 +积分
+        service.trigger_action("review_word", user_id=uid, reason="背单词")
         # 单词复习通过练习集完成会计入review_practice_set（需至少10个单词才积分）
         if len(data.results) >= 10:
-            service.trigger_action("review_practice_set", reason="单词练习")
+            service.trigger_action("review_practice_set", user_id=uid, reason="单词练习")
 
         # 检查单词正确率成就（满足条件时触发）
         if len(data.results) >= 10 and accuracy >= 90:
@@ -869,6 +1269,7 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         # 创建练习集
         practice_set = PracticeSet(
             name=f"单词复习 {now.strftime('%Y-%m-%d %H:%M')}",
+            user_id=uid,  # 归属小孩（数据隔离）
             subject_id=subject_id,
             source_type="word",  # 标记为单词来源
             question_type="original",
@@ -935,3 +1336,375 @@ def print_pdf(
     return {"pdf_url": f"/uploads/{pdf_path}"}
 
 
+# ---------------------------------------------------------------- AI 智能导入
+
+_GRADE_CN = {1: "一年级", 2: "二年级", 3: "三年级", 4: "四年级", 5: "五年级", 6: "六年级",
+             7: "初一", 8: "初二", 9: "初三", 10: "高一", 11: "高二", 12: "高三"}
+_SEM_CN = {1: "上学期", 2: "下学期"}
+
+
+def _strip_md_code(text: str) -> str:
+    """剥掉 LLM 返回里的 markdown 代码块"""
+    m = re.search(r"```[a-zA-Z]*\s*(.*?)```", text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return text.strip()
+
+
+def parse_llm_words(text: str) -> list:
+    """把 LLM 输出的「Unit 标题行 + 英文 中文」文本解析为结构化单词列表（与前端 smartParseWords 同规则）"""
+    words = []
+    cur_unit = None
+    cur_title = ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        um = re.match(r"^Unit\s*(\d+)\s*(.*)$", line, re.I)
+        if um:
+            cur_unit = int(um.group(1))
+            cur_title = (um.group(2) or "").strip()
+            continue
+        idx = re.search(r"[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]", line)
+        if idx:
+            english = line[:idx.start()].strip()
+            chinese = line[idx.start():].strip()
+            english = re.sub(r"\s*\([^)]*\)\s*$", "", english).strip()
+            op = english.rfind("(")
+            if op >= 0 and ")" not in english[op:]:
+                chinese = english[op:] + chinese
+                english = english[:op].strip()
+            cm = re.match(r"^(.*\s)([A-Z])$", english)
+            if cm and re.match(r"^[\u4e00-\u9fa5]", chinese):
+                english = cm.group(1).strip()
+                chinese = cm.group(2) + chinese
+            if english or chinese:
+                words.append({"english": english, "chinese": chinese, "unit": cur_unit, "unit_title": cur_title})
+        else:
+            words.append({"english": line, "chinese": "", "unit": cur_unit, "unit_title": cur_title})
+    return words
+
+
+@router.post("/ai-generate")
+def ai_generate_words(req: WordAIGenerateRequest):
+    """AI 智能导入：大模型按教材知识/自然语言指令生成单元单词表"""
+    if req.mode == "textbook":
+        if not req.subject or not req.version or not req.grade:
+            raise HTTPException(status_code=400, detail="教材模式需要选择：学科、版本、年级（册次可选）")
+        grade_cn = _GRADE_CN.get(req.grade, "")
+        sem_cn = _SEM_CN.get(req.semester, "") if req.semester else ""
+        desc = f"{req.subject}《{req.version}》{grade_cn}{sem_cn or '全一册'}"
+        task = f"教材：{desc}\n请依据这套教材的真实内容，生成该册全册的单元单词表。"
+    else:
+        if not req.instruction or not req.instruction.strip():
+            raise HTTPException(status_code=400, detail="请先输入导入指令，例如：我要导入沪教版深圳英语三年级上册 全册")
+        task = f"用户指令：{req.instruction.strip()}"
+
+    prompt = (
+        "你是精通国内各版本中小学教材的英语老师，熟悉各版本各年级教材的单元结构与词汇表。\n"
+        f"{task}\n"
+        "要求：\n"
+        "1. 按单元组织，覆盖该册全部单元；每个单元先输出一行标题，格式：Unit 1 标题（标题用教材里的英文单元名，没有英文标题时用单元主题中文名）\n"
+        "2. 标题行之后每行一个单词，格式：英文 中文释义（可把音标放在英文后面，如 apple /ˈæpl/，可选）\n"
+        "3. 只列该教材该册要求掌握的核心单词（词汇表为主），宁缺毋滥，不要臆造不在该教材的词；短语整体保留（如 a pair of 一双）\n"
+        "4. 中文释义一句话，必要时带括号补充（如 tooth 牙齿(复数teeth)）\n"
+        "5. 单词数量以该册实际词汇量为准，一般每单元 8~15 个\n"
+        "只输出单词表文本，严禁输出任何解释、提示、markdown 代码块，格式示例：\n"
+        "Unit 1 Meeting new people\n"
+        "meet 相识；结识\n"
+        "new 新的\n"
+        "……"
+    )
+    try:
+        raw = _strip_md_code(_llm_json(prompt, system="你只输出单词表文本，不要任何解释。", max_tokens=4000, timeout=180))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI 生成失败：{e}")
+
+    words = parse_llm_words(raw)
+    if not words:
+        raise HTTPException(status_code=502, detail="AI 返回内容无法解析为单词，请重试")
+
+    # 查重标记（english + grade + semester 全匹配算已存在）
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
+        seen = set()
+        out = []
+        for w in words:
+            en = (w.get("english") or "").strip()
+            cn = (w.get("chinese") or "").strip()
+            key = (en.lower(), cn)
+            if not en or key in seen:
+                continue
+            seen.add(key)
+            exists = db.query(Word).filter(
+                Word.deleted == False,
+                func.lower(Word.english) == en.lower(),
+            )
+            if req.grade is not None:
+                exists = exists.filter(Word.grade == req.grade)
+            if req.semester is not None:
+                exists = exists.filter(Word.semester == req.semester)
+            out.append({
+                "english": en,
+                "chinese": cn,
+                "phonetic": "",
+                "unit": w.get("unit"),
+                "unit_title": w.get("unit_title") or "",
+                "existing": exists.first() is not None,
+            })
+        db.close()
+    finally:
+        pass
+
+    return {"words": out, "total": len(out)}
+
+
+
+
+
+# ============================================================ 记忆专项（P2）
+# —— 记忆增强自动附带：新增/导入单词时后台自动生成（拼读规则/词根词源/相关词），
+#    不再需要独立操作。`POST /enhance` 保留仅用于历史数据补增强。
+_ENHANCE_CHUNK = 20          # 每次 LLM 调用处理的单词数
+_ENHANCE_DEBOUNCE = 4.0      # 秒：等待同一批导入全部落库后合并生成，减少 LLM 调用
+_enhance_pending: set = set()
+_enhance_lock = threading.Lock()
+_enhance_worker_running = False
+
+
+def _needs_enhance(word) -> bool:
+    """拼读规则与词根词源都缺失才算待增强；有任一字段视为已人工编辑，不覆盖"""
+    return not (word.phonetic_rule and word.word_root)
+
+
+def _needs_sentences(word) -> bool:
+    """例句缺失才算待补（有例句视为已生成/已编辑，不覆盖）"""
+    return not _parse_json_list(word.example_sentences)
+
+
+def _enhance_words_llm(db: Session, words: List[Word]) -> dict:
+    """对一组单词调用 LLM 生成记忆增强，就地更新内存对象（由调用方 commit）。
+
+    words 必须已在 db 中；建议单次不超过 _ENHANCE_CHUNK 个。失败抛异常，由调用方决定回滚/包装。
+    """
+    if not words:
+        return {"ok_count": 0, "results": [], "total": 0}
+    word_lines = "\n".join(f"- {w.english} / {w.phonetic or ''} / {w.chinese}" for w in words)
+    prompt = (
+        "你是小学英语特级教师，擅长自然拼读与词根词源。为下列小学英语单词批量生成「记忆增强包」：\n"
+        "1. phonetic_rule：拼读规则，按字母组合逐段拆解怎么读，每个字母组合一行（如 apple：a → /æ/，pp → /p/，le → /əl/ 结尾弱化；再如 ee → /iː/，ee 组合读长音 iː）；这是学生见词能读的关键，必须准确；\n"
+        "2. word_root：词根词缀拆解（有就写，如 un-（否定）+ happy → unhappy）；若是 apple 这类没有词根的基础词，写词源简史（如 apple ← 古英语 æppel），绝不硬凑词根；\n"
+        "3. related_words：相关词/形近词数组（1~3 个，形近或同类，如 [{\"en\":\"see\",\"cn\":\"看见\"}]）；\n"
+        "4. example_sentences：语境例句数组（1~2 条，把该单词融入句子里学，不孤立背词）。要求：语法绝对正确、口语自然、贴近低年级孩子生活；句子只用孩子已学的高频词 + 当前单词（新词最多再带 1 个生词），难度恰到好处（i+1）；中文翻译自然通顺。\n"
+        "要求：面向一年级小学生，拼读拆解简单准确、中文简单；不写联想口诀、不编顺口溜；例句严禁出现语法错误（如 I like to eat apples. 而不是 I like eat apple）。\n"
+        f"单词表：\n{word_lines}\n"
+        "只输出 JSON：{\"words\":[{\"english\":\"bee\",\"phonetic_rule\":\"...\","
+        "\"word_root\":\"...\",\"related_words\":[{\"en\":\"see\",\"cn\":\"看见\"}],"
+        "\"example_sentences\":[{\"en\":\"I like to eat apples.\",\"zh\":\"我喜欢吃苹果。\"}]}]}"
+    )
+    try:
+        content = _llm_json(prompt, system="你只输出JSON，不要任何解释。", max_tokens=4000, timeout=180)
+        data_resp = json.loads(_strip_md_code(content)) if isinstance(content, str) else content
+    except Exception as e:
+        raise Exception(f"AI 生成失败：{e}")
+
+    by_en = {w.english.lower(): w for w in words}
+    results, ok_count = [], 0
+    for item in data_resp.get("words", []) if isinstance(data_resp, dict) else []:
+        en = str(item.get("english", "")).strip().lower()
+        word = by_en.get(en)
+        if not word:
+            continue
+        word.phonetic_rule = str(item.get("phonetic_rule", "") or "").strip()
+        word.word_root = str(item.get("word_root", "") or "").strip()
+        word.related_words = _dump_json(item.get("related_words") or [])
+        word.example_sentences = _dump_json(item.get("example_sentences") or [])
+        results.append({"id": word.id, "english": word.english, "ok": True})
+        ok_count += 1
+    return {"ok_count": ok_count, "results": results, "total": len(words)}
+
+
+def _fill_sentences_llm(db: Session, words: List[Word]) -> dict:
+    """只补语境例句（对已有拼读/词根字段、仅缺例句的词）：不覆盖任何已编辑字段"""
+    if not words:
+        return {"ok_count": 0, "results": [], "total": 0}
+    word_lines = "\n".join(f"- {w.english} / {w.phonetic or ''} / {w.chinese}" for w in words)
+    prompt = (
+        "你是小学英语特级教师。为下列小学英语单词批量生成「语境例句」，把单词融入句子里学，不孤立背词：\n"
+        "1. 每个单词 1~2 条例句（example_sentences 数组）；\n"
+        "2. 语法绝对正确、口语自然、贴近低年级孩子生活；句子只用孩子已学的高频词 + 当前单词（最多再带 1 个生词），难度恰到好处（i+1）；\n"
+        "3. 中文翻译自然通顺；\n"
+        "4. 严禁语法错误（如 I like to eat apples. 而不是 I like eat apple）。\n"
+        f"单词表：\n{word_lines}\n"
+        "只输出 JSON：{\"words\":[{\"english\":\"bee\","
+        "\"example_sentences\":[{\"en\":\"The bee is on the flower.\",\"zh\":\"蜜蜂在花上。\"}]}]}"
+    )
+    try:
+        content = _llm_json(prompt, system="你只输出JSON，不要任何解释。", max_tokens=4000, timeout=180)
+        data_resp = json.loads(_strip_md_code(content)) if isinstance(content, str) else content
+    except Exception as e:
+        raise Exception(f"AI 生成失败：{e}")
+
+    by_en = {w.english.lower(): w for w in words}
+    results, ok_count = [], 0
+    for item in data_resp.get("words", []) if isinstance(data_resp, dict) else []:
+        en = str(item.get("english", "")).strip().lower()
+        word = by_en.get(en)
+        if not word:
+            continue
+        word.example_sentences = _dump_json(item.get("example_sentences") or [])
+        results.append({"id": word.id, "english": word.english, "ok": True})
+        ok_count += 1
+    return {"ok_count": ok_count, "results": results, "total": len(words)}
+
+
+def _schedule_auto_enhance(word_ids):
+    """新增/导入后登记待增强单词；去抖合并成一批，由后台线程自动生成（静默失败）"""
+    if not word_ids:
+        return
+    global _enhance_worker_running
+    with _enhance_lock:
+        _enhance_pending.update(word_ids)
+        if _enhance_worker_running:
+            return
+        _enhance_worker_running = True
+    threading.Thread(target=_auto_enhance_worker, daemon=True).start()
+
+
+def _auto_enhance_worker():
+    global _enhance_worker_running
+    try:
+        from app.database import SessionLocal
+        while True:
+            time.sleep(_ENHANCE_DEBOUNCE)  # 等同一批导入全部落库，合并成一次 LLM 调用
+            with _enhance_lock:
+                ids = list(_enhance_pending)
+                _enhance_pending.clear()
+            if not ids:
+                break
+            db = SessionLocal()
+            try:
+                words = db.query(Word).filter(Word.id.in_(ids), Word.deleted == False).all()  # noqa: E712
+                need = [w for w in words if _needs_enhance(w)]
+                need_sent = [w for w in words if not _needs_enhance(w) and _needs_sentences(w)]
+                for i in range(0, len(need), _ENHANCE_CHUNK):
+                    _enhance_words_llm(db, need[i:i + _ENHANCE_CHUNK])
+                    db.commit()
+                for i in range(0, len(need_sent), _ENHANCE_CHUNK):
+                    _fill_sentences_llm(db, need_sent[i:i + _ENHANCE_CHUNK])
+                    db.commit()
+            finally:
+                db.close()
+    except Exception:
+        # 记忆增强是增值内容，失败不影响单词本身；打日志便于排查（如 LLM 欠费 402）
+        import traceback
+        print(f"[word] 自动记忆增强失败: {traceback.format_exc()}")
+    finally:
+        with _enhance_lock:
+            _enhance_worker_running = False
+            if _enhance_pending:  # 处理期间又有新词登记 → 立刻再起一轮
+                _enhance_worker_running = True
+                threading.Thread(target=_auto_enhance_worker, daemon=True).start()
+
+
+class WordEnhanceRequest(BaseModel):
+    """AI 批量生成记忆增强（纯手动触发）：按单词ID列表或年级条件"""
+    word_ids: Optional[List[int]] = None
+    grade: Optional[int] = None
+    semester: Optional[int] = None
+    limit: int = 20
+
+
+class MemoryReviewStartResponse(BaseModel):
+    """记忆模式复习开始"""
+    total: int
+    items: List[dict]  # [{word_id, english, chinese, phonetic, mnemonic, word_root, hint}]
+
+
+class MemoryReviewSubmitRequest(BaseModel):
+    """记忆模式复习提交（逐词或整场）"""
+    word_id: int
+    correct: bool
+    user_id: Optional[int] = None
+
+
+@router.post("/enhance")
+def ai_enhance_words(data: WordEnhanceRequest, db: Session = Depends(get_db)):
+    """AI 批量生成记忆增强（拼读规则/词根词源/相关词/语境例句）。
+
+    保留用于历史数据补增强；新增/导入单词已在后台自动生成，无需手动触发。
+    已有增强但缺例句的词，自动补例句（不覆盖已编辑字段）。
+    """
+    query = db.query(Word).filter(Word.deleted == False)  # noqa: E712
+    if data.word_ids:
+        query = query.filter(Word.id.in_(data.word_ids))
+    if data.grade is not None:
+        query = query.filter(Word.grade == data.grade)
+    if data.semester is not None:
+        query = query.filter(Word.semester == data.semester)
+    words = query.order_by(Word.grade.asc(), Word.id).limit(max(1, min(data.limit, 50))).all()
+    need = [w for w in words if _needs_enhance(w)]
+    need_sent = [w for w in words if not _needs_enhance(w) and _needs_sentences(w)]
+    if not need and not need_sent:
+        return {"results": [], "ok_count": 0, "detail": "没有待增强的单词（可先清空筛选条件或换一批）"}
+
+    results, ok_count = [], 0
+    try:
+        for i in range(0, len(need), _ENHANCE_CHUNK):
+            r = _enhance_words_llm(db, need[i:i + _ENHANCE_CHUNK])
+            ok_count += r["ok_count"]
+            results.extend(r["results"])
+        for i in range(0, len(need_sent), _ENHANCE_CHUNK):
+            r = _fill_sentences_llm(db, need_sent[i:i + _ENHANCE_CHUNK])
+            ok_count += r["ok_count"]
+            results.extend(r["results"])
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"results": results, "ok_count": ok_count, "total": len(words), "detail": f"成功增强 {ok_count} 个单词"}
+
+
+@router.post("/memory-review/submit")
+def memory_review_submit(data: MemoryReviewSubmitRequest, db: Session = Depends(get_db)):
+    """记忆模式复习提交：按结果更新该小孩 word_progress（艾宾浩斯曲线），并写复习日志"""
+    uid = _resolve_user_id(db, data.user_id)
+    word = db.query(Word).filter(Word.id == data.word_id, Word.deleted == False).first()
+    if not word:
+        raise HTTPException(status_code=404, detail="单词不存在")
+    progress = _get_progress(db, data.word_id, uid)
+
+    progress.review_count = (progress.review_count or 0) + 1
+    if data.correct:
+        progress.correct_count = (progress.correct_count or 0) + 1
+    now = datetime.now()
+    progress.last_reviewed_at = now
+
+    # 艾宾浩斯：正确间隔翻倍、错误重置为1天
+    interval = progress.interval or 1
+    if data.correct:
+        interval = min(interval * 2, 30)
+    else:
+        interval = 1
+    progress.interval = interval
+    progress.next_review_at = now + timedelta(days=interval)
+    acc = progress.correct_count * 100.0 / progress.review_count
+    progress.learning_phase = _get_accuracy_level(progress.review_count, progress.correct_count)
+
+    log = WordReviewLog(
+        word_id=word.id,
+        user_id=uid,
+        is_correct=data.correct,
+        review_type=3,  # 3=记忆模式
+    )
+    db.add(log)
+    db.commit()
+    return {
+        "message": "ok",
+        "word_id": word.id,
+        "review_count": progress.review_count,
+        "correct_count": progress.correct_count,
+        "learning_phase": progress.learning_phase,
+        "next_review_at": progress.next_review_at,
+    }

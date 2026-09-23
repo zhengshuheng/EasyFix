@@ -26,6 +26,15 @@ class Word(Base):
     phonetic = Column(String(100), nullable=True)  # 音标
     grade = Column(Integer, nullable=True)  # 年级 1-12
     semester = Column(Integer, nullable=True)  # 学期 1=上学期, 2=下学期
+    unit = Column(Integer, nullable=True)  # 单元号（文本整表导入时识别 Unit N）
+    unit_title = Column(String(200), nullable=True)  # 单元英文标题（如 "Meeting new people"）
+
+    # 记忆增强（新增/导入单词时后台自动生成：拼读规则/词根词源/相关词）
+    phonetic_rule = Column(Text, nullable=True)  # 拼读规则：按字母组合拆解怎么读（如 "ee → /iː/，ee 组合读长音 iː"）
+    mnemonic = Column(Text, nullable=True)  # 联想记忆口诀（中文，帮助记忆）
+    word_root = Column(String(500), nullable=True)  # 词根词缀拆解（如 "un-（否定前缀）+ happy → unhappy"）
+    related_words = Column(Text, nullable=True)  # 相关词/形近词 JSON 数组：[{"en":"...","cn":"..."}]
+    example_sentences = Column(Text, nullable=True)  # 语境例句 JSON 数组：[{"en":"...","zh":"..."}]（单词融入句子，不孤立学）
 
     # 复习相关（已废弃：自 v1.1 起复习数据按小孩隔离，存 WordProgress 表；以下列仅保留兼容旧库）
     review_count = Column(Integer, default=0)  # 复习次数
@@ -65,6 +74,44 @@ class WordReviewLog(Base):
     word = relationship("Word", back_populates="review_logs")
 
 
+class PhonicsRule(Base):
+    """自然拼读规则库（phonics）：字母组合 → 发音规则 → 示例词
+
+    由家长在单词库「自然拼读」管理中 AI 批量生成或手动维护。
+    """
+    __tablename__ = "phonics_rule"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    pattern = Column(String(100), nullable=False, index=True)  # 字母组合，如 "ee" / "th" / "a_e"
+    sound = Column(String(50), nullable=True)  # 发音（音标），如 /iː/ /θ/ /eɪ/
+    rule_text = Column(Text, nullable=True)  # 规则说明（孩子能懂的语言）
+    example_words = Column(Text, nullable=True)  # 示例词 JSON：[{"en":"bee","cn":"蜜蜂"}, ...]
+    grade = Column(Integer, nullable=True)  # 建议年级 1-6
+    category = Column(String(50), default="vowel")  # vowel=元音组合 consonant=辅音组合 silent_e=不发音e
+    source = Column(String(20), default="ai")  # ai/manual
+    deleted = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
+class PhonicsAttempt(Base):
+    """自然拼读错题（按小孩隔离）：练习答错的 组合/示例词，进入错题池优先复习
+
+    答对一次即从错题池移除（删除该行）；同一 word 只保留一行（重复答错覆盖时间）。
+    """
+    __tablename__ = "phonics_attempt"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False, index=True)  # 小孩 id（拼读练习必须登录小孩）
+    rule_id = Column(Integer, nullable=True)  # 所属拼读规则 id（规则删除后保留历史）
+    word = Column(String(200), nullable=False, index=True)  # 答错的示例词
+    pattern = Column(String(100), nullable=True)  # 关联字母组合（快照，规则删除也可用）
+    category = Column(String(50), nullable=True)  # 组合类别快照（vowel/consonant/silent_e）
+    wrong_count = Column(Integer, default=1)  # 累计答错次数
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
 class WordReview(Base):
     """复习场次表"""
     __tablename__ = "word_review"
@@ -79,14 +126,29 @@ class WordReview(Base):
 
 
 class WordProgress(Base):
-    """单词复习进度（按小孩隔离）——单词库本身共享，复习情况/正确率每小孩一份"""
+    """单词复习进度（按小孩隔离）——单词库本身共享，复习情况/正确率每小孩一份
+
+    四维掌握标准：认得(recognize)/听得(listen)/说得(speak)/写得(write)，
+    每维独立计数；一个词「记住」= 四维均达标，薄弱维度由今日任务按缺口补练。
+    """
     __tablename__ = "word_progress"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     word_id = Column(Integer, ForeignKey("word.id"), nullable=False, index=True)
     user_id = Column(Integer, nullable=False, index=True)
-    review_count = Column(Integer, default=0)  # 复习次数
-    correct_count = Column(Integer, default=0)  # 正确次数
+    review_count = Column(Integer, default=0)  # 复习次数（总）
+    correct_count = Column(Integer, default=0)  # 正确次数（总）
+
+    # 四维计数（按维度独立统计，练习提交时按题型归类更新）
+    recognize_count = Column(Integer, default=0)   # 认得：英→中
+    recognize_correct = Column(Integer, default=0)
+    listen_count = Column(Integer, default=0)      # 听得：听音选中文
+    listen_correct = Column(Integer, default=0)
+    speak_count = Column(Integer, default=0)       # 说得：中→英
+    speak_correct = Column(Integer, default=0)
+    write_count = Column(Integer, default=0)       # 写得：听写/拼写
+    write_correct = Column(Integer, default=0)
+
     last_reviewed_at = Column(DateTime, nullable=True)  # 上次复习时间
     next_review_at = Column(DateTime, nullable=True)  # 下次复习时间
 
@@ -101,3 +163,24 @@ class WordProgress(Base):
         # 每小孩每词只有一条进度
         __import__("sqlalchemy").UniqueConstraint("word_id", "user_id", name="uq_word_progress_word_user"),
     )
+
+
+class WordAttempt(Base):
+    """单词记忆错词池（按小孩隔离）：四维练习任一答错的词
+
+    答对一次即从错词池移除（掌握即出池）；同一 word+dimension 只保留一行（重复答错累计次数）。
+    与 phonics_attempt（拼读错词）一起构成「记忆错题」，统一进错题栏目。
+    """
+    __tablename__ = "word_attempt"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    word_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    dimension = Column(String(20), nullable=False)  # recognize/listen/speak/write
+    source = Column(String(20), default="review")  # review=单词复习 memory=联想记忆 phonics=拼读
+    english = Column(String(200), nullable=False)  # 快照
+    chinese = Column(Text, nullable=True)  # 快照
+    phonetic = Column(String(100), nullable=True)  # 快照
+    wrong_count = Column(Integer, default=1)  # 累计答错次数
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)

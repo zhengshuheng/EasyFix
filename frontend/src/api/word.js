@@ -56,6 +56,21 @@ export const wordApi = {
   getMemoryCurve(wordId, params) {
     return api.get(`/words/${wordId}/memory-curve`, { params })
   },
+
+  // 教材单词表提取（多图/PDF → OCR + AI）
+  extractFromTextbook(formData) {
+    return api.post('/words/extract-from-textbook', formData)
+  },
+
+  // AI 智能导入：大模型生成单词表（textbook / custom）
+  aiGenerate(data) {
+    return api.post('/words/ai-generate', data)
+  },
+
+  // AI 批量生成记忆增强（拼读规则/词根词源/相关词/语境例句）
+  enhance(data) {
+    return api.post('/words/enhance', data)
+  },
 }
 
 export default wordApi

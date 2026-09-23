@@ -11,6 +11,7 @@ _（当前为空。进行中的任务文档在 `active/` 下，不入库。）_
 
 | 任务 | 文档 |
 |---|---|
+| 单词学习优化（例句融入 + 拼读带读 + 学习模式） | `done/2026-09-23-WORD_LEARN_ENHANCE.md` |
 | 评测分小孩 + 数据隔离架构文档 | `done/2026-09-22-KID_ISOLATION_ARCH.md` |
 | 低年级图示算式模板引擎（1-2年级数学） | `done/2026-09-22-PICTORIAL_MATH_ENGINE.md` |
 | 评测自动补题 | `done/2026-09-22-ASSESS_AUTO_REFILL.md` |
@@ -70,6 +71,7 @@ _（当前为空。进行中的任务文档在 `active/` 下，不入库。）_
 | 单词按小孩隔离 | `done/2026-09-21-WORD_PER_KID.md` |
 | 单词单元导入 | `done/2026-09-21-WORD_UNIT_IMPORT.md` |
 | 记忆增强自动附带 | `done/2026-09-21-WORD_AUTO_ENHANCE.md` |
+| 错题来源+科目切换+报告优化+单词五维量化 | `done/2026-09-22-LEARNING_QUANTIFY.md` |
 
 ## 📋 计划 / 待做（planned/）
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.database import engine, Base, SessionLocal, get_db
-from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router, textbook_router
+from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, word_memory_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router, textbook_router, grammar_router, phonics_router, zh_router, assessment_router
 from app.config import get_settings
 from app.models.user import User
 from app.utils.auth import (
@@ -23,6 +23,7 @@ from app.utils.auth import (
 from app.services.init_motivation_data import init_preset_data, init_achievement_progress, init_star_records_from_existing_data, init_achievement_configs
 from app.services.init_base_data import init_base_data
 from app.services.init_demo_data import init_demo_data
+from app.services.grammar_skeleton import ensure_grammar_skeleton
 
 settings = get_settings()
 
@@ -42,13 +43,78 @@ def _ensure_column(table: str, column: str, ddl: str):
     except Exception as e:
         print(f"[migrate] 跳过 {table}.{column}: {e}")
 
+
+def _backfill_user_enrollment_date():
+    """一次性迁移：旧库只有 current_grade（手工年级），反推为 enrollment_date 保留用户意图；
+    已有 enrollment_date 或非 child 用户不动。"""
+    try:
+        from sqlalchemy import text
+        from datetime import date
+        from app.utils.timeutil import enrollment_date_from_grade
+        with engine.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT id, current_grade, enrollment_date FROM users WHERE role='child'"
+            )).fetchall()
+        changed = 0
+        today = date.today()
+        for uid, grade, enr in rows:
+            if enr is None and grade is not None:
+                enr_date = enrollment_date_from_grade(grade, today)
+                with engine.begin() as conn:
+                    conn.execute(
+                        text("UPDATE users SET enrollment_date = :d WHERE id = :id"),
+                        {"d": enr_date.isoformat(), "id": uid},
+                    )
+                changed += 1
+        if changed:
+            print(f"[migrate] 已按当前年级反推 {changed} 个小孩的入学日期")
+    except Exception as e:
+        print(f"[migrate] 反推入学日期跳过: {e}")
+
+
 _ensure_column("practice_set_question", "student_answer", "student_answer TEXT")
 _ensure_column("error_book", "user_id", "user_id INTEGER")
 _ensure_column("learning_report", "user_id", "user_id INTEGER")
+# 能力评测集管理：评测集题目快照（start 时写入，供历史/重测/恢复）
+_ensure_column("assessment_record", "questions", "questions TEXT")
 # 错题/练习分表 + 按小孩隔离（新表由 create_all 建，这里补结构变更列）
 _ensure_column("practice_set", "user_id", "user_id INTEGER")
 _ensure_column("practice_set_question", "practice_question_id", "practice_question_id INTEGER")
 _ensure_column("word_review_session", "user_id", "user_id INTEGER")
+# 卷面分值：是否显示分数 / 计分方式（hundred=百分制100分，default=题型默认分值）
+# 旧库默认 'default'，与已生成的老 PDF 分值口径保持一致
+_ensure_column("practice_set", "show_score", "show_score BOOLEAN DEFAULT 1")
+_ensure_column("practice_set", "score_mode", "score_mode VARCHAR(20) DEFAULT 'default'")
+# 卷面「出题人」是否署名「AI 出题助手」（默认 0 = 留空白手填）
+_ensure_column("practice_set", "show_ai_author", "show_ai_author BOOLEAN DEFAULT 0")
+# 单词单元归属（文本整表导入时识别 Unit N，unit=单元号，unit_title=单元英文标题）
+_ensure_column("word", "unit", "unit INTEGER")
+_ensure_column("word", "unit_title", "unit_title VARCHAR(200)")
+# 单词记忆增强（新增/导入单词时后台自动生成）
+_ensure_column("word", "phonetic_rule", "phonetic_rule TEXT")
+_ensure_column("word", "mnemonic", "mnemonic TEXT")
+_ensure_column("word", "word_root", "word_root VARCHAR(500)")
+_ensure_column("word", "related_words", "related_words TEXT")
+# 语境例句（单词融入句子学习）：JSON 数组 [{"en":"...","zh":"..."}]
+_ensure_column("word", "example_sentences", "example_sentences TEXT")
+# 四维记忆模型：word_progress 分维度计数（认得/听得/说得/写得）
+_ensure_column("word_progress", "recognize_count", "recognize_count INTEGER DEFAULT 0")
+_ensure_column("word_progress", "recognize_correct", "recognize_correct INTEGER DEFAULT 0")
+_ensure_column("word_progress", "listen_count", "listen_count INTEGER DEFAULT 0")
+_ensure_column("word_progress", "listen_correct", "listen_correct INTEGER DEFAULT 0")
+_ensure_column("word_progress", "speak_count", "speak_count INTEGER DEFAULT 0")
+_ensure_column("word_progress", "speak_correct", "speak_correct INTEGER DEFAULT 0")
+_ensure_column("word_progress", "write_count", "write_count INTEGER DEFAULT 0")
+_ensure_column("word_progress", "write_correct", "write_correct INTEGER DEFAULT 0")
+# 小孩当前年级（默认年级按小孩）
+_ensure_column("users", "current_grade", "current_grade INTEGER DEFAULT 1")
+# 入学日期（据此推断年级，替代手工配置年级）
+_ensure_column("users", "enrollment_date", "enrollment_date DATE")
+_backfill_user_enrollment_date()
+# 语法专项练习卷：关联语法点
+_ensure_column("practice_set", "grammar_lesson_id", "grammar_lesson_id INTEGER")
+# AI 出题配图场景（结构化 JSON：count/group/shape）
+_ensure_column("practice_question", "visual", "visual TEXT")
 # AI 出题维度：题型（choice/fill/judge/calc/...）/ 类型（basic/scene/comprehensive/thinking）
 _ensure_column("question", "question_type", "question_type VARCHAR(50)")
 _ensure_column("question", "question_category", "question_category VARCHAR(50)")
@@ -109,6 +175,21 @@ with engine.begin() as conn:
     except Exception as e:
         print(f"[migrate] 跳过单词复习按小孩迁移: {e}")
 
+# ===== 激励数据按小孩迁移 =====
+# 旧激励数据（积分余额/明细/成就进度/兑换记录）挂在家长账号 user_id=1 上，
+# 归给第一个小孩（幂等：执行一次后 user_id=1 无记录，再跑无效果）
+with engine.begin() as conn:
+    try:
+        first_kid_id = conn.execute(
+            text("SELECT id FROM users WHERE role='child' AND enabled=1 ORDER BY id LIMIT 1")
+        ).scalar()
+        if first_kid_id and first_kid_id != 1:
+            for tbl in ("star_balance", "star_record", "achievement_progress", "redemption"):
+                conn.execute(text(f"UPDATE {tbl} SET user_id = :kid WHERE user_id = 1"), {"kid": first_kid_id})
+            print(f"[migrate] 激励数据已归属第一个小孩 id={first_kid_id}")
+    except Exception as e:
+        print(f"[migrate] 跳过激励数据归属迁移: {e}")
+
 # 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:
     init_base_data(db)
@@ -131,6 +212,8 @@ with SessionLocal() as db:
     init_achievement_progress(db)
     init_star_records_from_existing_data(db)
     init_achievement_configs(db)
+    # 英语语法专项骨架（空表才播种，幂等；家长可在管理界面增删/重新生成）
+    ensure_grammar_skeleton(db)
 
 app = FastAPI(
     title="EasyFix API",
@@ -165,6 +248,7 @@ app.include_router(tag_router)
 app.include_router(knowledge_point_router)
 app.include_router(error_type_router)
 app.include_router(practice_set_router)
+app.include_router(word_memory_router)  # /words/memory-review 静态路径必须先于 word_router 的 /{word_id}
 app.include_router(word_router)
 app.include_router(learning_report_router)
 app.include_router(motivation_router)
@@ -173,6 +257,10 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(k12_router)
 app.include_router(textbook_router)
+app.include_router(grammar_router)
+app.include_router(phonics_router)
+app.include_router(zh_router)
+app.include_router(assessment_router)
 
 
 @app.get("/")

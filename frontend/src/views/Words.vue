@@ -5,6 +5,10 @@
         <div class="card-header">
           <span>单词本</span>
           <div class="review-buttons">
+            <el-button type="info" plain @click="openLearnPage">
+              <el-icon><Reading /></el-icon>
+              学习本页
+            </el-button>
             <el-button type="danger" @click="startReview(3)">
               <el-icon><Microphone /></el-icon>
               听写
@@ -24,6 +28,43 @@
           </div>
         </div>
       </template>
+
+      <!-- 今日任务大入口（四维记忆调度 · 三分类） -->
+      <div class="daily-task-card">
+        <div class="dt-header">
+          <div class="dt-title">📅 今日任务 <span v-if="dailyTask.loaded" class="dt-count">{{ dailyTask.total }} 词</span></div>
+          <el-button text size="small" class="dt-config" @click="openDimConfig">⚙ 记忆设置</el-button>
+        </div>
+        <div class="dt-desc">
+          <template v-if="dailyTask.loaded">
+            <span class="dt-dims">记忆维度：{{ dimNames(dailyTask.enabled_dimensions) }}</span>
+          </template>
+          <template v-else>按记忆曲线 + 错词池自动排今天的单词任务</template>
+        </div>
+        <div class="dt-sections">
+          <div class="dt-section wrong" @click="openDailyTask('wrong')">
+            <span class="ds-dot"></span>
+            <span class="ds-name">错词复习</span>
+            <b class="ds-num">{{ dailyTask.wrong_count }}</b>
+            <span class="ds-tip">记错的维度</span>
+            <span class="ds-go">开始 ›</span>
+          </div>
+          <div class="dt-section due" @click="openDailyTask('due')">
+            <span class="ds-dot"></span>
+            <span class="ds-name">到期复习</span>
+            <b class="ds-num">{{ dailyTask.due_count }}</b>
+            <span class="ds-tip">记忆曲线到期</span>
+            <span class="ds-go">开始 ›</span>
+          </div>
+          <div class="dt-section new" @click="openDailyTask('new')">
+            <span class="ds-dot"></span>
+            <span class="ds-name">新词学习</span>
+            <b class="ds-num">{{ dailyTask.new_count }}</b>
+            <span class="ds-tip">今天学新词</span>
+            <span class="ds-go">开始 ›</span>
+          </div>
+        </div>
+      </div>
 
       <!-- 筛选条件 -->
       <div class="filters">
@@ -74,13 +115,21 @@
           <template #default="{ row }">
             <div class="word-cell">
               <span class="word-english">{{ row.english }}</span>
-              <el-button class="audio-btn-table" @click.stop="playWordAudio(row.id)" :loading="audioLoading" circle>
-                <span v-if="!audioLoading">🔊</span>
+              <el-button class="audio-btn-table" @click.stop="playWordAudio(row.id)" :loading="isAudioLoading(row.id)" circle>
+                <span v-if="!isAudioLoading(row.id)">🔊</span>
               </el-button>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="chinese" label="中文" min-width="200" />
+        <el-table-column label="中文" min-width="200">
+          <template #default="{ row }">
+            <span class="cn-wrap">
+              {{ row.chinese }}
+              <el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click.stop="speakZh(row.chinese)">🔊</el-button>
+              <span v-if="zhPinyin(row.chinese)" class="cn-pinyin">{{ zhPinyin(row.chinese) }}</span>
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="phonetic" label="音标" width="150">
           <template #default="{ row }">
             <span class="phonetic">{{ row.phonetic || '-' }}</span>
@@ -134,15 +183,29 @@
           <el-form label-width="80px" size="default">
             <el-form-item label="英文">
               {{ detailWord.english }}
-              <el-button class="audio-btn" @click="playWordAudio(detailWord.id)" :loading="audioLoading" size="small">🔊</el-button>
+              <el-button class="audio-btn" @click="playWordAudio(detailWord.id)" :loading="isAudioLoading(detailWord.id)" size="small">🔊</el-button>
             </el-form-item>
-            <el-form-item label="中文">{{ detailWord.chinese }}</el-form-item>
+            <el-form-item label="中文">
+              {{ detailWord.chinese }}
+              <el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click="speakZh(detailWord.chinese)">🔊</el-button>
+              <span v-if="zhPinyin(detailWord.chinese)" class="cn-pinyin">{{ zhPinyin(detailWord.chinese) }}</span>
+            </el-form-item>
             <el-form-item label="音标">{{ detailWord.phonetic || '-' }}</el-form-item>
             <el-form-item label="年级">{{ detailWord.grade ? detailWord.grade + '年级' : '-' }}</el-form-item>
             <el-form-item label="学期">{{ detailWord.semester === 1 ? '上学期' : detailWord.semester === 2 ? '下学期' : '-' }}</el-form-item>
             <el-form-item label="标签">
               <el-tag v-for="t in detailWord.tags" :key="t.id" style="margin-right: 5px">{{ t.name }}</el-tag>
               <span v-if="!detailWord.tags || detailWord.tags.length === 0">-</span>
+            </el-form-item>
+            <el-form-item label="拼读规律" v-if="detailWord.phonetic_rule">{{ detailWord.phonetic_rule }}</el-form-item>
+            <el-form-item label="词根词源" v-if="detailWord.word_root">{{ detailWord.word_root }}</el-form-item>
+            <el-form-item label="联想词" v-if="detailWord.related_words && detailWord.related_words.length">
+              <el-tag
+                v-for="(rw, i) in detailWord.related_words"
+                :key="i"
+                style="margin-right: 5px; cursor: pointer"
+                @click="searchRelatedWord(rw)"
+              >{{ rw.en || rw.english }}（{{ rw.cn || rw.chinese }}）</el-tag>
             </el-form-item>
             <el-form-item label="复习次数">{{ detailWord.review_count || 0 }}</el-form-item>
             <el-form-item label="正确次数">{{ detailWord.correct_count || 0 }}</el-form-item>
@@ -196,21 +259,112 @@
     </el-dialog>
 
     <!-- 复习弹窗 -->
-    <el-dialog v-model="reviewVisible" title="单词复习" width="1200px" :close-on-click-modal="false" class="review-dialog">
+    <el-dialog v-model="reviewVisible" :title="reviewConfig.isDaily ? '今日任务 · ' + (DAILY_CATEGORY_NAMES[reviewConfig.dailyCategory] || '复习') : '单词复习'" width="1200px" :close-on-click-modal="false" class="review-dialog">
+      <!-- 学习模式：先学后复习 -->
+      <div v-if="reviewStep === 'learn'" class="learn-flow">
+        <div class="learn-header">
+          <span class="learn-title">{{ learnMode === 'daily' ? '📖 先学习，再复习' : '📖 单词学习' }}</span>
+          <span class="learn-progress">{{ learnIndex + 1 }} / {{ learnWords.length }}</span>
+        </div>
+        <div class="learn-tip">{{ learnMode === 'daily' ? '把这一批词看一遍、听一遍，再开始复习' : '整页单词集中学习，不用一个个点开详情' }}</div>
+        <div class="learn-card" v-if="learnWords.length">
+          <div class="lc-english">
+            {{ learnWord.english }}
+            <el-button class="audio-btn" @click="playWordAudio(learnWord.word_id)" :loading="isAudioLoading(learnWord.word_id)">🔊</el-button>
+          </div>
+          <div class="lc-phonetic" v-if="learnWord.phonetic">/{{ learnWord.phonetic }}/</div>
+          <div class="lc-chinese">
+            {{ learnWord.chinese }}
+            <el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click="speakZh(learnWord.chinese)">🔊</el-button>
+            <span v-if="zhPinyin(learnWord.chinese)" class="cn-pinyin">{{ zhPinyin(learnWord.chinese) }}</span>
+          </div>
+          <div class="lc-section" v-if="learnWord.phonetic_rule">
+            <div class="lc-section-label">🔤 拼读规律</div>
+            <div class="lc-section-body">{{ learnWord.phonetic_rule }}</div>
+          </div>
+          <div class="lc-section" v-if="learnWord.word_root">
+            <div class="lc-section-label">🔎 词根词源</div>
+            <div class="lc-section-body">{{ learnWord.word_root }}</div>
+          </div>
+          <div class="lc-section" v-if="learnWord.related_words && learnWord.related_words.length">
+            <div class="lc-section-label">🔗 联想词</div>
+            <div class="lc-section-body">
+              <el-tag v-for="(r, i) in learnWord.related_words" :key="i" style="margin-right: 6px; cursor: pointer" @click="playAudioByEnglish(r.en)">
+                🔊 {{ r.en }} {{ r.cn }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="lc-section" v-if="visibleSentences(learnWord).length">
+            <div class="lc-section-label">💬 例句</div>
+            <div class="lc-section-body">
+              <div v-for="(s, i) in visibleSentences(learnWord)" :key="i" class="lc-ex">
+                <div class="lc-ex-en">{{ s.en }} <el-button size="small" text class="zh-speak-btn" title="朗读句子" @click.stop="speakEn(s.en)">🔊</el-button></div>
+                <div class="lc-ex-zh" v-if="sentenceZhVisible()">{{ s.zh }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="learn-nav">
+          <el-button :disabled="learnIndex === 0" @click="learnIndex--">← 上一张</el-button>
+          <el-button :disabled="learnIndex >= learnWords.length - 1" @click="learnIndex++">下一张 →</el-button>
+        </div>
+        <div class="learn-footer">
+          <el-button v-if="learnMode === 'daily'" type="primary" size="large" @click="startLearnPractice">开始复习 ›</el-button>
+          <el-button v-else type="primary" size="large" @click="reviewVisible = false">完成</el-button>
+          <span v-if="learnMode === 'daily'" class="learn-skip" @click="startLearnPractice">跳过学习直接复习</span>
+        </div>
+      </div>
       <div v-if="reviewStep === 'question'" class="review-question">
         <div class="question-header">
           <span class="progress">{{ currentIndex + 1 }} / {{ reviewQuestions.length }}</span>
+          <span v-if="currentQuestion.dimension" class="dim-tag" :class="currentQuestion.dimension">{{ dimName(currentQuestion.dimension) }}</span>
           <span class="timer">用时: {{ Math.floor(reviewElapsed / 60) }}:{{ String(reviewElapsed % 60).padStart(2, '0') }}</span>
         </div>
 
         <div class="question-content">
-          <!-- 默写模式：显示中文 + 喇叭按钮 + 字母格输入 -->
-          <div v-if="reviewConfig.type === 1" class="dictation">
+          <!-- 学习新词：展示 词/音标/拼读/词根 + 认得题 -->
+          <div v-if="currentQuestion.is_new" class="new-word-learn">
+            <div class="nw-english">
+              {{ currentQuestion.english }}
+              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)">🔊</el-button>
+            </div>
+            <div class="nw-meta">
+              <span v-if="currentQuestion.phonetic" class="nw-phonetic">/{{ currentQuestion.phonetic }}/</span>
+            </div>
+            <div class="nw-root" v-if="currentQuestion.word_root">
+              <span class="nw-root-label">🔎 词根词源</span> {{ currentQuestion.word_root }}
+            </div>
+            <div class="nw-root" v-if="currentQuestion.phonetic_rule">
+              <span class="nw-root-label">🔤 拼读规律</span> {{ currentQuestion.phonetic_rule }}
+            </div>
+            <div v-if="visibleSentences(currentQuestion).length" class="nw-example">
+              <div class="nw-root">
+                <span class="nw-root-label">💬 例句</span>
+                <span class="nw-ex-hint">听一听，猜猜意思（不显示中文，练听力理解）</span>
+              </div>
+              <div v-for="(s, i) in visibleSentences(currentQuestion)" :key="i" class="nw-ex-item">
+                <span class="nw-ex-en">{{ s.en }}</span>
+                <el-button size="small" text class="zh-speak-btn" title="朗读句子" @click.stop="speakEn(s.en)">🔊</el-button>
+              </div>
+            </div>
+            <div class="nw-question">认一认：选出对应的中文意思<el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读题目" @click.stop="speakZh('认一认：选出对应的中文意思')">🔊</el-button></div>
+            <el-radio-group v-model="selectedOption" @change="submitAnswer">
+              <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :value="opt" :disabled="currentQuestion.correct !== undefined">
+                <span class="opt-cn">{{ opt }}<el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click.stop="speakZh(opt)">🔊</el-button></span>
+                <span v-if="zhPinyin(opt)" class="cn-pinyin">{{ zhPinyin(opt) }}</span>
+              </el-radio>
+            </el-radio-group>
+          </div>
+
+          <!-- 默写模式：显示中文 + 喇叭按钮 + 字母格输入（说得维度） -->
+          <div v-else-if="currentType === 1" class="dictation">
             <div class="chinese" :style="{ fontSize: chineseFontSize }">
               {{ currentQuestion.chinese }}
+              <el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn zh-speak-inline" title="朗读中文" @click="speakZh(currentQuestion.chinese)">🔊</el-button>
+              <span v-if="zhPinyin(currentQuestion.chinese)" class="cn-pinyin">{{ zhPinyin(currentQuestion.chinese) }}</span>
             </div>
             <div class="audio-row">
-              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
+              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)">🔊</el-button>
             </div>
             <div class="hint-box">
               <div class="hint">提示：{{ letterBlankCount }}个字母</div>
@@ -248,26 +402,46 @@
             </div>
           </div>
 
-          <!-- 选择模式：显示英文 + 喇叭按钮 -->
-          <div v-else-if="reviewConfig.type === 2" class="choice">
+          <!-- 选择模式：显示英文 + 喇叭按钮（认得维度） -->
+          <div v-else-if="currentType === 2" class="choice">
             <div class="english">
               {{ currentQuestion.english }}
-              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading">🔊</el-button>
+              <el-button class="audio-btn" @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)">🔊</el-button>
             </div>
             <el-radio-group v-model="selectedOption" @change="submitAnswer">
               <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :value="opt" :disabled="currentQuestion.correct !== undefined">
-                {{ opt }}
+                <span class="opt-cn">{{ opt }}<el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click.stop="speakZh(opt)">🔊</el-button></span>
+                <span v-if="zhPinyin(opt)" class="cn-pinyin">{{ zhPinyin(opt) }}</span>
               </el-radio>
             </el-radio-group>
           </div>
 
-          <!-- 听力模式：仅喇叭按钮 + 输入框 -->
-          <div v-else class="listening">
+          <!-- 听音选中文：喇叭按钮 + 中文选项（听得维度） -->
+          <div v-else-if="currentType === 4" class="listening-choice">
             <div class="audio-controls">
-              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-large" type="primary" size="large">
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)" class="audio-btn-large" type="primary" size="large">
                 🔊 播放发音
               </el-button>
-              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="audioLoading" class="audio-btn-replay" size="small">
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)" class="audio-btn-replay" size="small">
+                重播
+              </el-button>
+            </div>
+            <div class="lc-tip">听发音，选出对应的中文意思<el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读题目" @click.stop="speakZh('听发音，选出对应的中文意思')">🔊</el-button></div>
+            <el-radio-group v-model="selectedOption" @change="submitAnswer">
+              <el-radio v-for="(opt, idx) in currentQuestion.options" :key="idx" :value="opt" :disabled="currentQuestion.correct !== undefined">
+                <span class="opt-cn">{{ opt }}<el-button v-if="dimConfigForm.zhReadAloud" size="small" text class="zh-speak-btn" title="朗读中文" @click.stop="speakZh(opt)">🔊</el-button></span>
+                <span v-if="zhPinyin(opt)" class="cn-pinyin">{{ zhPinyin(opt) }}</span>
+              </el-radio>
+            </el-radio-group>
+          </div>
+
+          <!-- 听力模式：仅喇叭按钮 + 输入框（写得维度） -->
+          <div v-else class="listening">
+            <div class="audio-controls">
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)" class="audio-btn-large" type="primary" size="large">
+                🔊 播放发音
+              </el-button>
+              <el-button @click="playWordAudio(currentQuestion.word_id)" :loading="isAudioLoading(currentQuestion.word_id)" class="audio-btn-replay" size="small">
                 重播
               </el-button>
             </div>
@@ -326,7 +500,7 @@
               <div class="correct-side">
                 <span class="correct-en">
                   {{ q.english }}
-                  <el-button class="audio-btn" @click="playWordAudio(q.word_id)" :loading="audioLoading" size="small">🔊</el-button>
+                  <el-button class="audio-btn" @click="playWordAudio(q.word_id)" :loading="isAudioLoading(q.word_id)" size="small">🔊</el-button>
                 </span>
                 <span class="correct-cn">{{ q.chinese }}</span>
               </div>
@@ -340,6 +514,68 @@
 
         <el-button type="primary" @click="reviewVisible = false" class="finish-btn">完成</el-button>
       </div>
+    </el-dialog>
+
+    <!-- 记忆维度配置 -->
+    <el-dialog v-model="dimConfigVisible" title="记忆设置（科学记忆）" width="480px">
+      <p class="dim-config-tip">单词要「记住」，按 4 个维度记忆（认得 → 听得 → 说得 → 写得，从易到难）。低年级或刚开始可只开部分维度。</p>
+      <div class="dim-config-list">
+        <div class="dim-config-item">
+          <el-checkbox v-model="dimConfigForm.recognize" border>👀 认得（英→中）</el-checkbox>
+        </div>
+        <div class="dim-config-item">
+          <el-checkbox v-model="dimConfigForm.listen" border>👂 听得（听音选中文）</el-checkbox>
+        </div>
+        <div class="dim-config-item">
+          <el-checkbox v-model="dimConfigForm.speak" border>🗣 说得（中→英）</el-checkbox>
+        </div>
+        <div class="dim-config-item">
+          <el-checkbox v-model="dimConfigForm.write" border>✍️ 写得（听写）</el-checkbox>
+        </div>
+        <div class="dim-config-item dim-config-row">
+          <span class="dc-label">每词每轮记忆维度</span>
+          <el-radio-group v-model="dimConfigForm.perWordDims">
+            <el-radio :value="1">1 个（推荐，间隔轮转）</el-radio>
+            <el-radio :value="2">2 个</el-radio>
+          </el-radio-group>
+          <div class="dc-hint">1 个词只记最弱的一维，四维隔天轮转，记忆更牢、不枯燥</div>
+        </div>
+        <div class="dim-config-item dim-config-row">
+          <span class="dc-label">单类任务词数上限</span>
+          <el-radio-group v-model="dimConfigForm.categoryCap">
+            <el-radio :value="10">10</el-radio>
+            <el-radio :value="15">15（推荐）</el-radio>
+            <el-radio :value="20">20</el-radio>
+            <el-radio :value="30">30</el-radio>
+          </el-radio-group>
+          <div class="dc-hint">错词复习/到期复习各最多这么多词，避免一次任务过重</div>
+        </div>
+        <div class="dim-config-item dim-config-row">
+          <span class="dc-label">🔉 低年级辅助（识字量少时开启）</span>
+          <div class="dc-check-row">
+            <el-checkbox v-model="dimConfigForm.showPinyin">🔡 中文显示拼音</el-checkbox>
+            <el-checkbox v-model="dimConfigForm.zhReadAloud">🔊 中文可朗读（点中文旁喇叭）</el-checkbox>
+            <el-checkbox v-model="dimConfigForm.autoRead">📖 自动带读（学习时自动朗读 英语→中文→词根）</el-checkbox>
+          </div>
+          <div class="dc-hint">不认识的字看拼音、点喇叭听读音；自动带读像老师一样带着读一遍</div>
+        </div>
+        <div class="dim-config-item dim-config-row">
+          <span class="dc-label">📚 学习模式（例句深浅）</span>
+          <el-radio-group v-model="dimConfigForm.learnMode">
+            <el-radio value="easy">入门（只看词）</el-radio>
+            <el-radio value="standard">标准（1 条例句）</el-radio>
+            <el-radio value="advanced">进阶（2 条例句）</el-radio>
+          </el-radio-group>
+          <div class="dc-hint">例句把单词放进句子里学，不孤立背词；跟读时先听英语例句、再看中文</div>
+          <div v-if="dimConfigForm.learnMode === 'advanced'" class="dc-check-row">
+            <el-checkbox v-model="dimConfigForm.showSentenceZh">例句显示中文翻译（关掉=只看英文练理解）</el-checkbox>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="dimConfigVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveDimConfig">保存</el-button>
+      </template>
     </el-dialog>
 
     <!-- 打印弹窗 -->
@@ -364,19 +600,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Printer, Upload } from '@element-plus/icons-vue'
+import { Plus, Edit, Printer, Upload, Reading } from '@element-plus/icons-vue'
 import { wordApi } from '@/api/word'
 import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
-import { useAppConfigStore } from '@/stores/appConfig'
 import { useSubjectStore } from '@/stores/subject'
 import { useKidStore } from '@/stores/kid'
 
 const route = useRoute()
-const appConfigStore = useAppConfigStore()
 const subjectStore = useSubjectStore()
 const kidStore = useKidStore()
 const words = ref({ total: 0, items: [] })
@@ -449,13 +683,93 @@ const toggleAccuracyLevel = (level) => {
 const reviewVisible = ref(false)
 const reviewStarting = ref(false) // 防止重复点击开始复习
 const reviewStep = ref('config')
+// 学习模式（先学后练）：学词卡流
+const learnWords = ref([])
+const learnIndex = ref(0)
+const learnMode = ref('daily') // daily=今日任务先学习 / list=列表页学习本页
+const learnWord = computed(() => learnWords.value[learnIndex.value] || {})
+// 从题目列表提取去重学习词（同词多维度只学一次）
+const buildLearnWords = (questions) => {
+  const seen = new Set()
+  const out = []
+  for (const q of questions) {
+    if (seen.has(q.word_id)) continue
+    seen.add(q.word_id)
+    out.push({
+      word_id: q.word_id,
+      english: q.english,
+      chinese: q.chinese,
+      phonetic: q.phonetic,
+      phonetic_rule: q.phonetic_rule,
+      word_root: q.word_root,
+      related_words: q.related_words || [],
+      example_sentences: q.example_sentences || [],
+    })
+  }
+  return out
+}
+// 列表页「学习本页」：整页单词批量学习
+const openLearnPage = () => {
+  const items = (words.value.items || []).filter(w => w.english)
+  if (!items.length) {
+    ElMessage.info('当前没有可学习的单词')
+    return
+  }
+  if (dimConfigForm.showPinyin) fetchPinyin(items.map(w => w.chinese).filter(Boolean))
+  learnWords.value = items.map(w => ({
+    word_id: w.id,
+    english: w.english,
+    chinese: w.chinese,
+    phonetic: w.phonetic,
+    phonetic_rule: w.phonetic_rule,
+    word_root: w.word_root,
+    related_words: w.related_words || [],
+    example_sentences: w.example_sentences || [],
+  }))
+  learnIndex.value = 0
+  learnMode.value = 'list'
+  reviewStep.value = 'learn'
+  reviewVisible.value = true
+  // 自动带读第一张
+  setTimeout(() => autoTeach(learnWord.value), 500)
+}
+// 从学习模式进入复习（今日任务）
+const startLearnPractice = () => {
+  // 停止自动带读
+  ++teachToken
+  window.speechSynthesis.cancel()
+  if (learnMode.value === 'list') {
+    reviewVisible.value = false
+    return
+  }
+  startDailyQuestion()
+}
+// 关闭学习/复习弹窗时停止带读
+watch(reviewVisible, (v) => {
+  if (!v) {
+    ++teachToken
+    window.speechSynthesis.cancel()
+  }
+})
+// 学习卡自动带读：切卡时自动朗读新词（英语→中文→词根词源）
+watch(learnIndex, () => {
+  autoTeach(learnWord.value)
+})
 const reviewConfig = reactive({
   count: 20,
-  grade: appConfigStore.defaultGrade,
+  grade: null,
   type: 1,
+  isDaily: false, // 今日任务模式：四维混合出题
+  dailyCategory: 'due', // wrong/due/new
 })
 const reviewQuestions = ref([])
 const currentIndex = ref(0)
+// 当前题渲染类型：今日任务混合模式按维度映射，普通复习用配置类型
+const currentType = computed(() => {
+  const q = reviewQuestions.value[currentIndex.value]
+  if (q && q.dimension) return DIM_TYPE[q.dimension] || reviewConfig.type
+  return reviewConfig.type
+})
 const userAnswer = ref('')
 const letterAnswers = ref([])
 const activeLetterIdx = ref(0)
@@ -464,7 +778,9 @@ const letterInputBoxRef = ref(null)
 const autoPlayToken = ref(0)
 const selectedOption = ref('')
 const currentSessionId = ref(null)
-const audioLoading = ref(false)
+// 正在加载/播放音频的单词 id（按单词隔离 loading，避免点击一个全部图标转圈）
+const audioLoadingMap = reactive({})
+const isAudioLoading = (wordId) => !!audioLoadingMap[wordId]
 const reviewResult = reactive({
   total: 0,
   correct: 0,
@@ -472,6 +788,312 @@ const reviewResult = reactive({
   accuracy: 0,
   duration: 0,
 })
+
+// ===== 今日任务（四维记忆）=====
+const DIMENSION_NAMES = { recognize: '认得', listen: '听得', speak: '说得', write: '写得' }
+const DIM_TYPE = { recognize: 2, listen: 4, speak: 1, write: 3 } // 维度 → 复习题型
+const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'] })
+const dimConfigVisible = ref(false)
+const dimConfigForm = reactive({ recognize: true, listen: true, speak: true, write: true, perWordDims: 1, categoryCap: 15, showPinyin: false, zhReadAloud: false, autoRead: true, learnMode: 'standard', showSentenceZh: true })
+// 低年级辅助：中文 → 拼音缓存映射
+const pinyinMap = reactive({})
+const zhSpeaking = ref('') // 正在朗读的中文
+
+const dimName = (d) => DIMENSION_NAMES[d] || d
+const dimNames = (dims) => (dims || []).map(d => DIMENSION_NAMES[d] || d).join(' / ')
+
+// 中文拼音（批量请求 /api/zh/pinyin）
+async function fetchPinyin(texts) {
+  const need = [...new Set((texts || []).filter(t => t && !pinyinMap[t]))]
+  if (!need.length || !dimConfigForm.showPinyin) return
+  try {
+    const res = await fetch(`/api/zh/pinyin?texts=${encodeURIComponent(need.join(','))}`)
+    if (!res.ok) return
+    const data = await res.json()
+    for (const [t, py] of Object.entries(data.texts || {})) pinyinMap[t] = py
+  } catch (e) { /* 忽略拼音失败 */ }
+}
+const zhPinyin = (t) => dimConfigForm.showPinyin ? (pinyinMap[t] || '') : ''
+
+// 中文朗读（SpeechSynthesis zh-CN）；force=true 时忽略 zhReadAloud 开关（自动带读用）
+function speakZh(text, opts = {}) {
+  const force = !!opts.force
+  if ((!force && !dimConfigForm.zhReadAloud) || !text) return Promise.resolve()
+  if (!('speechSynthesis' in window)) {
+    if (!force) ElMessage.warning('当前浏览器不支持中文朗读')
+    return Promise.resolve()
+  }
+  if (!force && zhSpeaking.value === text) {
+    window.speechSynthesis.cancel()
+    zhSpeaking.value = ''
+    return Promise.resolve()
+  }
+  window.speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'zh-CN'
+  u.rate = 0.9
+  const voices = window.speechSynthesis.getVoices()
+  const zh = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh'))
+  if (zh) u.voice = zh
+  return new Promise((resolve) => {
+    u.onend = () => { zhSpeaking.value = ''; resolve() }
+    u.onerror = () => { zhSpeaking.value = ''; resolve() }
+    zhSpeaking.value = text
+    window.speechSynthesis.speak(u)
+  })
+}
+
+// 英文朗读（SpeechSynthesis en-US；例句发音用，不走 TTS 文件缓存，避免污染 audio_dir）
+function speakEn(text) {
+  if (!text || !('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'en-US'
+  u.rate = 0.85
+  const voices = window.speechSynthesis.getVoices()
+  const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
+  if (en) u.voice = en
+  window.speechSynthesis.speak(u)
+}
+
+// 按学习模式取可见例句：入门=无、标准=1 条、进阶=2 条
+const visibleSentences = (word) => {
+  const list = (word?.example_sentences || []).slice()
+  if (!list.length || dimConfigForm.learnMode === 'easy') return []
+  const max = dimConfigForm.learnMode === 'advanced' ? 2 : 1
+  return list.slice(0, max)
+}
+// 例句中文翻译显示：进阶模式可独立关掉（只看英文练理解）
+const sentenceZhVisible = () => dimConfigForm.learnMode !== 'advanced' || dimConfigForm.showSentenceZh
+
+// 自动带读：学习卡自动依次朗读 英语 → 中文 → 词根词源（老师带学，可配置关闭）
+let teachToken = 0
+async function autoTeach(word) {
+  if (!dimConfigForm.autoRead || !word?.english) return
+  const token = ++teachToken
+  window.speechSynthesis.cancel()
+  try {
+    await playWordAudio(word.word_id) // 1. 英语
+    if (token !== teachToken) return
+    await speakZh(word.chinese, { force: true }) // 2. 中文
+    if (token !== teachToken) return
+    if (word.word_root) await speakZh(word.word_root, { force: true }) // 3. 词根词源
+  } catch (e) { /* 带读失败不打断学习 */ }
+}
+
+// 当前小孩的维度配置（localStorage 按小孩存）
+function loadDimConfig() {
+  const kidId = kidStore.activeKid?.id || 'default'
+  try {
+    const saved = JSON.parse(localStorage.getItem(`easyfix_dims_${kidId}`) || 'null')
+    if (saved) {
+      dimConfigForm.recognize = saved.recognize !== false
+      dimConfigForm.listen = saved.listen !== false
+      dimConfigForm.speak = saved.speak !== false
+      dimConfigForm.write = saved.write !== false
+      dimConfigForm.perWordDims = saved.perWordDims || 1
+      dimConfigForm.categoryCap = saved.categoryCap || 15
+      dimConfigForm.showPinyin = !!saved.showPinyin
+      dimConfigForm.zhReadAloud = !!saved.zhReadAloud
+      dimConfigForm.autoRead = saved.autoRead !== false
+      dimConfigForm.learnMode = saved.learnMode || 'standard'
+      dimConfigForm.showSentenceZh = saved.showSentenceZh !== false
+    }
+  } catch (e) { /* 默认 */ }
+  dailyTask.enabled_dimensions = enabledDims()
+}
+const enabledDims = () => {
+  const dims = []
+  if (dimConfigForm.recognize) dims.push('recognize')
+  if (dimConfigForm.listen) dims.push('listen')
+  if (dimConfigForm.speak) dims.push('speak')
+  if (dimConfigForm.write) dims.push('write')
+  return dims.length ? dims : ['recognize']
+}
+const openDimConfig = () => { dimConfigVisible.value = true }
+const saveDimConfig = () => {
+  const kidId = kidStore.activeKid?.id || 'default'
+  try {
+    localStorage.setItem(`easyfix_dims_${kidId}`, JSON.stringify({
+      recognize: dimConfigForm.recognize,
+      listen: dimConfigForm.listen,
+      speak: dimConfigForm.speak,
+      write: dimConfigForm.write,
+      perWordDims: dimConfigForm.perWordDims,
+      categoryCap: dimConfigForm.categoryCap,
+      showPinyin: dimConfigForm.showPinyin,
+      zhReadAloud: dimConfigForm.zhReadAloud,
+      autoRead: dimConfigForm.autoRead,
+      learnMode: dimConfigForm.learnMode,
+      showSentenceZh: dimConfigForm.showSentenceZh,
+    }))
+  } catch (e) { /* 忽略 */ }
+  dailyTask.enabled_dimensions = enabledDims()
+  dimConfigVisible.value = false
+  loadDailyTask()
+  if (dimConfigForm.showPinyin) {
+    // 立即为当前列表词补拼音
+    const texts = (words.value.items || []).map(w => w.chinese).filter(Boolean)
+    fetchPinyin(texts)
+  }
+  ElMessage.success('记忆设置已保存，今日任务已按新配置更新')
+}
+
+async function loadDailyTask() {
+  try {
+    const params = { new_quota: 5, dimensions: enabledDims().join(','), per_word_dims: dimConfigForm.perWordDims, category_cap: dimConfigForm.categoryCap }
+    if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
+    const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+    const res = await fetch(`/api/words/daily-task?${qs}`)
+    if (!res.ok) return
+    const data = await res.json()
+    dailyTask.loaded = true
+    dailyTask.total = data.total || 0
+    dailyTask.wrong_count = data.wrong_count || 0
+    dailyTask.due_count = data.due_count || 0
+    dailyTask.new_count = data.new_count || 0
+    dailyTask.enabled_dimensions = data.enabled_dimensions || enabledDims()
+  } catch (e) { /* 静默 */ }
+}
+
+// 今日任务：按分类生成题目
+// category: wrong=错词复习(错池词×错池维度优先) / due=到期复习(到期词×薄弱维度) / new=新词学习(学习卡)
+const DAILY_CATEGORY_NAMES = { wrong: '错词复习', due: '到期复习', new: '新词学习' }
+function buildDailyQuestions(data, category) {
+  const qs = []
+  const usedWordIds = new Set()
+  const makeOptions = (word, poolWords, getLabel) => {
+    const wrongs = poolWords.filter(w => w.word_id !== word.word_id)
+    const opts = [word]
+    for (const w of wrongs) {
+      if (opts.length >= 4) break
+      if (!opts.some(o => getLabel(o) === getLabel(w))) opts.push(w)
+    }
+    while (opts.length < 4 && poolWords.length) {
+      const w = poolWords[Math.floor(Math.random() * poolWords.length)]
+      if (!opts.some(o => getLabel(o) === getLabel(w))) opts.push(w)
+    }
+    return shuffleArr(opts.map(getLabel))
+  }
+  const all = [...(data.task || []), ...(data.new_words || [])]
+  const pool = all
+  const pushWord = (w, dims, isNew) => {
+    usedWordIds.add(w.word_id)
+    const dim = dims[0] || 'recognize'
+    const type = DIM_TYPE[dim]
+    const isChoice = type === 2 || type === 4
+    qs.push({
+      word_id: w.word_id,
+      english: w.english,
+      chinese: w.chinese,
+      phonetic: w.phonetic,
+      phonetic_rule: w.phonetic_rule,
+      word_root: w.word_root,
+      related_words: w.related_words,
+      example_sentences: w.example_sentences || [],
+      dimension: dim,
+      is_new: isNew,
+      ...(isChoice ? { options: makeOptions(w, pool, x => x.chinese) } : {}),
+    })
+  }
+
+  if (category === 'new') {
+    // 新词学习：学习卡（认一认）
+    for (const w of data.new_words || []) pushWord(w, ['recognize'], true)
+    return qs
+  }
+
+  for (const w of data.task || []) {
+    const isWrong = category === 'wrong' ? !!w.in_attempt : !w.in_attempt
+    if (!isWrong) continue
+    let dims
+    if (category === 'wrong') {
+      // 错词复习：只记错过的维度（in_pool=true 的优先）
+      dims = (Object.entries(w.dimensions || {}).filter(([d, v]) => v.in_pool).map(([d]) => d))
+      if (!dims.length) dims = w.recommended_dimensions || ['recognize']
+    } else {
+      dims = w.recommended_dimensions || ['recognize']
+    }
+    for (const dim of dims) pushWord(w, [dim], false)
+  }
+  return qs
+}
+
+function shuffleArr(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+// 打开今日任务某分类（先取 session_id，再按分类出题）
+async function openDailyTask(category = 'due') {
+  loadDimConfig()
+  if (reviewStarting.value) return
+  reviewStarting.value = true
+  try {
+    const params = { count: 10 }
+    if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
+    const { data } = await wordApi.startReview(params)
+    currentSessionId.value = data.session_id
+
+    const qp = { new_quota: 5, dimensions: enabledDims().join(','), per_word_dims: dimConfigForm.perWordDims, category_cap: dimConfigForm.categoryCap }
+    if (kidStore.activeKid?.id) qp.user_id = kidStore.activeKid.id
+    const qs = Object.entries(qp).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+    const res = await fetch(`/api/words/daily-task?${qs}`)
+    const task = await res.json()
+    const built = buildDailyQuestions(task, category)
+    if (!built.length) {
+      ElMessage.info(DAILY_CATEGORY_NAMES[category] + '已清空，明天再来吧')
+      return
+    }
+    reviewQuestions.value = built.map(q => ({ ...q, correct: undefined }))
+    reviewConfig.type = reviewQuestions.value[0]?.dimension === 'listen' ? 4 : (DIM_TYPE[reviewQuestions.value[0]?.dimension] || 2)
+    reviewConfig.isDaily = true
+    reviewConfig.dailyCategory = category
+    // 先学习，再复习：进入学词卡流（去重展示本批词），点「开始复习」才进入测验
+    learnWords.value = buildLearnWords(reviewQuestions.value)
+    learnIndex.value = 0
+    learnMode.value = 'daily'
+    if (dimConfigForm.showPinyin) {
+      fetchPinyin(learnWords.value.map(w => w.chinese).filter(Boolean))
+    }
+    reviewStep.value = 'learn'
+    reviewVisible.value = true
+    // 自动带读第一张
+    setTimeout(() => autoTeach(learnWord.value), 500)
+  } catch (error) {
+    ElMessage.error('今日任务加载失败')
+  } finally {
+    reviewStarting.value = false
+  }
+}
+
+// 今日任务从学习模式进入测验
+function startDailyQuestion() {
+  currentIndex.value = 0
+  userAnswer.value = ''
+  selectedOption.value = ''
+  currentQuestion.value = reviewQuestions.value[0]
+  if (dimConfigForm.showPinyin) {
+    const q0 = currentQuestion.value
+    fetchPinyin([...(q0.options || []), q0.chinese].filter(Boolean))
+  }
+  reviewStep.value = 'question'
+  // 启动计时
+  if (reviewTimer.value) clearInterval(reviewTimer.value)
+  reviewStartTime.value = Date.now()
+  reviewElapsed.value = 0
+  reviewTimer.value = setInterval(() => {
+    reviewElapsed.value = Math.floor((Date.now() - reviewStartTime.value) / 1000)
+  }, 1000)
+  // 听音/听写题自动播放
+  if (currentQuestion.value.dimension === 'listen' || currentQuestion.value.dimension === 'write') {
+    setTimeout(() => autoPlayWithReplay(currentQuestion.value.word_id), 400)
+  }
+}
 
 // 复习计时器
 const reviewStartTime = ref(null)
@@ -566,7 +1188,7 @@ const handleLetterKeydown = (e) => {
 const printDialogVisible = ref(false)
 const printForm = reactive({
   count: 25,
-  grade: appConfigStore.defaultGrade,
+  grade: null,
 })
 
 // 导入相关
@@ -581,12 +1203,18 @@ const importForm = reactive({
   image: null,
   ocrText: '',
   parsedWords: [],  // 解析后的单词预览
-  grade: appConfigStore.defaultGrade,
-  semester: appConfigStore.defaultSemester,
+  grade: null,
+  semester: null,
   tag_ids: [],
 })
 
 const currentQuestion = ref({})
+// 新词学习题：进入时自动带读（英语→中文→词根词源），同学习卡带读
+watch(currentQuestion, (q) => {
+  if (q && q.is_new && reviewStep.value === 'question' && dimConfigForm.autoRead) {
+    setTimeout(() => autoTeach(q), 600)
+  }
+})
 const tableRef = ref()
 const selectedWords = ref([])
 
@@ -643,8 +1271,17 @@ const viewDetail = async (row) => {
   activeTab.value = 'info'
   memoryCurve.value = null
   detailVisible.value = true
+  if (dimConfigForm.showPinyin && row.chinese) fetchPinyin([row.chinese])
   // 获取记忆曲线
   await fetchMemoryCurve(row.id)
+}
+
+// 点击联想词 → 搜索该词
+const searchRelatedWord = (rw) => {
+  detailVisible.value = false
+  filters.keyword = rw.en || rw.english || ''
+  pagination.page = 1
+  fetchWords()
 }
 
 // 计算单词正确率
@@ -746,6 +1383,10 @@ const fetchWords = async () => {
 
     const { data } = await wordApi.list(params)
     words.value = data
+    // 低年级辅助：开启拼音时批量补当前页中文拼音
+    if (dimConfigForm.showPinyin && data.items && data.items.length) {
+      fetchPinyin(data.items.map(w => w.chinese).filter(Boolean))
+    }
   } catch (error) {
     ElMessage.error('获取单词列表失败')
   }
@@ -784,8 +1425,8 @@ const resetForm = () => {
   form.english = ''
   form.chinese = ''
   form.phonetic = ''
-  form.grade = appConfigStore.defaultGrade
-  form.semester = appConfigStore.defaultSemester
+  form.grade = null
+  form.semester = null
   form.tag_ids = []
 }
 
@@ -868,14 +1509,18 @@ const startReviewGame = async () => {
     userAnswer.value = ''
     selectedOption.value = ''
     currentQuestion.value = reviewQuestions.value[0]
+    if (dimConfigForm.showPinyin) {
+      const q0 = currentQuestion.value
+      fetchPinyin([...(q0.options || []), q0.chinese].filter(Boolean))
+    }
     reviewStep.value = 'question'
-    if (reviewConfig.type === 1) {
+    if (currentType.value === 1) {
       resetLetterInput()
       setTimeout(() => focusLetterInput(), 100)
     }
 
     // 默写/听力：自动播放（播完停3秒再播一次）
-    if (reviewConfig.type === 1 || reviewConfig.type === 3) {
+    if (currentType.value === 1 || currentType.value === 3) {
       setTimeout(() => autoPlayWithReplay(reviewQuestions.value[0].word_id), 400)
     }
 
@@ -897,8 +1542,8 @@ const startReviewGame = async () => {
 
 // 播放单词音频（Promise 在播放结束/失败时 resolve）
 const playWordAudio = async (wordId) => {
-  if (!wordId) return
-  audioLoading.value = true
+  if (!wordId || audioLoadingMap[wordId]) return
+  audioLoadingMap[wordId] = true
 
   try {
     const response = await fetch(`/api/words/${wordId}/audio`)
@@ -912,17 +1557,17 @@ const playWordAudio = async (wordId) => {
 
     await new Promise((resolve) => {
       audio.onended = () => {
-        audioLoading.value = false
+        audioLoadingMap[wordId] = false
         URL.revokeObjectURL(audioUrl)
         resolve()
       }
       audio.onerror = () => {
-        audioLoading.value = false
+        audioLoadingMap[wordId] = false
         URL.revokeObjectURL(audioUrl)
         resolve()
       }
       audio.play().catch(() => {
-        audioLoading.value = false
+        audioLoadingMap[wordId] = false
         URL.revokeObjectURL(audioUrl)
         resolve()
       })
@@ -930,8 +1575,15 @@ const playWordAudio = async (wordId) => {
   } catch (e) {
     console.error('音频播放失败:', e)
     ElMessage.warning('音频播放失败')
-    audioLoading.value = false
+    audioLoadingMap[wordId] = false
   }
+}
+
+// 按英文播放（联想词标签用，直接走 TTS 接口）
+const playAudioByEnglish = (en) => {
+  if (!en) return
+  const audio = new Audio('/api/words/audio?english=' + encodeURIComponent(en))
+  audio.play().catch(() => {})
 }
 
 // 进入新题时：自动播放，暂停3秒后再播一次
@@ -947,17 +1599,17 @@ const autoPlayWithReplay = async (wordId) => {
 
 const submitAnswer = () => {
   const q = currentQuestion.value
-  if (reviewConfig.type === 1) {
+  if (currentType.value === 1) {
     // 默写：从字母格拼答案
     userAnswer.value = fillBuiltAnswer()
     q.correct = userAnswer.value.toLowerCase() === q.english.toLowerCase()
     q.userAnswer = userAnswer.value
-  } else if (reviewConfig.type === 3) {
+  } else if (currentType.value === 3) {
     // 听力：比较英文输入
     q.correct = userAnswer.value.toLowerCase().trim() === q.english.toLowerCase().trim()
     q.userAnswer = userAnswer.value
   } else {
-    // 选择
+    // 选择（英-中 / 听音选中文 / 新学词）
     q.correct = selectedOption.value === q.chinese
     q.userAnswer = selectedOption.value
   }
@@ -984,21 +1636,26 @@ const submitAnswer = () => {
 const nextQuestion = () => {
   currentIndex.value++
   currentQuestion.value = reviewQuestions.value[currentIndex.value]
+  if (dimConfigForm.showPinyin) {
+    const qn = currentQuestion.value
+    fetchPinyin([...(qn.options || []), qn.chinese].filter(Boolean))
+  }
   userAnswer.value = ''
   selectedOption.value = ''
-  if (reviewConfig.type === 1) {
+  if (currentType.value === 1) {
     resetLetterInput()
     setTimeout(() => focusLetterInput(), 100)
   }
-  // 默写/听力自动播放
-  if (reviewConfig.type === 1 || reviewConfig.type === 3) {
+  // 听音/听写/中英拼写自动播放
+  if (currentType.value === 1 || currentType.value === 3 || currentType.value === 4) {
     setTimeout(() => autoPlayWithReplay(currentQuestion.value.word_id), 300)
   }
   setTimeout(() => {
-    if (reviewConfig.type === 1) {
+    if (currentType.value === 1) {
       focusLetterInput()
       return
     }
+    if (currentType.value === 2 || currentType.value === 4) return // 选择题无需焦点
     const input = answerInputRef.value?.$el?.querySelector('input')
     if (input) {
       input.focus()
@@ -1041,7 +1698,7 @@ const finishReview = async () => {
     word_id: q.word_id,
     is_correct: q.correct,
     user_answer: q.userAnswer || '',
-    review_type: reviewConfig.type,
+    review_type: q.dimension ? (DIM_TYPE[q.dimension] || 2) : reviewConfig.type,
   }))
 
   try {
@@ -1057,6 +1714,7 @@ const finishReview = async () => {
     reviewResult.accuracy = data.accuracy
     reviewResult.duration = duration
     reviewStep.value = 'result'
+    loadDailyTask() // 刷新今日任务（错词池变化）
 
     // 调用单词正确率成就检查
     try {
@@ -1363,23 +2021,24 @@ const importWords = async () => {
 }
 
 onMounted(async () => {
-  await appConfigStore.load()
   // 首页年级维度跳转：/words?grade=6；学习空间指定年级优先
   const routeGrade = Number(route.query.grade)
+  // 学习空间指定年级优先，其次路由参数；否则留空=全部（不再套用系统配置「默认年级」）
   if (subjectStore.activeGrade !== null) {
     filters.grade = subjectStore.activeGrade
   } else if (routeGrade) {
     filters.grade = routeGrade
-  } else if (filters.grade == null) {
-    filters.grade = appConfigStore.defaultGrade
+  } else {
+    filters.grade = null
   }
-  if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
-  if (reviewConfig.grade == null) reviewConfig.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
-  if (printForm.grade == null) printForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
-  if (importForm.grade == null) importForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
-  if (importForm.semester == null) importForm.semester = appConfigStore.defaultSemester
+  // 表单默认年级只跟随当前学习空间
+  if (reviewConfig.grade == null) reviewConfig.grade = subjectStore.activeGrade
+  if (printForm.grade == null) printForm.grade = subjectStore.activeGrade
+  if (importForm.grade == null) importForm.grade = subjectStore.activeGrade
+  loadDimConfig()
   fetchWords()
   fetchTags()
+  loadDailyTask()
 })
 </script>
 
@@ -1401,6 +2060,263 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
+/* 今日任务大入口（三分类） */
+.daily-task-card {
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f1ff 100%);
+  border: 1px solid #cfe3ff;
+}
+.dt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dt-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f3d7a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dt-count {
+  font-size: 14px;
+  color: #3a7afe;
+  background: #fff;
+  border-radius: 20px;
+  padding: 2px 12px;
+  font-weight: 600;
+}
+.dt-config {
+  margin-left: auto;
+}
+.dt-desc {
+  margin-top: 4px;
+  color: #5b6c8f;
+  font-size: 12px;
+}
+.dt-dims {
+  color: #3a7afe;
+}
+.dt-sections {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.dt-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #e6eefb;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.dt-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(64, 128, 255, 0.16);
+}
+.ds-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dt-section.wrong .ds-dot { background: #e64a4a; }
+.dt-section.due .ds-dot { background: #e6a23c; }
+.dt-section.new .ds-dot { background: #67c23a; }
+.ds-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+.ds-num {
+  font-size: 17px;
+  color: #3a7afe;
+  margin-left: auto;
+}
+.ds-tip {
+  font-size: 11px;
+  color: #9aa7bd;
+  display: none;
+}
+.ds-go {
+  font-size: 12px;
+  color: #3a7afe;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* 复习弹窗：维度标签 */
+.dim-tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.dim-tag.recognize { background: #ecf5ff; color: #3a7afe; }
+.dim-tag.listen { background: #fdf6ec; color: #b88230; }
+.dim-tag.speak { background: #f0f9eb; color: #529b2e; }
+.dim-tag.write { background: #fef0f0; color: #d85c5c; }
+
+/* 新学词学习卡 */
+.new-word-learn {
+  padding: 16px;
+  border-radius: 12px;
+  background: #f7faff;
+  border: 1px dashed #cfe3ff;
+}
+.nw-english {
+  font-size: 30px;
+  font-weight: 700;
+  color: #1f3d7a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nw-meta {
+  margin: 8px 0;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.nw-phonetic {
+  color: #5b6c8f;
+  font-size: 15px;
+}
+.nw-question {
+  margin: 12px 0 8px;
+  color: #5b6c8f;
+  font-size: 14px;
+}
+.nw-root {
+  margin: 6px 0;
+  color: #5b6c8f;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid #e6eefb;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.nw-root-label {
+  color: #3a7afe;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.nw-example {
+  margin: 6px 0;
+}
+.nw-ex-hint {
+  color: #909399;
+  font-size: 12px;
+}
+.nw-ex-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  background: #fff;
+  border: 1px solid #e6eefb;
+  border-radius: 8px;
+}
+.nw-ex-en {
+  font-size: 15px;
+  color: #2c3e50;
+}
+
+/* 听音选中文 */
+.listening-choice {
+  text-align: center;
+  padding: 12px 0;
+}
+.lc-tip {
+  color: #5b6c8f;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+/* 维度配置 */
+.dim-config-tip {
+  color: #5b6c8f;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.dim-config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dim-config-item .el-checkbox {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 0;
+}
+.dim-config-row {
+  border-top: 1px dashed #e6eefb;
+  padding-top: 12px;
+}
+.dc-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 8px;
+}
+.dc-hint {
+  font-size: 12px;
+  color: #9aa7bd;
+  margin-top: 6px;
+}
+.dc-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+}
+/* 低年级辅助：中文拼音小字 */
+.cn-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+.cn-pinyin {
+  font-size: 12px;
+  color: #8a94a6;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+  display: block;
+}
+.zh-speak-btn {
+  font-size: 14px;
+  padding: 0 4px;
+  margin-left: 2px;
+}
+.zh-speak-inline {
+  font-size: 30px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.opt-cn {
+  margin-right: 6px;
+}
+.review-question .cn-pinyin {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 13px;
+}
+.dictation .cn-pinyin {
+  font-size: 22px;
+  margin-top: 4px;
+  color: #8a94a6;
+}
 .word-english {
   font-weight: bold;
   color: #409eff;
@@ -1467,6 +2383,129 @@ onMounted(async () => {
   flex-direction: column;
   height: 70vh;
   max-height: 600px;
+}
+
+/* ===== 学习模式（先学后练） ===== */
+.learn-flow {
+  padding: 20px 30px 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+.learn-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.learn-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #303133;
+}
+.learn-progress {
+  font-size: 22px;
+  font-weight: bold;
+  color: #409eff;
+}
+.learn-tip {
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 18px;
+}
+.learn-card {
+  background: #f8fafd;
+  border: 1px solid #e6eefb;
+  border-radius: 16px;
+  padding: 28px 34px;
+  flex: 1;
+}
+.lc-english {
+  font-size: 42px;
+  font-weight: 800;
+  color: #2b6cb0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lc-english .audio-btn {
+  font-size: 24px;
+  padding: 4px 10px;
+}
+.lc-phonetic {
+  font-size: 18px;
+  color: #5b6c8f;
+  margin: 6px 0 14px;
+}
+.lc-chinese {
+  font-size: 28px;
+  color: #303133;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.lc-chinese .cn-pinyin {
+  font-size: 16px;
+  display: inline-block;
+  margin-left: 4px;
+}
+.lc-section {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #e6eefb;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.lc-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2b6cb0;
+  margin-bottom: 4px;
+}
+.lc-section-body {
+  font-size: 15px;
+  color: #4b5a74;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.lc-ex {
+  margin-top: 6px;
+}
+.lc-ex:first-child {
+  margin-top: 0;
+}
+.lc-ex-en {
+  font-size: 16px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.lc-ex-zh {
+  font-size: 13px;
+  color: #909399;
+  margin-top: 2px;
+}
+.learn-nav {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 18px 0 6px;
+}
+.learn-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding-top: 6px;
+}
+.learn-skip {
+  font-size: 13px;
+  color: #909399;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .question-header {
