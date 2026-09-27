@@ -64,6 +64,30 @@
             <span class="ds-go">开始 ›</span>
           </div>
         </div>
+
+        <!-- 已学会的词：让家长/孩子能看到「学过哪些词」，不再只靠今日任务列表 -->
+        <div v-if="dailyTask.loaded && dailyTask.learned_count > 0" class="dt-learned">
+          <div class="dt-learned-head" @click="learnedOpen = !learnedOpen">
+            <span class="dl-icon">✅</span>
+            <span class="dl-title">已学会的词</span>
+            <b class="dl-count">{{ dailyTask.learned_count }}</b>
+            <span class="dl-phases">
+              <span v-for="(n, ph) in dailyTask.learned_phase_counts" :key="ph"
+                    class="phase-chip" :class="phaseClass(ph)">
+                {{ ph }} {{ n }}
+              </span>
+            </span>
+            <span class="dl-toggle">{{ learnedOpen ? '收起 ▴' : '展开 ▾' }}</span>
+          </div>
+          <div v-show="learnedOpen" class="dt-learned-body">
+            <div v-for="w in dailyTask.learned_words" :key="w.word_id" class="dl-word">
+              <span class="dl-en">{{ w.english }}</span>
+              <span class="dl-cn">{{ w.chinese }}</span>
+              <span class="phase-badge" :class="phaseClass(w.learning_phase)">{{ w.learning_phase }}</span>
+              <span class="dl-stat">练 {{ w.review_count }} 次 · 正确率 {{ w.accuracy }}%</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 筛选条件 -->
@@ -605,6 +629,16 @@
       </template>
     </el-dialog>
 
+    <!-- 家长验证：学生删除单词需家长认证 -->
+    <ParentLockDialog
+      v-model="parentGuardVisible"
+      title="家长验证"
+      tip="删除单词需要家长验证"
+      confirm-text="验证并删除"
+      @success="onParentVerified"
+      @update:model-value="!$event && onParentGuardCancel()"
+    />
+
   </div>
 </template>
 
@@ -618,6 +652,9 @@ import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { useSubjectStore } from '@/stores/subject'
 import { useKidStore } from '@/stores/kid'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import { useParentGuard } from '@/composables/useParentGuard'
+import { speakEn as ttsSpeakEn, speakZh as ttsSpeakZh, playServerTts, stopSpeech, installSpeechUnlock } from '@/utils/speech'
 
 const route = useRoute()
 const subjectStore = useSubjectStore()
@@ -746,7 +783,7 @@ const openLearnPage = () => {
 const startLearnPractice = () => {
   // 停止自动带读
   ++teachToken
-  window.speechSynthesis.cancel()
+  stopSpeech()
   if (learnMode.value === 'list') {
     reviewVisible.value = false
     return
@@ -757,13 +794,33 @@ const startLearnPractice = () => {
 watch(reviewVisible, (v) => {
   if (!v) {
     ++teachToken
-    window.speechSynthesis.cancel()
+    stopSpeech()
   }
 })
 // 学习卡自动带读：切卡时自动朗读新词（英语→中文→词根词源）
 watch(learnIndex, () => {
   autoTeach(learnWord.value)
+  // 翻到该卡即标记「已学（看过）」——无答题也算学过，
+  // 否则看完一遍没点开始复习，下次进来又是同一批词从头开始。
+  markCurrentSeen()
 })
+
+// 上报「已看过」：把当前学词卡（含之前翻过的）标记到后端。
+// 只写 seen_at，不影响正确率/记忆曲线；失败静默（不打断学习体验）。
+const seenReported = new Set()
+async function markCurrentSeen() {
+  if (learnMode.value !== 'daily') return
+  const w = learnWord.value
+  if (!w || !w.word_id || seenReported.has(w.word_id)) return
+  seenReported.add(w.word_id)
+  try {
+    await wordApi.markWordsSeen({
+      word_ids: [w.word_id],
+      user_id: kidStore.activeKid?.id,
+    })
+  } catch (e) { /* 静默：标记失败不应打断学习 */ }
+}
+
 const reviewConfig = reactive({
   count: 20,
   grade: null,
@@ -801,7 +858,18 @@ const reviewResult = reactive({
 // ===== 今日任务（四维记忆）=====
 const DIMENSION_NAMES = { recognize: '认得', listen: '听得', speak: '说得', write: '写得' }
 const DIM_TYPE = { recognize: 2, listen: 4, speak: 1, write: 3 } // 维度 → 复习题型
-const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'] })
+const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'], learned_count: 0, learned_words: [], learned_phase_counts: {} })
+const learnedOpen = ref(false)
+
+// 阶段徽章配色：新学/在途/遗忘点/牢记（后端 learning_phase 文案）
+function phaseClass(ph) {
+  if (ph === '牢记' || ph === 'mastered') return 'ph-mastered'
+  if (ph === '遗忘点' || ph === 'weak') return 'ph-weak'
+  if (ph === '在途' || ph === 'learning' || ph === 'good') return 'ph-learning'
+  if (ph === '已学' || ph === 'seen') return 'ph-seen'
+  return 'ph-new'
+}
+
 const dimConfigVisible = ref(false)
 const dimConfigForm = reactive({ recognize: true, listen: true, speak: true, write: true, perWordDims: 1, categoryCap: 15, showPinyin: false, zhReadAloud: false, autoRead: true, autoReadTimes: 2, learnMode: 'standard', showSentenceZh: true })
 // 低年级辅助：中文 → 拼音缓存映射
@@ -824,50 +892,26 @@ async function fetchPinyin(texts) {
 }
 const zhPinyin = (t) => dimConfigForm.showPinyin ? (pinyinMap[t] || '') : ''
 
-// 中文朗读（SpeechSynthesis zh-CN）；force=true 时忽略 zhReadAloud 开关（自动带读用）
+// 读音统一走 utils/speech（浏览器语音 + 服务器 edge-tts 降级，全站唯一实现点）
+// 中文朗读：force=true 时忽略 zhReadAloud 开关（自动带读用）；再点同一句 = 停止
 function speakZh(text, opts = {}) {
   const force = !!opts.force
-  if ((!force && !dimConfigForm.zhReadAloud) || !text) return Promise.resolve()
-  if (!('speechSynthesis' in window)) {
-    if (!force) ElMessage.warning('当前浏览器不支持中文朗读')
-    return Promise.resolve()
-  }
+  if ((!force && !dimConfigForm.zhReadAloud) || !text) return Promise.resolve(false)
   if (!force && zhSpeaking.value === text) {
-    window.speechSynthesis.cancel()
+    stopSpeech()
     zhSpeaking.value = ''
-    return Promise.resolve()
+    return Promise.resolve(false)
   }
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'zh-CN'
-  u.rate = 0.9
-  const voices = window.speechSynthesis.getVoices()
-  const zh = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh'))
-  if (zh) u.voice = zh
-  return new Promise((resolve) => {
-    u.onend = () => { zhSpeaking.value = ''; resolve() }
-    u.onerror = () => { zhSpeaking.value = ''; resolve() }
-    zhSpeaking.value = text
-    window.speechSynthesis.speak(u)
+  zhSpeaking.value = text
+  return ttsSpeakZh(text).then((ok) => {
+    if (zhSpeaking.value === text) zhSpeaking.value = ''
+    return ok
   })
 }
 
-// 英文朗读（SpeechSynthesis en-US；例句发音用，不走 TTS 文件缓存，避免污染 audio_dir）
-// 返回 Promise，供自动带读顺序等待；点击喇叭时 fire-and-forget 不受影响
+// 英文朗读（自动降级），返回 Promise 供自动带读顺序等待；点击喇叭时 fire-and-forget 不受影响
 function speakEn(text) {
-  return new Promise((resolve) => {
-    if (!text || !('speechSynthesis' in window)) return resolve()
-    window.speechSynthesis.cancel()
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = 'en-US'
-    u.rate = 0.85
-    const voices = window.speechSynthesis.getVoices()
-    const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
-    if (en) u.voice = en
-    u.onend = () => resolve()
-    u.onerror = () => resolve()
-    window.speechSynthesis.speak(u)
-  })
+  return ttsSpeakEn(text)
 }
 
 // 按学习模式取可见例句：入门=无、标准=1 条、进阶=2 条
@@ -882,14 +926,21 @@ const sentenceZhVisible = () => dimConfigForm.learnMode !== 'advanced' || dimCon
 
 // 自动带读：学习卡自动依次朗读 英语 → 中文 → 词根词源 → 例句（老师带学，可配置次数/关闭）
 // opts.noZh=true 用于复习做题场景：只读英语+例句，不读中文（防止泄题）
+// opts.tip=题干文本（如「认一认：选出对应的中文意思」）→ 循环前先读一遍
+// opts.options=中文选项数组 → 循环后逐个读一遍（一年级不识字也能自己读题，无需家长在旁边读）
 let teachToken = 0
 async function autoTeach(word, opts = {}) {
   if (!dimConfigForm.autoRead || !word?.english) return
   const token = ++teachToken
   const times = dimConfigForm.autoReadTimes || 1
+  // 0. 题干带读（中文，force 忽略 zhReadAloud 开关——自动带读场景必读）
+  if (opts.tip) {
+    await speakZh(opts.tip, { force: true })
+    if (token !== teachToken) return
+  }
   for (let t = 0; t < times; t++) {
     if (token !== teachToken) return
-    window.speechSynthesis.cancel()
+    stopSpeech()
     try {
       await playWordAudio(word.word_id) // 1. 英语
       if (token !== teachToken) return
@@ -907,6 +958,13 @@ async function autoTeach(word, opts = {}) {
         if (token !== teachToken) return
       }
     } catch (e) { /* 带读失败不打断学习 */ }
+  }
+  // 5. 选项带读（中文选项逐个读，帮孩子认字）
+  if (opts.options && opts.options.length) {
+    for (const o of opts.options) {
+      await speakZh(o, { force: true })
+      if (token !== teachToken) return
+    }
   }
 }
 
@@ -984,6 +1042,9 @@ async function loadDailyTask() {
     dailyTask.due_count = data.due_count || 0
     dailyTask.new_count = data.new_count || 0
     dailyTask.enabled_dimensions = data.enabled_dimensions || enabledDims()
+    dailyTask.learned_count = data.learned_count || 0
+    dailyTask.learned_words = data.learned_words || []
+    dailyTask.learned_phase_counts = data.learned_phase_counts || {}
   } catch (e) { /* 静默 */ }
 }
 
@@ -1065,7 +1126,10 @@ async function openDailyTask(category = 'due') {
   if (reviewStarting.value) return
   reviewStarting.value = true
   try {
-    const params = { count: 10 }
+    // 关键：把 category 传给后端，让 review/start 直接消费 daily-task 的同一批词，
+    // 保证「练的 = 今日任务显示的」。旧实现不传 category，后端从全库随机抽，
+    // 导致练完一批后今日学习列表纹丝不动（学过的词一直留在列表里）。
+    const params = { count: 10, category }
     if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
     const { data } = await wordApi.startReview(params)
     currentSessionId.value = data.session_id
@@ -1075,12 +1139,24 @@ async function openDailyTask(category = 'due') {
     const qs = Object.entries(qp).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
     const res = await fetch(`/api/words/daily-task?${qs}`)
     const task = await res.json()
+    // 刷新顶部计数与「已学会的词」，让练完立即反映
+    dailyTask.loaded = true
+    dailyTask.total = task.total || 0
+    dailyTask.wrong_count = task.wrong_count || 0
+    dailyTask.due_count = task.due_count || 0
+    dailyTask.new_count = task.new_count || 0
+    dailyTask.learned_count = task.learned_count || 0
+    dailyTask.learned_words = task.learned_words || []
+    dailyTask.learned_phase_counts = task.learned_phase_counts || {}
     const built = buildDailyQuestions(task, category)
     if (!built.length) {
       ElMessage.info(DAILY_CATEGORY_NAMES[category] + '已清空，明天再来吧')
       return
     }
-    reviewQuestions.value = built.map(q => ({ ...q, correct: undefined }))
+    // 防机械记忆：词集合当天固定（任务可完成），但**每次点开重新打乱顺序**。
+    // 否则孩子会记住"第 3 题选 B"这类位置信息，造成"看着会了、其实没记住"的假象。
+    // 错题环节尤其重要——每次顺序都不同，逼孩子认单词本身而不是认位置。
+    reviewQuestions.value = shuffleArr(built).map(q => ({ ...q, correct: undefined }))
     reviewConfig.type = reviewQuestions.value[0]?.dimension === 'listen' ? 4 : (DIM_TYPE[reviewQuestions.value[0]?.dimension] || 2)
     reviewConfig.isDaily = true
     reviewConfig.dailyCategory = category
@@ -1095,6 +1171,9 @@ async function openDailyTask(category = 'due') {
     reviewVisible.value = true
     // 自动带读第一张
     setTimeout(() => autoTeach(learnWord.value), 500)
+    // 第一张也要标记「已看过」（watch 只在 learnIndex 变化时触发）
+    seenReported.clear()
+    setTimeout(() => markCurrentSeen(), 600)
   } catch (error) {
     ElMessage.error('今日任务加载失败')
   } finally {
@@ -1240,11 +1319,17 @@ const importForm = reactive({
 })
 
 const currentQuestion = ref({})
-// 新词学习题：进入时自动带读（英语→中文→词根词源），同学习卡带读
+// 新词学习题：进入时自动带读（题干 → 英语 → 例句 → 中文选项）
+// 题干+选项也朗读：一年级孩子不识字时无需家长在旁边读题（不读中文释义=不报答案）
 watch(currentQuestion, (q) => {
   if (q && q.is_new && reviewStep.value === 'question' && dimConfigForm.autoRead) {
-    // 复习做题场景：只读英语+例句，不读中文（读中文=报答案，失去复习效果）
-    setTimeout(() => autoTeach(q, { noZh: true }), 600)
+    // 新词学习题（is_new 是"学习"不是"复习"）：完整带读 题干 → 英语 → 中文 → 词根 → 例句 → 选项
+    // 中文翻译必须读出来帮孩子理解（9/28 修复：上一版 noZh 一刀切导致新词学习中文没声音）
+    setTimeout(() => autoTeach(q, {
+      noZh: false,
+      tip: '认一认：选出对应的中文意思',
+      options: q.options || [],
+    }), 600)
   }
 })
 const tableRef = ref()
@@ -1490,7 +1575,8 @@ const deleteWord = async (row) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await wordApi.delete(row.id)
+    // 家长认证：学生（child）删除单词需家长验证
+    await guard(() => wordApi.delete(row.id))
     ElMessage.success('删除成功')
     fetchWords()
   } catch (error) {
@@ -1499,6 +1585,14 @@ const deleteWord = async (row) => {
     }
   }
 }
+
+// 家长认证守卫：学生删除单词需家长验证
+const {
+  visible: parentGuardVisible,
+  guard,
+  onVerified: onParentVerified,
+  onCancel: onParentGuardCancel,
+} = useParentGuard()
 
 // 复习（铺平：听写=3 中-英=1 英-中=2，点击直达）
 const startReview = (type) => {
@@ -1578,12 +1672,8 @@ const playWordAudio = async (wordId) => {
   audioLoadingMap[wordId] = true
 
   try {
-    const response = await fetch(`/api/words/${wordId}/audio`)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-
-    const blob = await response.blob()
+    const response = await wordApi.getAudio(wordId)
+    const blob = response.data
     const audioUrl = URL.createObjectURL(blob)
     const audio = new Audio(audioUrl)
 
@@ -1614,8 +1704,7 @@ const playWordAudio = async (wordId) => {
 // 按英文播放（联想词标签用，直接走 TTS 接口）
 const playAudioByEnglish = (en) => {
   if (!en) return
-  const audio = new Audio('/api/words/audio?english=' + encodeURIComponent(en))
-  audio.play().catch(() => {})
+  playServerTts(en)
 }
 
 // 进入新题时：自动播放，暂停3秒后再播一次
@@ -1726,11 +1815,15 @@ const finishReview = async () => {
   }
   const duration = reviewElapsed.value
 
+  // 注意：未作答的题 q.correct 是 undefined，JSON.stringify 会**整条丢弃**
+  // is_correct 字段 → 后端必填校验失败 → 422，整批学习记录丢失。
+  // 这里统一收敛：未作答一律按错误计（与 terminateReview 的兜底语义一致），
+  // 并保证 review_type 一定是合法整数。
   const results = reviewQuestions.value.map(q => ({
     word_id: q.word_id,
-    is_correct: q.correct,
+    is_correct: q.correct === true,
     user_answer: q.userAnswer || '',
-    review_type: q.dimension ? (DIM_TYPE[q.dimension] || 2) : reviewConfig.type,
+    review_type: q.dimension ? (DIM_TYPE[q.dimension] || 2) : (reviewConfig.type || 1),
   }))
 
   try {
@@ -1759,7 +1852,16 @@ const finishReview = async () => {
       console.error('激励触发失败:', error)
     }
   } catch (error) {
-    ElMessage.error('提交结果失败')
+    // 不再吞掉真实原因：把后端返回的字段校验信息暴露出来，便于定位
+    const detail = error?.response?.data?.detail
+    let msg = '提交结果失败'
+    if (Array.isArray(detail) && detail.length) {
+      const d0 = detail[0]
+      msg = `提交结果失败：${d0.loc ? d0.loc.join('.') + ' ' : ''}${d0.msg || ''}`
+    } else if (typeof detail === 'string') {
+      msg = `提交结果失败：${detail}`
+    }
+    ElMessage.error(msg)
   }
 }
 
@@ -2053,6 +2155,8 @@ const importWords = async () => {
 }
 
 onMounted(async () => {
+  // 解锁 AudioContext：首次用户点击/按键后，服务器 TTS 任意时刻可播放（绕开 Chrome Autoplay）
+  installSpeechUnlock()
   // 首页年级维度跳转：/words?grade=6；学习空间指定年级优先
   const routeGrade = Number(route.query.grade)
   // 学习空间指定年级优先，其次路由参数；否则留空=全部（不再套用系统配置「默认年级」）
@@ -2183,6 +2287,84 @@ onMounted(async () => {
   font-weight: 600;
   flex-shrink: 0;
 }
+
+/* 已学会的词（今日任务卡片内折叠区） */
+.dt-learned {
+  margin-top: 12px;
+  border-top: 1px dashed #e0e8f6;
+  padding-top: 10px;
+}
+.dt-learned-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+}
+.dt-learned-head:hover .dl-title { color: #3a7afe; }
+.dl-icon { font-size: 14px; }
+.dl-title { font-weight: 600; color: #4a5a75; }
+.dl-count {
+  background: #eef6ee;
+  color: #529b2e;
+  border-radius: 10px;
+  padding: 1px 9px;
+  font-size: 12px;
+}
+.dl-phases { display: flex; gap: 6px; flex-wrap: wrap; }
+.phase-chip {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #f2f5fa;
+  color: #6b7a91;
+}
+.phase-chip.ph-mastered { background: #eef9eb; color: #529b2e; }
+.phase-chip.ph-learning { background: #eef4ff; color: #3a7afe; }
+.phase-chip.ph-weak { background: #fef0f0; color: #d85c5c; }
+.phase-chip.ph-seen { background: #fdf6ec; color: #d99a2b; }
+.phase-chip.ph-new { background: #f7f7f9; color: #909399; }
+.dl-toggle {
+  margin-left: auto;
+  font-size: 12px;
+  color: #3a7afe;
+  flex-shrink: 0;
+}
+.dt-learned-body {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dl-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fafcff;
+}
+.dl-word:hover { background: #f2f7ff; }
+.dl-en { font-weight: 600; color: #303133; min-width: 92px; }
+.dl-cn { color: #6b7a91; flex: 1; }
+.dl-stat { font-size: 11px; color: #9aa7bd; }
+.phase-badge {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #f2f5fa;
+  color: #6b7a91;
+  flex-shrink: 0;
+}
+.phase-badge.ph-mastered { background: #eef9eb; color: #529b2e; }
+.phase-badge.ph-learning { background: #eef4ff; color: #3a7afe; }
+.phase-badge.ph-weak { background: #fef0f0; color: #d85c5c; }
+.phase-badge.ph-seen { background: #fdf6ec; color: #d99a2b; }
+.phase-badge.ph-new { background: #f7f7f9; color: #909399; }
 
 /* 复习弹窗：维度标签 */
 .dim-tag {
