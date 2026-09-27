@@ -63,12 +63,16 @@ async function unlock() {
     // 3) admin 兜底（旧空间默认家长）
     const candidates = []
     const token = localStorage.getItem('easyfix_token')
+    // 当前空间 key：URL /{key}/ 优先（空间 SPA 部署路径即真相）；localStorage 全局共享，
+    // 可能残留别的空间 key 或缺失（官网跳转前瞬间），仅作兜底。
+    const trialKey =
+      (window.location.pathname.match(/^\/([^/]+)\//) || [])[1] ||
+      localStorage.getItem('easyfix_trial_key') ||
+      ''
     try {
       // 原生 fetch 必须带 X-Trial-Key：不带则租户中间件不切库，/api/auth/me 会落到
       // 主库，主库 User.id 与租户库错位（主库同 id 可能是 child）→ 当前会话账号候选
       // 丢失 → 辅助账号输对密码也会因候选错位全败，密码锁卡死（9/28 回归根因）。
-      const m = window.location.pathname.match(/^\/([^/]+)\//)
-      const trialKey = (m && m[1]) || localStorage.getItem('easyfix_trial_key') || ''
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       if (trialKey) headers['X-Trial-Key'] = trialKey
       const meRes = await fetch('/api/auth/me', { headers })
@@ -80,9 +84,8 @@ async function unlock() {
       }
     } catch { /* 忽略，走下一优先级 */ }
     try {
-      const key = localStorage.getItem('easyfix_trial_key')
-      if (key) {
-        const res = await fetch('/api/trial/status', { headers: { 'X-Trial-Key': key } })
+      if (trialKey) {
+        const res = await fetch('/api/trial/status', { headers: { 'X-Trial-Key': trialKey } })
         if (res.ok) {
           const data = await res.json()
           if (data.space && data.space.username && !candidates.includes(data.space.username)) {
