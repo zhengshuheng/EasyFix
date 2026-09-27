@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
@@ -12,6 +12,7 @@ from app.database import engine, Base, SessionLocal, get_db
 from app.routers import question_router, upload_router, stats_router, similar_router, config_router, error_book_router, subject_router, tag_router, knowledge_point_router, practice_set_router, word_router, word_memory_router, learning_report_router, motivation_router, error_type_router, reading_router, auth_router, users_router, k12_router, textbook_router, grammar_router, phonics_router, zh_router, assessment_router
 from app.config import get_settings
 from app.models.user import User
+from app.models.account import Account
 from app.utils.auth import (
     DEFAULT_ADMIN_USERNAME,
     DEFAULT_ADMIN_PASSWORD,
@@ -24,6 +25,17 @@ from app.services.init_motivation_data import init_preset_data, init_achievement
 from app.services.init_base_data import init_base_data
 from app.services.init_demo_data import init_demo_data
 from app.services.grammar_skeleton import ensure_grammar_skeleton
+from app.trial import router as trial_router, is_trial_key, ensure_template_db, migrate_legacy_registry, ensure_tenant_engine
+from app.account_api import router as account_router
+from app.subscription_api import router as subscription_router
+from app.config_api import router as config_api_router, seed_app_config
+from app.routers.ops_data_router import router as ops_data_router
+from app.routers.ops_provider_router import router as ops_provider_router
+from app.routers.ops_incentive_router import router as ops_incentive_router
+from app.routers.ops_grammar_router import router as ops_grammar_router
+from app.routers.ops_trial_accounts_router import router as ops_trial_accounts_router
+from app.routers.sync_router import router as sync_router
+from app.database import set_current_tenant, current_tenant
 
 settings = get_settings()
 
@@ -115,6 +127,9 @@ _backfill_user_enrollment_date()
 _ensure_column("practice_set", "grammar_lesson_id", "grammar_lesson_id INTEGER")
 # AI 出题配图场景（结构化 JSON：count/group/shape）
 _ensure_column("practice_question", "visual", "visual TEXT")
+# 全局账号：角色（家长/机构）+ 小孩昵称（家长建空间预填）
+_ensure_column("accounts", "role", "role VARCHAR(10) DEFAULT 'parent'")
+_ensure_column("accounts", "child_name", "child_name VARCHAR(50) DEFAULT ''")
 # AI 出题维度：题型（choice/fill/judge/calc/...）/ 类型（basic/scene/comprehensive/thinking）
 _ensure_column("question", "question_type", "question_type VARCHAR(50)")
 _ensure_column("question", "question_category", "question_category VARCHAR(50)")
@@ -185,10 +200,24 @@ with engine.begin() as conn:
         ).scalar()
         if first_kid_id and first_kid_id != 1:
             for tbl in ("star_balance", "star_record", "achievement_progress", "redemption"):
-                conn.execute(text(f"UPDATE {tbl} SET user_id = :kid WHERE user_id = 1"), {"kid": first_kid_id})
+                # UPDATE OR IGNORE：目标小孩已有同 key 数据时保留小孩的，跳过冲突行（幂等，不再每次启动报错）
+                conn.execute(text(f"UPDATE OR IGNORE {tbl} SET user_id = :kid WHERE user_id = 1"), {"kid": first_kid_id})
             print(f"[migrate] 激励数据已归属第一个小孩 id={first_kid_id}")
     except Exception as e:
         print(f"[migrate] 跳过激励数据归属迁移: {e}")
+
+# ============================================================
+# 迁移必须最先执行：任何业务初始化（init_preset_data 等）都会读取模型上的新列，
+# 若旧库缺列会直接 OperationalError（no such column）导致进程启动崩溃。
+# 历史事故：init_preset_data 查 star_action.ops_override，而 ensure_ops_override_columns
+# 在其之后调用 → 线上容器无限重启、8012 端口从未绑定、公网无法访问。
+# ============================================================
+from app.db_migrate import ensure_ops_override_columns, ensure_word_seen_column, ensure_account_space_key_column
+ensure_ops_override_columns()
+# word_progress.seen_at（"看过"标记）：必须覆盖空间库，否则空间端 daily-task 500
+ensure_word_seen_column()
+# accounts.space_key（辅助家长账号绑定空间）：主库 + 模板库补列，官网登录依赖
+ensure_account_space_key_column()
 
 # 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:
@@ -214,6 +243,13 @@ with SessionLocal() as db:
     init_achievement_configs(db)
     # 英语语法专项骨架（空表才播种，幂等；家长可在管理界面增删/重新生成）
     ensure_grammar_skeleton(db)
+    # 旧试用注册表迁移（tenants 含密码 → spaces + accounts，幂等）
+    migrate_legacy_registry(db)
+    # 存量辅助家长补官网账号（旧版「添加家长」只写空间库；幂等，官网登录依赖）
+    from app.db_migrate import sync_helper_accounts_to_main
+    sync_helper_accounts_to_main(db)
+    # 运营配置默认值播种（幂等）
+    seed_app_config(db)
 
 app = FastAPI(
     title="EasyFix API",
@@ -234,6 +270,29 @@ app.add_middleware(
 uploads_path = os.path.abspath(settings.UPLOAD_DIR)
 os.makedirs(uploads_path, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+
+
+# ===== 试用空间租户中间件：X-Trial-Key → 租户上下文（get_db 按此分发）=====
+@app.middleware("http")
+async def trial_tenant_middleware(request, call_next):
+    key = request.headers.get("x-trial-key")
+    if not key:
+        return await call_next(request)
+    # 无效/已删除空间 key：拒绝访问，避免静默回退正式库（数据泄漏隐患）
+    if not is_trial_key(key):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "体验空间不存在或已失效，请重新进入"},
+        )
+    # 服务重启后进程内引擎为空：从 registry 懒注册，防止静默回退正式库
+    ensure_tenant_engine(key)
+    token_ctx = set_current_tenant(key)
+    try:
+        return await call_next(request)
+    finally:
+        current_tenant.reset(token_ctx)
+
 
 # 注册路由
 app.include_router(question_router)
@@ -261,15 +320,44 @@ app.include_router(grammar_router)
 app.include_router(phonics_router)
 app.include_router(zh_router)
 app.include_router(assessment_router)
+app.include_router(account_router)
+app.include_router(subscription_router)
+app.include_router(config_api_router)
+app.include_router(trial_router)
+app.include_router(ops_data_router)
+app.include_router(ops_provider_router)
+app.include_router(ops_incentive_router)
+app.include_router(ops_grammar_router)
+app.include_router(ops_trial_accounts_router)
+app.include_router(sync_router)
+
+# 确保试用模板库存在（首次启动生成一次 ~10s，之后秒开；注册租户=复制模板，秒级）
+# 注意：schema 迁移已在文件上方、业务初始化之前执行（见 ensure_ops_override_columns 处注释）
+ensure_template_db()
 
 
-@app.get("/")
-def root():
-    # 前端构建产物存在时，根路径直接返回前端页面
-    index_file = os.path.join(FRONTEND_DIST, "index.html")
-    if os.path.isdir(FRONTEND_DIST) and os.path.isfile(index_file):
-        return FileResponse(index_file)
-    return {"message": "EasyFix API", "version": "1.0.0"}
+# 官网静态页（宣传 + 注册入口）：StaticFiles(html=True) 让 /site 直接返回 index.html
+# 注意：/ 根路由必须在最前面定义（下方 SITE block 的 site_root），旧 root 已删除——
+# 根路径现在由 site_root 处理（官网主页），正式版 SPA 应用入口迁移到 /app。
+SITE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "site")
+)
+if os.path.isdir(SITE_DIR):
+    app.mount("/site", StaticFiles(directory=SITE_DIR, html=True), name="site")
+
+    @app.get("/site")
+    @app.get("/")
+    def site_root():
+        """官网主页（/ 与 /site 均可直达；Mount 不匹配无尾斜杠的路径，需显式路由，否则被 SPA fallback 吞掉）"""
+        return FileResponse(os.path.join(SITE_DIR, "index.html"))
+
+
+# 运营后台 Vue 构建产物（frontend/dist-ops，/ops 直达；必须注册在 trial 通配路由之前）
+OPS_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "dist-ops")
+)
+if os.path.isdir(OPS_DIST):
+    app.mount("/ops", StaticFiles(directory=OPS_DIST, html=True), name="ops")
 
 
 @app.get("/health")
@@ -286,32 +374,84 @@ def verify_password(data: PasswordVerifyRequest, db: Session = Depends(get_db)):
     """验证访问密码（旧前端兼容）：校验默认家长账号密码"""
     admin = db.query(User).filter_by(username=DEFAULT_ADMIN_USERNAME).first()
     if admin and check_password(data.password, admin.password_hash):
-        return {"success": True, "token": create_token(admin), "role": admin.role}
-    raise HTTPException(status_code=401, detail="密码错误")
+        return {"success": True, "token": create_token(admin, persistent=True), "role": admin.role}
+    # 用 400 而非 401：401 会被前端 http.js 全局拦截清登录态踢回登录页，
+    # 而这里只是"密码不对"的业务校验失败，应留在当前页提示
+    raise HTTPException(status_code=400, detail="家长密码错误")
 
 
 # ===== 前端静态资源（frontend/dist 构建产物，与 API 同源）=====
 FRONTEND_DIST = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "dist")
 )
+# 试用版前端构建产物（base='./' + hash 路由，部署在 /{trial_key}/ 下）
+TRIAL_FRONTEND_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "dist-trial")
+)
+# 官网静态页目录（StaticFiles 挂载在 app 创建处，见 /site mount）
 
+# ===== 正式版 SPA 静态资源 mount：必须在 /{trial_key}/{full_path:path} 通配路由之前注册，=====
+# 否则 /assets/xxx.js 会被 trial_spa 抢先匹配（trial_key="assets"）→ fallback index.html → MIME text/html 白屏
 if os.path.isdir(FRONTEND_DIST):
-    assets_dir = os.path.join(FRONTEND_DIST, "assets")
-    icons_dir = os.path.join(FRONTEND_DIST, "icons")
-    if os.path.isdir(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-    if os.path.isdir(icons_dir):
-        app.mount("/icons", StaticFiles(directory=icons_dir), name="icons")
+    _assets_dir = os.path.join(FRONTEND_DIST, "assets")
+    if os.path.isdir(_assets_dir):
+        app.mount("/assets", StaticFiles(directory=_assets_dir), name="assets")
+    _icons_dir = os.path.join(FRONTEND_DIST, "icons")
+    if os.path.isdir(_icons_dir):
+        app.mount("/icons", StaticFiles(directory=_icons_dir), name="icons")
 
-    @app.get("/{full_path:path}")
-    def spa_fallback(full_path: str):
-        """SPA 前端入口：非 API 路径回退到 index.html（支持 history 路由）"""
-        if full_path.startswith(("api/", "uploads/")) or full_path in ("api", "uploads"):
+# ===== 正式版 SPA（/app）已移除（2026-09-24 架构统一）=====
+# 架构统一后所有用户入口 = 官网 /（site）+ /{key}/ 空间 SPA，/app 无存在意义；
+# 无老用户包袱，直接移除不重定向。dist 构建产物与 /assets /icons mount 暂保留（无害，
+# 阶段 D 前端合并时统一清理）。
+
+
+def _trial_index() -> str:
+    """试用 SPA 的 index.html（未构建时返回 None）"""
+    idx = os.path.join(TRIAL_FRONTEND_DIST, "index.html")
+    if os.path.isdir(TRIAL_FRONTEND_DIST) and os.path.isfile(idx):
+        return idx
+    return None
+
+
+# ===== 试用空间：/{trial_key}/ 直达独立 db 的 SPA（hash 路由）=====
+if _trial_index():
+
+    @app.get("/{trial_key}/assets/{full_path:path}")
+    def trial_assets(trial_key: str, full_path: str):
+        if not is_trial_key(trial_key):
             raise HTTPException(status_code=404, detail="Not Found")
-        candidate = os.path.join(FRONTEND_DIST, full_path.replace("/", os.sep))
+        candidate = os.path.join(TRIAL_FRONTEND_DIST, "assets", full_path.replace("/", os.sep))
         if full_path and os.path.isfile(candidate):
             return FileResponse(candidate)
-        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    @app.get("/{trial_key}/icons/{full_path:path}")
+    def trial_icons(trial_key: str, full_path: str):
+        if not is_trial_key(trial_key):
+            raise HTTPException(status_code=404, detail="Not Found")
+        candidate = os.path.join(TRIAL_FRONTEND_DIST, "icons", full_path.replace("/", os.sep))
+        if full_path and os.path.isfile(candidate):
+            return FileResponse(candidate)
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    @app.get("/{trial_key}")
+    @app.get("/{trial_key}/")
+    @app.get("/{trial_key}/{full_path:path}")
+    def trial_spa(request: Request, trial_key: str, full_path: str = ""):
+        """空间入口：/xxx/ 及其子路径（hash 路由，SPA 内部不请求服务器）"""
+        if is_trial_key(trial_key):
+            if full_path.startswith(("api/", "uploads/")) or full_path in ("api", "uploads"):
+                raise HTTPException(status_code=404, detail="Not Found")
+            # 无尾斜杠（/easyfix_demo）：301 补斜杠——dist-trial 用相对路径 base='./'，
+            # 缺尾斜杠时浏览器把 ./assets 解析成根路径 /assets → 混入正式版 dist JS 白屏
+            if not request.url.path.endswith("/"):
+                qs = request.url.query
+                target = request.url.path + "/" + (("?" + qs) if qs else "")
+                return RedirectResponse(target, status_code=301)
+            return FileResponse(_trial_index())
+        # 非空间 key（/app 与正式 SPA 已退役）：一律 404，回官网用 /
+        raise HTTPException(status_code=404, detail="Not Found")
 
 
 if __name__ == "__main__":
