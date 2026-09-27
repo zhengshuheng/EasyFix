@@ -7,10 +7,32 @@
 
 _（当前为空。进行中的任务文档在 `active/` 下，不入库。）_
 
-## ✅ 已完成（done/，45+13 项）
+## ✅ 已完成（done/，76 项）
 
 | 任务 | 文档 |
 |---|---|
+| 辅助账号进家长中心密码锁卡死修复：ParentLockDialog 原生 fetch `/api/auth/me` 缺 X-Trial-Key → 落主库 id 错位（child 顶替 admin 候选）→ 辅助密码全败；补租户头后端到端验证通过（部署 f9dafad） | `done/2026-09-28-HELPER_PARENT_LOCK.md` |
+| 远端移动端两个问题修复：①单词卡片换行——Words.vue 补全站唯一缺失的移动端适配（@media 768：review-dialog 96vw/字号缩放/单词 flex-wrap+word-break）；②自动带读例句中文翻译无声——autoTeach 例句循环补 `speakZh(s.zh,{force:true})`（noZh 复习题/隐藏翻译时不读） | `done/2026-09-28-WORD_CARD_TTS_FIX.md` |
+| 一键部署增加 ops 权威数据同步：tools/deploy_export_ops.py 导出主库配置表(语法教程/激励/成就) → deploy/ops_data.sql，remote_deploy.sh 容器内幂等 upsert 云端主库（不覆盖空间/用户数据），deploy.ps1 加 [1.5/5] 导出步骤（保持 BOM） | `done/2026-09-27-deploy-ops-sync.md` |
+| 家长端知识点过滤条件与运营平台对齐：过滤栏 7 组收敛为 5 组（学科/版本/年级/册次/搜索，删 标签/要求/类型），年级收敛为小学 1-6，版本默认选中教材（修复 synced 为空无默认），新增名称/章节搜索 | `done/2026-09-27-kp-filter-align.md` |
+| 语法教程运营化：主库 ops 权威 + 建空间自动同步 + 更新逻辑（sync-tutorials / sync-tenants）+ 家长端固化只读（403），修复模板/存量空间教程缺失；**追加教程版面优化**：正文按 `##` 分节卡片 + 可折叠 + 本课目录锚点 + 上/下一个语法点 | `done/2026-09-27-GRAMMAR_OPS_TUTORIAL.md` |
+| 文库「生成短文后界面空白」修复：Reading.vue 裸 axios 缺 X-Trial-Key 导致读写落主库 + 生成年级硬编码 7 + generate 响应不含 questions 致右侧白屏；全部改走 `api`、年级跟随空间、生成后同步筛选并拉详情展示；**追加第二轮**：「创建练习集」500（practice_set.user_id NOT NULL）+ 详情响应漏 passage_id 致阅读理解测试页空白 | `done/2026-09-27-READING_TENANT_FIX.md` |
+| 做题环节键盘化：自动聚焦输入框 + 选择题方向键 + 答完回车下一题 + 答对彩蛋（可开关） | `done/2026-09-27-assess-keyboard-ux.md` |
+| 出题规则集成运营中心：ops_prompt_rule 表 + 运营后台「出题规则」页 + llm/question_prompts 读配置（改规则不用改代码） | `done/2026-09-27-prompt-rules-ops.md` |
+| 评测举一反三出题：库存只作参考+每次生成新变式+题干排重+错题知识点加权（9卷连续切卷0重叠） | `done/2026-09-27-assessment-variant.md` |
+| 密码重置（easyfix_demo）+ 练习端浏览器验证：修复 watch 未 import 白屏 + 练习集详情返回 grade 低年级判定 | `done/2026-09-26-password-reset-practice-verify.md` |
+| 大陆义务教育教材版本全量登记（数学12/语文10/英语15，共37个版本） | `done/2026-09-26-mandatory-editions.md` |
+| 运营后台体验账号管理：列表/延长体验/删除账号（含 delete_space 句柄修复） | `done/2026-09-26-trial-account-mgmt.md` |
+| AI 模型市场 ↔ 学生端 LLM/OCR 联动测试 + deepseek 配置迁移到模型市场 | `done/2026-09-26-ai-market-link.md` |
+| 教材版本独立菜单：知识点/单词统一版本库 + 未登记版本一键登记/删除 | `done/2026-09-26-editions-menu.md` |
+| 教材识别策略升级：多模态优先+目录定位+ocr_mode识别方式字段 | `done/2026-09-26-textbook-ocr-strategy.md` |
+| 知识点导入优化：智能导入自动决策 + 来源标记 + 按单元分组保序 | `done/2026-09-25-kp-import-optimize.md` |
+| 运营后台改造：账号+口令登录、后台布局导航、数据列表、敏感文案移除 | `done/2026-09-24-OPS_ADMIN_UI.md` |
+| 架构统一：注册即建空间 + 正式数据收编 easyfix_demo + 移除 /app | `done/2026-09-24-EASYFIX_DEMO.md` |
+| 定位检索省 token：file_map 结构地图 + AGENTS.md 定位 SOP | `done/2026-09-24-SEARCH_OPTIMIZE.md` |
+| 模块体积上限约束（AGENTS.md 代码规范） | `done/2026-09-24-MODULE_SIZE_LIMIT.md` |
+| 搜索纪律（AGENTS.md 省 token 扫描约束） | `done/2026-09-24-SEARCH_DISCIPLINE.md` |
+| 学生端删除家长认证（单词/练习/错题/报告/阅读） | `done/2026-09-23-PARENT_GUARD_DELETE.md` |
 | 单词学习优化（例句融入 + 拼读带读 + 学习模式） | `done/2026-09-23-WORD_LEARN_ENHANCE.md` |
 | 评测分小孩 + 数据隔离架构文档 | `done/2026-09-22-KID_ISOLATION_ARCH.md` |
 | 低年级图示算式模板引擎（1-2年级数学） | `done/2026-09-22-PICTORIAL_MATH_ENGINE.md` |

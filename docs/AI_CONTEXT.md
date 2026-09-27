@@ -216,6 +216,7 @@
   - 官网注册校验用户名=手机号/旧用户名 + 强密码（`Abc@12345` 级别）；**辅助账号用户名任意但必须全局唯一**（与官网已注册账号撞名 → 400 提示换名）。
   - 辅助账号密码规则沿用空间内（≥4 位），官网登录不校验强度（只校验存在+密码）；两边密码不同步=登录失败。
   - `remote_deploy.sh` 的 schema 漂移检查脚本用 `conn.dialect`（sqlite3.Connection 无此属性）会警告失败——**无害**（应用启动 main.py 迁移兜底），已改为 `create_engine('sqlite:///...').dialect`。
+- **坑2（9/28 同日，ParentLockDialog 原生 fetch）**：`frontend/src/components/ParentLockDialog.vue` 的家长密码锁用**原生 fetch(`/api/auth/me`)**（不走 `@/api/http`）→ **缺 X-Trial-Key** → 租户中间件不切库 → me 落**主库** → 主库 `User.id` 与租户库**错位**（同 id 可能是 child）→ `role==='admin'` 候选收集失败 → 只剩 registry 主账号名，辅助账号**输对密码也全败**（弹窗不关=「家长中心进不去」）。已修：原生 fetch 手动拼 `X-Trial-Key`（URL pathname 解析 `/{key}/`，回退 localStorage `easyfix_trial_key`）。**铁律：空间内任何原生 fetch 必须带 X-Trial-Key；一律优先走 `@/api/http` 的 `api` 实例。**
 
 ## 4. 判分/评测相关文档索引
 
