@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DB_USER: str = "root"
     DB_PASSWORD: str = "123456"
     DB_NAME: str = "easyfix"
-    DB_PATH: str = "easyfix.db"  # SQLite database file path
+    DB_PATH: str = "easyfix_main.db"  # SQLite 主库文件路径（正式库：官网账号+运营数据+同步状态）
 
     # Upload - 图片存储在 backend/uploads/images
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "images")

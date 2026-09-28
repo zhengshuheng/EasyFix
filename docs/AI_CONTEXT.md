@@ -13,6 +13,12 @@
 ## 1. 运行环境（易错）
 
 - 后端端口：`backend/.env` 里 `PORT=8012`（**不是 8000**）。启动：`cd backend && ..\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8012`（用项目 `.venv`，系统 python 缺依赖）。
+- **启动调试服务用 `tools/devserver.py`（Agent 自测专用，2026-09-28 固化）**：`exec(open(r'E:\qianwenpaw\EasyFix-main\tools\devserver.py', encoding='utf-8').read())` 在**常驻内核（browser 工具）**里执行——**shell 会话结束会杀子进程，devserver 的 uvicorn 必须挂在 browser 内核下才存活**；默认端口 **8016**（避开用户 8010/8012），幂等：端口无服务或 backend/app 有更新才重启，否则复用；可用 `DEV_PORT`/`DEV_FORCE_RESTART=1` 覆盖；辅助 `dev_enter_app('/路径')`、`dev_build()`、`dev_kill()`、`dev_log_tail(n)`。**不要再用 wmic/subprocess 在 shell 里裸起服务**（会被 QwenPaw 清理，且 8012 用户可能自己占用）。
+- **运营例句链路（2026-09-28 固化，升级版）**：ops_word 运营词库 1131 词导入时**无例句**（ai-generate prompt 只要"英文 中文"、`parse_llm_words` 不解析例句、`ops_word_import` 不写 example_sentences）。已建双轨：
+  ①**运营侧批量补**：`POST /api/ops/words/fill-sentences`（Body {version?, grade?, semester?} 过滤范围）→ 后台线程分批（20/批）复用 `_fill_sentences_llm` 生成写回 **ops_word**（主库 SessionLocal 安全，静默失败幂等）；`ops_word_import` 导入后自动登记缺例句词补全；运营前端 `frontend/ops/src/views/WordManage.vue` 有「✨ 补全例句」按钮 + 例句列（构建 `npm run build:ops` → dist-ops）。
+  ②**学习时兜底**：`word.py daily_task` 复习题卡+今日新词返回前对缺例句词同步懒生成写回空间库。
+  **同步已自动带例句**：`sync_words` 的 `_effective_example` = ops 有例句优先用 → 租户端点击同步即得。实测：fill-sentences 补牛津 grade=1 101 词 30s 完成 → sync_words 后空间库缺例句 96→0。
+  **脚本验证坑**：`sync_words(space_db, ...)` 第一个参数必须是**空间库 session**（`trial.tenant_factory(key)()`），传主库 SessionLocal 会把同步写到主库 word 表、空间库毫无变化；且 SessionLocal 库路径相对 cwd，脚本必须在 backend/ 下执行。
 - 前端：`cd frontend && npm run build`（产物 dist/，由后端托管）。开发 dev server 走 5173。
 - **SQLite 路径是相对 cwd 的**：跑后端脚本必须在 `backend/` 目录下执行，否则连到空库报 `no such table`。
 - 数据库：`backend/easyfix_main.db`（主库/正式库）。表名：`practice_question`（345+ 题）、`assessment_record`、`user`（家长+小孩同表，role=child）、`knowledge_point` 等。
@@ -100,7 +106,7 @@
 ## 1.11 引导 v2 + Ops 一键同步（2026-09-24，阶段 B/C）
 
 - **`POST /api/sync/words-all`**（sync_router.py:89）：一键同步 1-6 年级全部英语单词（`WordAllSyncRequest{version}`），内部循环 8 册调 `ops_data_service.sync_words`，异常单册吞掉继续，全空才 404。返回 `{books:[{grade,semester,added,removed}...], added, removed}`。
-- **家长账号模型（2026-09-24 用户定规则）**：官网注册账号 = 空间**主账号**，**显式标识 `users.is_owner`（每空间仅 1 个）**，注册建空间时 `trial.py create_space_for_account` 标 True；不可删除（users.py delete_user 400「主账号不可删除」+ 前端 UserManage 删除按钮禁用、显示「主账号」标签）。其他家长 = 辅账号，家庭中心删除辅账号 → 其官网账号 `enabled=0`（accounts 表，官网登录 401）→ 官网登录失效；主账号官网登录保持可用。**迁移**：`backend/migrations/003_user_is_owner.py`（幂等：users 加 is_owner 列 + 按 registry spaces.username 标主账号，覆盖正式库/template/tenants）。**关键**：官网登录接口是 `/api/account/login`（不是 `/api/auth/login`——后者是空间内家长登录，走租户 User 表）；账号 token scope=account。**坑：启动服务必须用根 `.venv`（E:\qianwenpaw\EasyFix-main\.venv，含 fpdf 等全依赖），qwenpaw venv 缺 fpdf 起不来**。- **Word 模型补列（必读）**：`models/word.py` 加 `source/edition_key/revision` 三列（custom/ops 标记 + 修订标记）。模板库 word 表**没有**这三列 → `sync_words` 开头 `_ensure_word_package_columns` 幂等 `ALTER TABLE` 补列（空间库每次同步自动补，无需手工迁移）。**坑：补列前 sync_words 赋值 `row.edition_key`/`Word(source=..., edition_key=..., revision=...)` 会抛 AttributeError/TypeError 被 words-all 吞掉 → 整批 404「ops 仓库无该版本」**，症状像"数据源没词"其实模型缺字段。**另一个坑（2026-09-24 实测）：`_ensure_word_package_columns` 只在 sync 入口跑，单词列表等读查询不触发补列 → 未同步过的库 SELECT word.source 直接 `OperationalError: no such column: word.source`。已全库一次性迁移：`backend/migrations/002_word_source_edition_revision.py`（幂等，覆盖正式库 easyfix_main.db + trial_data/template.db + trial_data/tenants/*.db）。模型加列后必须跑该脚本（或等价迁移），读查询会炸。**
+- **家长账号模型（2026-09-24 用户定规则；删除权限 2026-09-28 收口）**：官网注册账号 = 空间**主账号**，**显式标识 `users.is_owner`（每空间仅 1 个）**，注册建空间时 `trial.py create_space_for_account` 标 True；不可删除（users.py delete_user 400「主账号不可删除」+ 前端 UserManage 删除按钮禁用、显示「主账号」标签）。其他家长 = 辅账号，家庭中心删除辅账号 → 其官网账号 `enabled=0`（accounts 表，官网登录 401）→ 官网登录失效；主账号官网登录保持可用。**删除权限仅主账号**：`delete_user` 开头 `if not admin.is_owner: 403`（辅助家长删任何账号/小孩一律 403），前端 UserManage 删除按钮 `v-if="authStore.user?.is_owner"`（**辅助家长完全不显示删除按钮**；主账号行仍 disabled；mount 时 `authStore.refreshMe()` 兜底旧登录态缺 is_owner）。**迁移**：`backend/migrations/003_user_is_owner.py`（幂等：users 加 is_owner 列 + 按 registry spaces.username 标主账号，覆盖正式库/template/tenants）。**关键**：官网登录接口是 `/api/account/login`（不是 `/api/auth/login`——后者是空间内家长登录，走租户 User 表）；账号 token scope=account。**坑：启动服务必须用根 `.venv`（E:\qianwenpaw\EasyFix-main\.venv，含 fpdf 等全依赖），qwenpaw venv 缺 fpdf 起不来**。- **Word 模型补列（必读）**：`models/word.py` 加 `source/edition_key/revision` 三列（custom/ops 标记 + 修订标记）。模板库 word 表**没有**这三列 → `sync_words` 开头 `_ensure_word_package_columns` 幂等 `ALTER TABLE` 补列（空间库每次同步自动补，无需手工迁移）。**坑：补列前 sync_words 赋值 `row.edition_key`/`Word(source=..., edition_key=..., revision=...)` 会抛 AttributeError/TypeError 被 words-all 吞掉 → 整批 404「ops 仓库无该版本」**，症状像"数据源没词"其实模型缺字段。**另一个坑（2026-09-24 实测）：`_ensure_word_package_columns` 只在 sync 入口跑，单词列表等读查询不触发补列 → 未同步过的库 SELECT word.source 直接 `OperationalError: no such column: word.source`。已全库一次性迁移：`backend/migrations/002_word_source_edition_revision.py`（幂等，覆盖正式库 easyfix_main.db + trial_data/template.db + trial_data/tenants/*.db）。模型加列后必须跑该脚本（或等价迁移），读查询会炸。**
   - **辅助家长官网登录链路（2026-09-28，PARENT_HELPER_LOGIN_FIX）**：家长中心「添加家长」= 空间库 User(role=admin、非主账号) + 主库 Account 同步（username + 同 password_hash + `space_key=空间key`，users.py create_user）；官网登录 `/api/account/login` → `get_space_by_account`：主账号按 registry spaces.username 查，**辅助家长按 `Account.space_key` 查（走 `get_space_by_key`）**。**坑：所有「返回空间记录」的 dict 必须含 `url` 字段**——`get_space_by_key` 曾缺 url（只有 get_space_by_username 构造 url），辅助家长官网登录时 `issue_space_token_for_account` 访问 `record["url"]` 直接 KeyError → 500「登录不上」（主账号路径有 url 所以正常，只有辅助家长炸）。**存量旧版辅助家长（基线 users.py 只写空间库、不同步主库 Account）**：官网登录查主库 401 → 靠 `db_migrate.py sync_helper_accounts_to_main()` 启动幂等补录（按 registry 主账号名识别辅助家长，主库重名跳过），main.py 启动时调用。
 - **引导 v2（Onboarding.vue 重写）**：Step1 选小孩数量 1~5 → **动态上限 `5 - 现有 child 数`**（模板自带「体验小朋友 id=2 + 我的小孩 id=3」2 个演示/空壳占名额 → 新注册空间实际可加 1-3 个；名额满显示警告 + 「已有小孩，跳过此步」）；批量添加 `usersApi.create({username:`kid_${Date.now()}_${ok}`, role:'child', display_name, enrollment_date})` 循环。Step3 科目卡**只有 数学/英语**（语文文案说明"已内置后续开放"）→ 版本默认 catalog 第一个 → `syncApi.syncKp({subject, version})` 一键导入全年级（数学=372 条）。Step4 `syncApi.syncWordsAll({version})`（人教版PEP=917 词 8 册）。完成写 `localStorage easyfix_onboarded_{trialKey}` + 清 `easyfix_new_space`。
 - **新 API 客户端 `frontend/src/api/sync.js`**：status/syncKp/syncWordsAll（http.js 自动带 X-Trial-Key + Bearer token）。
@@ -183,6 +189,10 @@
 
 - **Python 循环变量覆盖函数参数**（stats.py 实测翻车）：`for subject_id, ... in subject_query:` 循环变量会**覆盖函数参数 subject_id**，后续 `is_english_subject(db, subject_id)` 拿到的是最后一个学科 id 而非参数值。凡参数名与循环变量同名必翻车——循环变量一律用 `sid` 等别名。
 - **cmd.exe 多行 python -c 会被压成一行报 IndentationError** → 临时脚本写成 .py 文件跑。
+- **移动端头部 chips 逐字换行（2026-09-28，MOBILE_UI_6FIX）**：`mobile.css` 旧规则 `.header-user > * { min-width:0; max-width:100% }` 允许子项压缩 → flex 子项**可缩就不触发**容器 `overflow-x:auto`，`flex-wrap:nowrap` 形同虚设 → 官网/小孩名/退出登录被压成逐字换行。解法：`.header-user > * { flex-shrink:0; min-width:max-content; max-width:max-content }` + chips/site-link/logout-btn `white-space:nowrap`（超宽时容器内横滑）。教训：**"nowrap+横滑"兜底必须在子项不可压缩时才生效**。
+- **窄屏 el-table 固定列占满屏（2026-09-28，MOBILE_UI_5FIX）**：`<el-table-column width="400" fixed="right">` 在 375px 屏永远占满可视宽度，数据列被完全挤出（表格横滑也没用）。解法：`matchMedia('(max-width:768px)')` 响应式 `:width` + 移动端把按钮组收敛为「操作」el-dropdown（90px）。教训：**fixed 列宽必须移动端收敛，否则数据列不可见**。
+- **日期范围弹层 646px 溢出（2026-09-28，MOBILE_UI_5FIX）**：el-date-range-picker popper 桌面两列日历约 646px，窄屏"显示不完整/操作不便"（不是编辑器本身！）。解法：mobile.css 全局 `.el-picker-panel{width:94vw!important}` + `.el-picker-panel__body{min-width:0}` + 左右列 50% + body-wrapper overflow-x:auto。教训：**窄屏查弹层（teleport 到 body）而非触发器**。
+- **LearningReport 用户隔离未接线（2026-09-28，MOBILE_UI_5FIX）**：模型有 `user_id`（"归属小孩"）但 `/generate` 不写入、`/list` 不过滤 → 多小孩数据混看。已补 `get_current_kid_id`（X-Kid-Id 头）+ `or_(user_id==kid_id, user_id.is_(None))` 兼容历史 NULL。另：前端传 `grade` 后端忽略（FastAPI 静默吞未知 query 参数）——参数契约要两侧对齐。
 - **TestClient 版本不兼容**（starlette/httpx 新版报 `Client.__init__() got an unexpected keyword 'app'`）→ 改用直接调用 router 函数传参冒烟，或起真实 uvicorn + curl。
 - **冒烟/测试会在真实 SQLite 里创建 AssessmentRecord 等记录** → 测完按特征清理（写清理脚本），别污染用户历史。
 - **评测空答案=孩子空卷提交**（Assessment.vue `buildFullAnswers` 未答题显式发 `user_answer=''`）——错题详情看到"未作答"是真实数据，不是接口 bug。**且 `_sync_error_questions` 会跳过 user_answer 为空的题**（评测未作答不入错题集，只有输入了答案且判错的才算错题）；存量清理：source='assessment' 且该题在所有评测 detail 中从未有过答案的错题已软删除（36 条，含原停车场题 id=24）。
@@ -217,6 +227,65 @@
   - 辅助账号密码规则沿用空间内（≥4 位），官网登录不校验强度（只校验存在+密码）；两边密码不同步=登录失败。
   - `remote_deploy.sh` 的 schema 漂移检查脚本用 `conn.dialect`（sqlite3.Connection 无此属性）会警告失败——**无害**（应用启动 main.py 迁移兜底），已改为 `create_engine('sqlite:///...').dialect`。
 - **坑2（9/28 同日，ParentLockDialog 原生 fetch）**：`frontend/src/components/ParentLockDialog.vue` 的家长密码锁用**原生 fetch(`/api/auth/me`)**（不走 `@/api/http`）→ **缺 X-Trial-Key** → 租户中间件不切库 → me 落**主库** → 主库 `User.id` 与租户库**错位**（同 id 可能是 child）→ `role==='admin'` 候选收集失败 → 只剩 registry 主账号名，辅助账号**输对密码也全败**（弹窗不关=「家长中心进不去」）。已修：原生 fetch 手动拼 `X-Trial-Key`（URL pathname 解析 `/{key}/`，回退 localStorage `easyfix_trial_key`）。**铁律：空间内任何原生 fetch 必须带 X-Trial-Key；一律优先走 `@/api/http` 的 `api` 实例。** **坑2b（同日再翻车）**：候选2（`/api/trial/status` 拿 registry 主账号名）只读 `localStorage.getItem('easyfix_trial_key')`——残留别的空间 key 会查错空间、缺失（官网跳转前瞬间）直接跳过 → 辅助家长**输主账号密码也进不去**。已修：trialKey 统一提前到 unlock() 顶层，**URL pathname 解析优先、localStorage 仅兜底**（与候选1 一致，commit b9577dc）。**部署后旧 JS 缓存仍会显示旧行为（「进不去」）——验证前强制刷新/无痕。**
+
+## 3.7 专项评测（2026-09-28，阶段 A+B+C 完成）
+
+- **专项 = 学科内知识模块（知识点分组）**：配置 `SPECIALTIES`（`backend/app/routers/assessment.py`，代码内置三科 14 专项：数学 6/英语 4/语文 4），每项 `{key, name, desc, pool(知识点关键词池·子串匹配), types, min_grade, max_grade}`。匹配用 `_kp_in_pool(kp, pool)`（子串），命名差异靠词条兜底 + 覆盖不足时 AI 补题（`_auto_refill` 加 `knowledge_points` 参数限定生成题知识点）。
+- **组卷复用**：原 `start` 主体重构为 `_compose_paper(db, kid_id, req, specialty=None, mode="assessment")`；`mode="practice"` 不建评测记录、不废弃旧 in_progress（练习不打断评测）。判分抽公共 `_grade_answers(db, req, uid)`（评测 submit 与 `special/practice/submit` 同口径，三态判分/数的分解/低年级忽略单位全复用）。
+- **接口**：`GET /assessment/special/list`（按学科返回专项）、`POST /assessment/special/start`、`GET /assessment/special/history`（专项历次 done 记录=进步曲线数据源）、`POST /assessment/special/practice/start`（练习出题，record_id=None）、`POST /assessment/special/practice/submit`（判分+错题同步，无等级评级）。submit/history/detail 均返回 `specialty`+`specialty_name`；`assessment_record.specialty` 列靠 `_ensure_column` 幂等迁移（**不用删库**）。
+- **前端**：Assessment.vue 顶部模式 Tab（综合/专项）；专项模式=学科下拉+专项卡片（按课标学段过滤当前年级）+「开始评测」+「🏋️专项练习」；报告弹窗头部专项名 tag、练习模式徽标（不计等级）、「专项进步」Tab（历次正确率条形曲线+趋势箭头）；历史列表显示专项名；专项历史记录重测保持专项。
+- **坑（实测翻车，2026-09-28）**：
+  - **前端题目 dict 字段名是 `knowledge`，不是 `knowledge_point`**（`_to_question_dict`）；后端判分从 DB 查 `q.knowledge_point`。断言/统计脚本别用错字段。
+  - **数的分解题 dict 的 `answer` 已被转成友好文本**（"任意两个数相加等于该数即可"），不能当用户答案提交判分；测试提交答案必须从 DB 取真实 answer。
+  - **7 天排重会吃掉小题库**：同一学科年级的题被判过（done）后 7 天内不再出。冒烟脚本若先评测后练习，专项池 5 道题会被评测吃光 → 练习返回空。冒烟顺序：练习在前、评测在后。
+  - **空库首次导入 app.main 会崩**（`ensure_kp_dimension_columns` 等前置迁移在 create_all 前跑）：隔离冒烟必须先 `import app.models`（注册全部表到 Base.metadata）→ `Base.metadata.create_all(bind=engine)` → 再 `import app.main`。
+  - **Node 构建 OOM**（`Zone Allocation failed`）：`npm run build*` 前设 `set NODE_OPTIONS=--max-old-space-size=6144`。
+  - **脚本名**：前端正式产物是 `npm run build`（VITE_APP_BASE=/app/，输出 dist/）+ `build:trial`（dist-trial）+ `build:ops`（dist-ops）；**没有 `build:dist`**。
+  - **空间库迁移必须走 db_migrate（2026-09-28 部署翻车）**：新列不能只加 main.py 的 `_ensure_column`（那只改主库 engine）——生产数据在**独立空间库文件**（`trial_data/tenants/*.db`，从 template.db 复制），漏掉就 `no such column: assessment_record.specialty` → 专项评测/练习接口 500。**铁律：加列 = ①main.py `_ensure_column`（主库）②`db_migrate.py` 加 `ensure_xxx_column()` 遍历主库+模板库+全部空间库（`_all_db_targets()`）③main.py 启动调用**。本次教训：`ensure_assessment_specialty_column()`（db_migrate.py）。
+  - **专项练习共用组卷排重逻辑**：刚评测完的专项题 7 天内练习不会重出（好行为，避免原题练习）。
+- **题库归属现状**（只读统计脚本已按 tools/tmp 规约清理，需要复查时从本段+会话记录重写）：数学 268 题——数与运算 50%/解决问题 15%/图形几何 9%/代数方程 1%/**统计概率 0%**/综合实践 1%；英语 137 题——词汇 32%/句型 21%/拼读 4%/**阅读 0%**；语文 144 题——词语 40%/古诗 44%/拼音 21%/**阅读 3%。覆盖低专项靠 AI 补题兜底（生成题带专项知识点）。回归冒烟脚本（23 断言，临时库 smoke_special.db）同样已清理，需要时按 AI_CONTEXT 3.7「坑」重写（冒烟顺序：练习在前、评测在后）。
+
+## 3.8 单词分级空数据 = 裸 fetch 漏租户头（2026-09-28 修复闭环）
+
+**现象**：空间里单词列表「需加强/薄弱/一般」筛选全空；「今日任务/已学会的词」却显示"练 11 次·正确率 27.3%"等记录，用户以为练过但分级无数据；故意答错也不见记录。
+
+**根因**：`Words.vue loadDailyTask / openDailyTask` 与 `MemoryReviewPanel.vue`（联想记忆）用**原生 fetch 调 /api 且不带 X-Trial-Key** → 后端 `trial_tenant_middleware` 不切租户 → 落到**主库 easyfix_main.db**，读到的是**主库演示账号（uid=3）的 demo 进度**（apple 11 次 27.3% 即主库数据，与用户截图逐字一致）。而**表格列表走 wordApi（axios 拦截器自动带 X-Trial-Key）→ 读空间库**（`trial_data/tenants/*.db`，从模板复制，`word_progress` 0 行）→ 分级筛选当然全空。答错的记录其实写进了空间库（submitReview 走 wordApi），但用户回看「已学会的词」（裸 fetch 读主库）看不到 → 误判"没有记录"。
+
+**修复**：`frontend/src/api/http.js` 导出 `apiHeaders(extra={})`（Authorization + X-Kid-Id + X-Trial-Key，显式传入的 header 优先），`Words.vue` 两处 daily-task fetch 与 `MemoryReviewPanel.vue` load/submit 两处 fetch 全部改 `{ headers: apiHeaders() }`。
+
+**铁律**：**空间版前端任何 `fetch('/api/...')` 必须带租户头**。axios 拦截器会自动带，原生 fetch 不会。写新调用优先走 `api/xxx.js` 的 axios 实例；必须裸 fetch 时用 `apiHeaders()`。排查空间数据"看不到/显示主库数据"先检查请求头里有没有 `X-Trial-Key`。验证方法：对同一空间库调 `daily_task(user_id, db=tenant_session)` 看 learned_words（空间库=meet/morning 等真实词；主库=apple/banana demo 词）。
+
+**同族坑（2026-09-28 深夜）**：答错后「需加强」也查不出 = **练习出词年级 ≠ 表格筛选年级**。表格 `fetchWords` 默认 `filters.grade = subjectStore.activeGrade`（学习空间年级），而 daily-task / startReview 前端**没传 grade** → 后端全年级选词 → 答错的词跨年级 → 当前年级视图筛选不到。**铁律：任何"练习/出题"接口与"列表/统计"接口的筛选维度（年级/学期/分类）必须一致**——前端调用 daily-task、startReview 都要传 `grade: subjectStore.activeGrade`（null 不传）。
+
+## 3.9 复习做题带读中文=泄题（2026-09-28）
+
+**现象**：新词学习"认一认"题自动带读把**中文答案**读出来；例句中文翻译也读（例句含答案词）。
+
+**根因**：`Words.vue` watch(currentQuestion) 对新词学习题（is_new）曾为"中文没声音"改成 `noZh: false` 全量带读（题干→英语→中文→词根→例句→**选项**）。但"认一认：选出对应的中文意思"题的正确答案就是 `word.chinese`，带读中文/例句中文=报答案；**选项也含正确答案，自动朗读同样泄题**。
+
+**修复**：做题场景 `noZh: true` + **调用处不传 options**（autoTeach 的 opts.options 朗读不检查 noZh，不传就不读）。只读题干→英语→例句英文；中文需要时点喇叭手动读。
+
+**铁律**：**凡 `reviewStep==='question'` 做题场景，autoTeach 必须 noZh:true 且不带 options**。"帮一年级认字"的诉求用**手动点喇叭**满足（模板选项旁已有 zh-speak-btn），不要自动读中文——中文要么是答案、要么含答案线索。autoTeach 的 `opts.tip`（题干）与 `opts.options`（选项）都要按"是否泄题"单独判断，不能图省事一刀切。
+
+## 3.10 音频残留竞态 = 退出路径漏停带读（2026-09-28）
+
+**现象**：单词复习界面，终止答题 / 提交 / 下一个 / 关闭后，还在自动读上一个单词。
+
+**根因**：`autoTeach` 靠 `teachToken` 中断循环、`autoPlayWithReplay` 靠 `autoPlayToken` 中断重播，但 submitAnswer / nextQuestion / finishReview / terminateReview 都没使 token 失效、也没 `stopSpeech()`——旧循环继续读，甚至和新题自动播放交叉重叠；finishReview 原本只 `++autoPlayToken`（停重播）漏了 autoTeach 循环。
+
+**修复**：Words.vue 统一 `stopTeaching()`（teachToken++ + autoPlayToken.value++ + stopSpeech），挂到：submitAnswer / nextQuestion / terminateReview / finishReview / watch(reviewVisible) 关闭 / startLearnPractice 学习→复习 / watch(learnIndex) 切卡 / onBeforeUnmount 路由离开。
+
+**铁律**：**凡有"自动循环朗读"（token 中断式）的组件，所有退出路径（提交/切题/结算/终止/关闭/路由离开）必须调用统一停止函数**——只停"当前播放"（stopSpeech）不够，还要使循环 token 失效，否则 await 链继续往下播。新增自动朗读功能时先列全退出路径再动手。
+
+## 3.11 空间库 schema 漂移 = 云端"需加强没数据"（2026-09-28 根因闭环）
+
+  **现象**：本地起服务一切正常（复习答错→需加强有数据）；deploy.bat 部署云端后同样操作「需加强/薄弱」永远空。查后端/前端/租户头全链路均正常。
+
+  **根因**：模板库/空间库是**旧版本生成后持久化复用**的（deploy 挂载 `trial_data` 数据卷，`ensure_template_db` 见模板已存在直接复用、**不重建不 create_all**；新空间 = `shutil.copy(template.db)`）。新增模型表/列（word_progress 四维列 recognize/listen/speak/write 等 8 列、word.mnemonic/unit、users.enrollment_date、question 选项列、practice_set_question.student_answer…）**只在主库**由 `main.py _ensure_column`/`create_all` 补齐；空间库此前只补过零星几列（seen_at/specialty/ops_override）。空间库 word_progress 缺列 → 复习提交 / 需加强 / 今日任务接口 SELECT 全列 → `OperationalError: no such column` → 500 → 列表空。**本地正常 = 本地模板是新代码生成的**；云端旧模板 = 必现。
+
+  **修复（db_migrate.py `ensure_tenant_schema()`，main.py 启动最先调用）**：对主库+模板库+全部空间库 ① `Base.metadata.create_all` 补缺失表（已有表不动不碰数据）；② 按 `_COLUMN_MIGRATIONS`（= main.py 主库 `_ensure_column` 全清单 35 项）补缺失列（缺表安全跳过）。本地验证：模拟库 rename 掉四维列 / DROP 表 → 跑迁移 → 需加强查询恢复、表重建 20 列完整。
+
+  **铁律（三件套升级版）**：改模型加表/加列后，**主库迁移（create_all/_ensure_column）≠ 空间库迁移**。空间库是独立文件，必须走 db_migrate 的"**补表 + 补列**"双保险（`ensure_tenant_schema`），只补列不建表会漏掉整表缺失场景（`_add_column_if_missing` 表不存在直接跳过）。**验证必须用"旧 schema 模拟库"**（rename 列 / DROP 表）跑迁移后查接口，不能只看新库。排查"本地正常、云端不行"先怀疑**云端持久化数据（模板/空间库/主库）与本地版本差异**——Dockerfile 缺 COPY、数据卷旧 schema 都是高嫌疑。
 
 ## 4. 判分/评测相关文档索引
 

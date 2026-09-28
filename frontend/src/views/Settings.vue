@@ -7,18 +7,12 @@
           <div class="tab-content general-config">
             <div class="gen-config-form">
               <el-form :model="appConfigForm" label-width="120px" style="max-width: 480px">
-                <el-form-item label="默认年级">
-                  <el-select v-model="appConfigForm.defaultGrade" placeholder="选择默认年级" clearable style="width: 100%">
-                    <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
-                  </el-select>
-                  <div class="form-tip">各页面搜索/筛选将默认使用该年级；可单独清空后查看全部</div>
-                </el-form-item>
                 <el-form-item label="默认学期">
                   <el-select v-model="appConfigForm.defaultSemester" placeholder="选择默认学期" clearable style="width: 100%">
                     <el-option label="上学期" :value="1" />
                     <el-option label="下学期" :value="2" />
                   </el-select>
-                  <div class="form-tip">若页面提供学期筛选，将默认使用该值</div>
+                  <div class="form-tip">仅用于首次启动（未手动选过学期）时默认进入的学期</div>
                 </el-form-item>
                 <el-form-item>
                   <el-button type="primary" @click="saveAppConfig" :loading="savingAppConfig">保存配置</el-button>
@@ -26,7 +20,7 @@
               </el-form>
               <el-alert type="info" :closable="false" style="margin-top: 8px">
                 <template #title>
-                  保存后立即生效：单词、错题、阅读、学习报告、上传录入等页面的默认筛选与新建表单会自动带入默认年级。
+                  各小孩的年级已不再全局配置：请到「账号管理」为每个小孩设置入学日期，系统会自动推断当前年级，点选小孩即进入对应年级学习空间。
                 </template>
               </el-alert>
             </div>
@@ -35,7 +29,7 @@
               <el-descriptions :column="1" size="small">
                 <el-descriptions-item label="服务状态">{{ healthText }}</el-descriptions-item>
                 <el-descriptions-item label="运行端口">{{ portText }}</el-descriptions-item>
-                <el-descriptions-item label="数据存储">backend/easyfix.db（仅本机）</el-descriptions-item>
+                <el-descriptions-item label="数据存储">backend/easyfix_main.db（主库，仅本机）</el-descriptions-item>
                 <el-descriptions-item label="运行模式">本地单机 · 数据不出本机</el-descriptions-item>
               </el-descriptions>
             </el-card>
@@ -57,68 +51,18 @@
 
             <!-- 多模态模型配置 -->
             <el-divider v-if="ocrForm.provider === 'multimodal'">多模态模型OCR配置</el-divider>
-            <el-form-item v-if="ocrForm.provider === 'multimodal'" label="模型提供商">
-              <el-select v-model="ocrForm.multimodal_provider" placeholder="选择多模态模型">
-                <el-option label="OpenAI (GPT-4V/4o)" value="openai" />
-                <el-option label="Claude (Vision)" value="claude" />
-                <el-option label="阿里 (Qwen-VL)" value="qwen" />
+            <el-form-item v-if="ocrForm.provider === 'multimodal'" label="厂商">
+              <el-select v-model="ocrForm.vendor" placeholder="选择平台提供的厂商" style="width: 100%" @change="onOcrVendorChange">
+                <el-option v-for="p in ocrProviders" :key="p.vendor" :label="`${p.name}（${p.vendor}）`" :value="p.vendor" />
               </el-select>
             </el-form-item>
-
-            <!-- OpenAI配置 -->
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'openai'" label="API Key">
-              <el-input v-model="ocrForm.openai_api_key" placeholder="请输入OpenAI API Key" show-password />
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'openai'" label="模型">
-              <el-select v-model="ocrForm.openai_vision_model" placeholder="选择模型">
-                <el-option label="GPT-4o (最新)" value="gpt-4o" />
-                <el-option label="GPT-4 Turbo" value="gpt-4-turbo" />
-                <el-option label="GPT-4 Vision" value="gpt-4-vision-preview" />
+            <el-form-item v-if="ocrForm.provider === 'multimodal'" label="模型">
+              <el-select v-model="ocrForm.multimodal_model" placeholder="选择平台提供的模型" style="width: 100%">
+                <el-option v-for="m in ocrVendorModels" :key="m" :label="m" :value="m" />
               </el-select>
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'openai'">
-              <el-alert type="info" :closable="false">
-                <template #title>
-                  OpenAI计费：约¥0.01-0.1/张图片 | <a href="https://platform.openai.com/docs/vision" target="_blank">查看详情</a>
-                </template>
-              </el-alert>
-            </el-form-item>
-
-            <!-- Claude配置 -->
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'claude'" label="API Key">
-              <el-input v-model="ocrForm.anthropic_api_key" placeholder="请输入Anthropic API Key" show-password />
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'claude'" label="模型">
-              <el-select v-model="ocrForm.claude_vision_model" placeholder="选择模型">
-                <el-option label="Claude 3 Opus (最强)" value="claude-3-opus-20240229" />
-                <el-option label="Claude 3 Sonnet (平衡)" value="claude-3-sonnet-20240229" />
-                <el-option label="Claude 3 Haiku (快速)" value="claude-3-haiku-20240307" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'claude'">
-              <el-alert type="info" :closable="false">
-                <template #title>
-                  Claude计费：约¥0.01-0.15/张图片 | <a href="https://docs.anthropic.com/claude/docs/vision" target="_blank">查看详情</a>
-                </template>
-              </el-alert>
-            </el-form-item>
-
-            <!-- Qwen配置 -->
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'qwen'" label="API Key">
-              <el-input v-model="ocrForm.qwen_api_key" placeholder="请输入阿里云API Key" show-password />
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'qwen'" label="模型">
-              <el-select v-model="ocrForm.qwen_vision_model" placeholder="选择模型">
-                <el-option label="Qwen-VL-Max (最强)" value="qwen-vl-max" />
-                <el-option label="Qwen-VL-Plus" value="qwen-vl-plus" />
-              </el-select>
-            </el-form-item>
-            <el-form-item v-if="ocrForm.provider === 'multimodal' && ocrForm.multimodal_provider === 'qwen'">
-              <el-alert type="info" :closable="false">
-                <template #title>
-                  阿里云百炼计费：约¥0.002-0.02/张图片 | <a href="https://help.aliyun.com/zh/dashscope" target="_blank">查看详情</a>
-                </template>
-              </el-alert>
+              <div class="form-tip">
+                订阅制下无需配置 API Key，多模态模型由平台统一提供；如列表为空，说明当前厂商未配置视觉模型（不支持多模态 OCR），请联系运营在「AI 模型市场」填写视觉模型。
+              </div>
             </el-form-item>
 
             <!-- 传统OCR配置 -->
@@ -241,24 +185,21 @@
           </el-form>
         </el-tab-pane>
 
-        <!-- LLM配置 -->
+        <!-- LLM配置（订阅制：无需配置 Key，只选模型名） -->
         <el-tab-pane label="LLM配置" name="llm">
           <el-form :model="llmForm" label-width="120px" style="max-width: 600px">
-            <el-form-item label="API类型">
-              <el-select v-model="llmForm.provider">
-                <el-option label="OpenAI" value="openai" />
-                <el-option label="Claude" value="claude" />
-                <el-option label="自定义" value="custom" />
+            <el-form-item label="AI 厂商">
+              <el-select v-model="llmForm.vendor" placeholder="选择平台提供的厂商" style="width: 100%" @change="onLlmVendorChange">
+                <el-option v-for="p in llmProviders" :key="p.vendor" :label="`${p.name}（${p.vendor}）`" :value="p.vendor" />
               </el-select>
             </el-form-item>
-            <el-form-item label="API Key">
-              <el-input v-model="llmForm.api_key" placeholder="请输入API Key" show-password />
-            </el-form-item>
-            <el-form-item label="Base URL">
-              <el-input v-model="llmForm.base_url" placeholder="API地址，如 https://api.openai.com/v1" />
-            </el-form-item>
-            <el-form-item label="模型名称">
-              <el-input v-model="llmForm.model" placeholder="如 gpt-4o, claude-3-sonnet" />
+            <el-form-item label="AI 模型">
+              <el-select v-model="llmForm.model" placeholder="选择平台提供的模型" style="width: 100%">
+                <el-option v-for="m in llmVendorModels" :key="m" :label="m" :value="m" />
+              </el-select>
+              <div class="form-tip">
+                订阅制下无需配置 API Key，模型由平台统一提供；如列表为空，请联系运营在后台配置 AI 网关。
+              </div>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="saveLlmConfig" :loading="saving">
@@ -273,7 +214,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { configApi } from '@/api/question'
 import { useAppConfigStore } from '@/stores/appConfig'
@@ -296,30 +237,14 @@ async function fetchHealth() {
   }
 }
 
-// 通用配置：默认年级/学期
+// 通用配置：默认学期（年级已改为按小孩入学日期自动推断，不再全局配置）
 const appConfigForm = reactive({
-  defaultGrade: null,
   defaultSemester: null,
 })
 const savingAppConfig = ref(false)
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 },
-]
 
 const loadAppConfig = async () => {
   await appConfigStore.load(true)
-  appConfigForm.defaultGrade = appConfigStore.defaultGrade
   appConfigForm.defaultSemester = appConfigStore.defaultSemester
 }
 
@@ -327,10 +252,9 @@ const saveAppConfig = async () => {
   savingAppConfig.value = true
   try {
     await appConfigStore.save({
-      defaultGrade: appConfigForm.defaultGrade,
       defaultSemester: appConfigForm.defaultSemester,
     })
-    ElMessage.success('默认年级配置已保存')
+    ElMessage.success('默认学期配置已保存')
   } catch (e) {
     ElMessage.error('保存失败')
   } finally {
@@ -340,14 +264,9 @@ const saveAppConfig = async () => {
 
 const ocrForm = reactive({
   provider: 'multimodal',
-  // 多模态模型
-  multimodal_provider: 'openai',
-  openai_api_key: '',
-  openai_vision_model: 'gpt-4o',
-  anthropic_api_key: '',
-  claude_vision_model: 'claude-3-sonnet-20240229',
-  qwen_api_key: '',
-  qwen_vision_model: 'qwen-vl-max',
+  // 多模态模型（订阅制：只选厂商+模型名，Key 由平台 AI 网关统一提供）
+  multimodal_model: '',
+  vendor: '',
   // 百度
   baidu_api_key: '',
   baidu_secret_key: '',
@@ -359,6 +278,16 @@ const ocrForm = reactive({
   // 本地
   tesseract_path: '',
 })
+const ocrModels = ref([])
+const ocrProviders = ref([])
+const ocrVendorModels = computed(() => {
+  // 只列该厂商的视觉模型；vision_models 留空 = 不支持 OCR（模型列表为空，前端显示提示）
+  const p = ocrProviders.value.find((x) => x.vendor === ocrForm.vendor)
+  return p ? p.vision_models : ocrModels.value
+})
+function onOcrVendorChange() {
+  ocrForm.multimodal_model = ''
+}
 
 const customForm = reactive({
   api_url: '',
@@ -369,11 +298,18 @@ const customForm = reactive({
 })
 
 const llmForm = reactive({
-  provider: 'openai',
-  api_key: '',
-  base_url: 'https://api.openai.com/v1',
-  model: 'gpt-4o',
+  model: '',
+  vendor: '',
 })
+const llmModels = ref([])
+const llmProviders = ref([])
+const llmVendorModels = computed(() => {
+  const p = llmProviders.value.find((x) => x.vendor === llmForm.vendor)
+  return p ? p.models : llmModels.value
+})
+function onLlmVendorChange() {
+  llmForm.model = ''
+}
 
 const saveOcrConfig = async () => {
   saving.value = true
@@ -402,7 +338,7 @@ const saveCustomConfig = async () => {
 const saveLlmConfig = async () => {
   saving.value = true
   try {
-    await configApi.saveLlmConfig(llmForm)
+    await configApi.saveLlmConfig({ model: llmForm.model, vendor: llmForm.vendor })
     ElMessage.success('LLM配置已保存')
   } catch (error) {
     ElMessage.error('保存失败: ' + (error.message || '未知错误'))
@@ -416,12 +352,23 @@ const loadConfigs = async () => {
   try {
     const { data: ocrData } = await configApi.getOcrConfig()
     Object.assign(ocrForm, ocrData)
+    ocrModels.value = ocrData.multimodal_models || []
+    ocrProviders.value = ocrData.multimodal_providers || []
+    if (!ocrForm.vendor && ocrProviders.value.length) {
+      ocrForm.vendor = ocrProviders.value.find((p) => p.is_default)?.vendor || ocrProviders.value[0].vendor
+    }
 
     const { data: customData } = await configApi.getCustomOcrConfig()
     Object.assign(customForm, customData)
 
     const { data: llmData } = await configApi.getLlmConfig()
-    Object.assign(llmForm, llmData)
+    llmForm.model = llmData.model || llmData.default_model || ''
+    llmForm.vendor = llmData.vendor || ''
+    llmModels.value = llmData.models || []
+    llmProviders.value = llmData.providers || []
+    if (!llmForm.vendor && llmProviders.value.length) {
+      llmForm.vendor = llmProviders.value.find((p) => p.is_default)?.vendor || llmProviders.value[0].vendor
+    }
   } catch (error) {
     console.error('加载配置失败:', error)
   } finally {
@@ -499,5 +446,23 @@ onMounted(() => {
 
 .el-divider {
   margin: 20px 0 10px;
+}
+
+/* ============ 移动端：设置卡片单列全宽 ============
+ * 桌面 .gen-config-form 是 flex-basis 480px 且 flex-shrink:0，
+ * 375px 屏上换行后仍是 480px 宽 → 横向溢出（body overflow-x 裁掉右缘）。
+ * 移动端改为 100% 全宽，系统信息卡同步占满。 */
+@media screen and (max-width: 768px) {
+  .general-config {
+    gap: 16px;
+  }
+  .gen-config-form {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+  .sys-info-card {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 }
 </style>

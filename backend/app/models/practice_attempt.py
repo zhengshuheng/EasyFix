@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class PracticeAttempt(Base):
@@ -29,7 +30,7 @@ class PracticeAttempt(Base):
     graded_by = Column(String(20), nullable=True)  # auto=自动判分, manual=人工批改, ai=AI 批改
     accuracy = Column(Float, nullable=True)  # 主观题得分率 0-100
 
-    answered_at = Column(DateTime, server_default=func.now(), index=True)
+    answered_at = Column(DateTime, default=now_local, server_default=func.now(), index=True)
 
     # Relationships
     practice_question = relationship("PracticeQuestion", back_populates="attempts")

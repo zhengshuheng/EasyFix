@@ -154,13 +154,10 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
-import { useAppConfigStore } from '@/stores/appConfig'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadApi, questionApi } from '@/api/question'
-
-const appConfigStore = useAppConfigStore()
 
 // 年级选项
 const gradeOptions = [
@@ -368,9 +365,7 @@ const continueAdd = () => {
 }
 
 onMounted(async () => {
-  await appConfigStore.load()
-  if (form.grade == null) form.grade = appConfigStore.defaultGrade
-  if (form.semester == null) form.semester = appConfigStore.defaultSemester
+  // 年级/学期不再套用系统配置默认值，由用户自选（留空=未指定）
   loadMetaData()
   if (form.subject_id) {
     fetchKnowledgePoints()

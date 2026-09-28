@@ -105,6 +105,11 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="来源" width="110">
+          <template #default="{ row }">
+            <el-tag :type="getSourceType(row.source)" :style="{ fontSize: '14px' }">{{ getSourceLabel(row.source) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="difficulty" label="难度" width="120">
           <template #default="{ row }">
             <span class="difficulty-stars" :class="'difficulty-' + row.difficulty">{{ getDifficultyStars(row.difficulty) }}</span>
@@ -216,6 +221,7 @@
           <div class="detail-card flex-1">
             <div class="card-header-blue">题目</div>
             <div class="card-content">
+              <SceneVisual v-if="currentQuestion.visual" :scene="currentQuestion.visual" />
               <div class="question-text" v-html="decodeHTML(currentQuestion.parsed_question || currentQuestion.original_text || '暂无')"></div>
             </div>
           </div>
@@ -291,18 +297,45 @@
           <span v-if="!currentQuestion.tags?.length" class="text-muted">暂无</span>
         </div>
 
-        <!-- 练习历史卡片 -->
+        <!-- 最近一次作答（醒目：孩子答案 + 对错 + 来源 + 时间） -->
         <div v-if="practiceHistory.length" class="detail-card">
-          <div class="card-header-purple">练习历史</div>
+          <div class="card-header-purple">最近一次作答</div>
+          <div class="card-content">
+            <div class="last-attempt">
+              <div class="la-answer">
+                <span class="la-label">孩子答案：</span>
+                <span :class="[stateOf(practiceHistory[0].is_correct).cls, 'la-value']">{{ practiceHistory[0].student_answer || '（未作答）' }}</span>
+              </div>
+              <div class="la-meta">
+                <el-tag :type="stateOf(practiceHistory[0].is_correct).type" size="small">
+                  {{ stateOf(practiceHistory[0].is_correct).text }}
+                </el-tag>
+                <el-tag size="small" :type="practiceHistory[0].source === 'assessment' ? 'success' : 'primary'" style="margin-left: 6px">
+                  {{ practiceHistory[0].source === 'assessment' ? '评测' : '练习' }}
+                </el-tag>
+                <span class="history-date" style="margin-left: 8px">{{ practiceHistory[0].date }}</span>
+                <span class="history-name">{{ practiceHistory[0].practice_set_name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 作答历史卡片（全部作答记录，含孩子答案与来源） -->
+        <div v-if="practiceHistory.length" class="detail-card">
+          <div class="card-header-purple">作答历史</div>
           <div class="card-content">
             <div v-for="(record, idx) in practiceHistory" :key="idx" class="history-item">
               <span class="history-date">{{ record.date }}</span>
               <span class="history-name">{{ record.practice_set_name }}</span>
-              <el-tag :type="record.is_correct ? 'success' : 'danger'" size="small">
-                {{ record.is_correct ? '✓ 正确' : '✗ 错误' }}
+              <span class="history-answer">{{ record.student_answer ? '孩子答案：' + record.student_answer : '未作答' }}</span>
+              <el-tag :type="stateOf(record.is_correct).type" size="small">
+                {{ stateOf(record.is_correct).text }}
+              </el-tag>
+              <el-tag size="small" :type="record.source === 'assessment' ? 'success' : 'primary'">
+                {{ record.source === 'assessment' ? '评测' : '练习' }}
               </el-tag>
             </div>
-            <div v-if="practiceHistory.length === 0" class="text-muted">暂无练习记录</div>
+            <div v-if="practiceHistory.length === 0" class="text-muted">暂无作答记录</div>
           </div>
         </div>
 
@@ -441,6 +474,13 @@
         <el-form-item label="选择题目">
           <span>已选择 <strong>{{ selectedQuestions.length }}</strong> 道错题</span>
         </el-form-item>
+        <el-form-item label="卷面分数">
+          <el-radio-group v-model="printForm.scoreSetting" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+            <el-radio value="hundred">百分制（满分 100 分）</el-radio>
+            <el-radio value="default">按题型默认分值</el-radio>
+            <el-radio value="none">不显示分数（纯练习卷）</el-radio>
+          </el-radio-group>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="printDialogVisible = false">取消</el-button>
@@ -454,6 +494,16 @@
       :url-list="[imagePreviewUrl]"
       @close="imagePreviewVisible = false"
     />
+
+    <!-- 家长验证：学生删除错题需家长认证 -->
+    <ParentLockDialog
+      v-model="parentGuardVisible"
+      title="家长验证"
+      tip="删除错题需要家长验证"
+      confirm-text="验证并删除"
+      @success="onParentVerified"
+      @update:model-value="!$event && onParentGuardCancel()"
+    />
   </div>
 </template>
 
@@ -464,6 +514,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useSubjectStore } from '@/stores/subject'
+import SceneVisual from '@/components/SceneVisual.vue'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import { useParentGuard } from '@/composables/useParentGuard'
 import axios from 'axios'
 
 const route = useRoute()
@@ -554,6 +607,13 @@ const detailVisible = ref(false)
 const editVisible = ref(false)
 const currentQuestion = ref(null)
 const practiceHistory = ref([])
+// 作答结果三态：1=正确 / 0.5=半对（算式对缺单位等）/ 其他=错误
+const stateOf = (n) => {
+  const v = Number(n)
+  if (v === 1) return { type: 'success', text: '✓ 正确', cls: 'text-success' }
+  if (v === 0.5) return { type: 'warning', text: '◐ 半对', cls: 'text-warning' }
+  return { type: 'danger', text: '✗ 错误', cls: 'text-danger' }
+}
 const imagePreviewVisible = ref(false)
 const imagePreviewUrl = ref('')
 const editLoading = ref(false)
@@ -565,6 +625,7 @@ const printLoading = ref(false)
 const printForm = reactive({
   name: '',
   questionType: 'original',
+  scoreSetting: 'hundred', // 卷面分数：hundred=百分制 / default=题型默认分值 / none=不显示
 })
 
 const editForm = reactive({
@@ -851,7 +912,8 @@ const deleteQuestion = async (row) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await questionApi.delete(row.id)
+    // 家长认证：学生（child）删除错题需家长验证
+    await guard(() => questionApi.delete(row.id))
     ElMessage.success('删除成功')
     fetchQuestions()
   } catch (error) {
@@ -861,6 +923,14 @@ const deleteQuestion = async (row) => {
   }
 }
 
+// 家长认证守卫：学生删除错题需家长验证
+const {
+  visible: parentGuardVisible,
+  guard,
+  onVerified: onParentVerified,
+  onCancel: onParentGuardCancel,
+} = useParentGuard()
+
 const getDifficultyType = (difficulty) => {
   const types = ['', 'success', 'success', 'warning', 'warning', 'danger']
   return types[difficulty] || 'info'
@@ -869,6 +939,17 @@ const getDifficultyType = (difficulty) => {
 const getDifficultyStars = (difficulty) => {
   return '★'.repeat(difficulty)
 }
+
+// 错题来源：practice=练习批改、assessment=评测、upload=手动录入、error_review=错题复习、ai=AI生成
+const SOURCE_MAP = {
+  practice: { label: '练习', type: 'primary' },
+  assessment: { label: '评测', type: 'success' },
+  upload: { label: '手动', type: 'warning' },
+  error_review: { label: '错题复习', type: 'info' },
+  ai: { label: 'AI生成', type: 'danger' },
+}
+const getSourceLabel = (source) => SOURCE_MAP[source]?.label || source || '练习'
+const getSourceType = (source) => SOURCE_MAP[source]?.type || 'info'
 
 // 获取黄色星星（统一黄色）
 const getYellowStars = (difficulty) => {
@@ -1006,11 +1087,31 @@ const clearSelection = () => {
 
 const showPrintDialog = (type) => {
   printForm.questionType = type
-  // 自动生成默认名称
-  const now = new Date()
-  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
-  printForm.name = `练习集_${dateStr}`
+  // 默认名称按「学科年级·错题重练卷·知识点·N题」生成（可自行修改，不再只是一串日期）
+  printForm.name = buildPrintName()
   printDialogVisible.value = true
+}
+
+// 组卷默认名称：数学三年级·错题重练卷·两位数乘一位数·5题
+const buildPrintName = () => {
+  const qs = selectedQuestions.value || []
+  const parts = []
+  const subjectName = subjectStore.activeSubject ? subjectStore.activeSubject.name : ''
+  const gradeLabel = subjectStore.activeGrade
+    ? (gradeOptions.find(g => g.value === subjectStore.activeGrade) || {}).label || `${subjectStore.activeGrade}年级`
+    : ''
+  const head = `${subjectName}${gradeLabel}`
+  if (head) parts.push(head)
+  parts.push('错题重练卷')
+  const kps = []
+  qs.forEach(q => {
+    const kp = (q.knowledge_point || '').trim()
+    if (kp && !kps.includes(kp)) kps.push(kp)
+  })
+  if (kps.length === 1) parts.push(kps[0])
+  else if (kps.length > 1) parts.push(`${kps[0]}等${kps.length}个知识点`)
+  parts.push(`${qs.length}题`)
+  return parts.join('·')
 }
 
 const createPracticeSet = async () => {
@@ -1030,6 +1131,8 @@ const createPracticeSet = async () => {
       name: printForm.name,
       question_ids: questionIds,
       question_type: printForm.questionType,
+      show_score: printForm.scoreSetting !== 'none',
+      score_mode: printForm.scoreSetting === 'default' ? 'default' : 'hundred',
     })
 
     // 自动生成PDF
@@ -1082,15 +1185,15 @@ onMounted(async () => {
   await appConfigStore.load()
   // 首页年级维度跳转：/questions?grade=6
   const routeGrade = Number(route.query.grade)
-  // 学习空间指定年级优先，其次路由参数，最后管理配置默认年级
+  // 学习空间指定年级优先，其次路由参数；都不指定则留空=全部年级
+  // （不再套用系统配置「默认年级」，避免干扰筛选）
   if (subjectStore.activeGrade !== null) {
     filters.grade = subjectStore.activeGrade
   } else if (routeGrade) {
     filters.grade = routeGrade
-  } else if (filters.grade == null) {
-    filters.grade = appConfigStore.defaultGrade
+  } else {
+    filters.grade = null
   }
-  if (filters.semester == null) filters.semester = appConfigStore.defaultSemester
   // 学习空间指定学科时：加载该学科筛选选项
   if (subjectStore.activeSubjectId !== null) {
     fetchFilterOptions(subjectStore.activeSubjectId)
@@ -1484,9 +1587,71 @@ onMounted(async () => {
   min-width: 140px;
 }
 
+.history-answer {
+  font-size: 13px;
+  color: #606266;
+  min-width: 120px;
+}
+
 .history-name {
   flex: 1;
   font-size: 14px;
   color: #303133;
+}
+
+/* 最近一次作答 */
+.last-attempt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.la-answer {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.la-label {
+  color: #909399;
+}
+
+.la-value {
+  font-weight: 600;
+}
+
+.la-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.text-success {
+  color: #67c23a;
+}
+
+.text-warning {
+  color: #e6a23c;
+}
+
+.text-danger {
+  color: #f56c6c;
+}
+
+/* ===== 移动端：错题筛选条件改为横向滚动单行 =====
+ * 8 个控件固定宽 135~330px，换行堆叠时占近半屏；改单行横滑后高度仅 1 行。
+ * 控件保持各自固定宽（flex: 0 0 auto），容器内横向滑动看全。 */
+@media screen and (max-width: 768px) {
+  .filters {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .filters .el-select,
+  .filters .el-input {
+    flex: 0 0 auto;
+  }
 }
 </style>

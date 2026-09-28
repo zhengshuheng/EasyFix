@@ -29,6 +29,11 @@ class Word(Base):
     unit = Column(Integer, nullable=True)  # 单元号（文本整表导入时识别 Unit N）
     unit_title = Column(String(200), nullable=True)  # 单元英文标题（如 "Meeting new people"）
 
+    # 数据来源标记（ops 同步用；custom=手动/导入，ops=主库教材数据同步）
+    source = Column(String(20), nullable=True, default="custom")  # custom/ops
+    edition_key = Column(String(50), nullable=True)  # 同步修订标记（如 ops-v1）
+    revision = Column(String(20), nullable=True)  # 数据修订号
+
     # 记忆增强（新增/导入单词时后台自动生成：拼读规则/词根词源/相关词）
     phonetic_rule = Column(Text, nullable=True)  # 拼读规则：按字母组合拆解怎么读（如 "ee → /iː/，ee 组合读长音 iː"）
     mnemonic = Column(Text, nullable=True)  # 联想记忆口诀（中文，帮助记忆）
@@ -151,6 +156,11 @@ class WordProgress(Base):
 
     last_reviewed_at = Column(DateTime, nullable=True)  # 上次复习时间
     next_review_at = Column(DateTime, nullable=True)  # 下次复习时间
+
+    # 「看过」标记：在今日任务的学词卡阶段翻到过该词（未答题也算）
+    # 语义：seen = 孩子已经学/看过，不再出现在新词池；
+    #       不参与正确率与记忆曲线计算（那些只由答题提交更新）。
+    seen_at = Column(DateTime, nullable=True)
 
     # 记忆曲线参数（艾宾浩斯）
     ease_factor = Column(Integer, default=250)  # 难度因子（单位：分钟）

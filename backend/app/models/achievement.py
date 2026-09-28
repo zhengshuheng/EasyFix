@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class Achievement(Base):
@@ -18,8 +19,9 @@ class Achievement(Base):
     reward_stars = Column(Integer, default=0)
     is_preset = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    ops_override = Column(Boolean, default=False)  # 家长（空间）自定义标记：1=家长改过，0=跟随运营默认
     deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint('code', 'level', name='uix_achievement_code_level'),
@@ -52,7 +54,7 @@ class AchievementConfig(Base):
     achievement_id = Column(Integer, ForeignKey("achievement.id"), unique=True)
     min_words = Column(Integer, default=10)      # 每次最少单词数
     min_accuracy = Column(Integer, default=90)    # 最低正确率%
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local)
 
     achievement = relationship("Achievement")

@@ -56,6 +56,14 @@ export const questionApi = {
   listKnowledgePoints(params) {
     return api.get('/knowledge-points', { params })
   },
+  // 教材版本选项（按学科）
+  getTextbookVersions() {
+    return api.get('/knowledge-points/textbook-versions')
+  },
+  // AI 智能生成知识点（教材/自定义模式）
+  aiGenerateKp(data) {
+    return api.post('/knowledge-points/ai-generate', data)
+  },
   knowledgePointOptions(subjectId) {
     return api.get('/knowledge-points/options', { params: { subject_id: subjectId || undefined } })
   },
@@ -140,6 +148,19 @@ export const questionApi = {
   },
   submitAnswersPracticeSet(id, answers) {
     return api.post(`/practice-sets/${id}/submit-answers`, { answers })
+  },
+  // 线下做题·拍照交卷：上传卷子照片识别手写作答（不落库）
+  recognizePaperAnswers(id, files) {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file))
+    return api.post(`/practice-sets/${id}/recognize-paper`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300000
+    })
+  },
+  // 线下做题·拍照交卷：提交（可选自动 AI 批改），落库判错并派生错题
+  submitPaperPhotos(id, payload) {
+    return api.post(`/practice-sets/${id}/photo-submit`, payload, { timeout: 300000 })
   },
 }
 

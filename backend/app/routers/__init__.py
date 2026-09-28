@@ -9,6 +9,7 @@ from app.routers.tag import router as tag_router
 from app.routers.knowledge_point import router as knowledge_point_router
 from app.routers.practice_set import router as practice_set_router
 from app.routers.word import router as word_router
+from app.routers.word_memory import router as word_memory_router
 from app.routers.learning_report import router as learning_report_router
 from app.routers.motivation import router as motivation_router
 from app.routers.error_type import router as error_type_router
@@ -17,6 +18,10 @@ from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.k12 import router as k12_router
 from app.routers.textbook import router as textbook_router
+from app.routers.grammar import router as grammar_router
+from app.routers.phonics import router as phonics_router
+from app.routers.zh import router as zh_router
+from app.routers.assessment import router as assessment_router
 
 __all__ = [
     "question_router",
@@ -30,6 +35,7 @@ __all__ = [
     "knowledge_point_router",
     "practice_set_router",
     "word_router",
+    "word_memory_router",
     "learning_report_router",
     "motivation_router",
     "error_type_router",
@@ -38,4 +44,8 @@ __all__ = [
     "users_router",
     "k12_router",
     "textbook_router",
+    "grammar_router",
+    "phonics_router",
+    "zh_router",
+    "assessment_router",
 ]

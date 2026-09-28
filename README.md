@@ -17,6 +17,7 @@
 | 📄 练习卷 PDF | 一键从错题生成练习集，导出 PDF（难度星级彩色标注） |
 | 📚 单词学习 | 单词管理 + 艾宾浩斯记忆曲线复习（新学/在途/遗忘点/牢记四阶段） |
 | 📖 阅读理解 | 阅读材料管理 + 阅读测试 |
+| 📚 教材同步 | 按教材同步知识点：拍照教材同步（拍纸质教材，照片即用即删）/ 自备教材 PDF（上传自己持有的电子教材）/ 在线知识大纲 / 教材 PDF 提取（默认不提供下载，提示用户通过合法渠道获取 PDF 后导入），AI 按单元提取知识点入库 |
 | 📈 学习报告 | 周期学习报告生成（LLM 结构化总结） |
 | 🎯 激励系统 | 成就、星星奖励、奖励商城，激发学习动力 |
 | 🗣 语音朗读 | TTS 朗读（单词/阅读） |
@@ -70,8 +71,25 @@ uv pip install -r backend\requirements.txt
 | `HOST` | `0.0.0.0` | 监听地址；`0.0.0.0`=局域网可访问，`127.0.0.1`=仅本机 |
 | `PORT` | `8010` | 服务端口（前端页面与后端 API 共用），按需修改 |
 | `DB_TYPE` | `sqlite` | 数据库类型：`sqlite` / `mysql` / `postgres` |
-| `DB_PATH` | `easyfix.db` | SQLite 数据库文件路径 |
+| `DB_PATH` | `easyfix_main.db` | SQLite 主库文件路径（正式库：官网账号+运营数据+同步状态） |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | - | MySQL / PostgreSQL 连接参数 |
+
+### 教材同步入口配置（`backend/textbook_import_config.json`）
+
+对外推广或分发时默认关闭「在线教材 PDF 下载」入口（产品本身不提供教材下载，PDF tab 显示「请自行通过合法渠道获取」引导），仅保留用户自主内容路径（拍照 / 自备 PDF）与在线知识大纲；确需放开时可自行修改：
+
+```json
+{
+  "enable_online_ctsf": true,
+  "enable_online_pdf": false,
+  "enable_photo": true,
+  "enable_user_pdf": true
+}
+```
+
+- 开关为 `false` 时：前端隐藏对应入口或显示引导，后端对应接口返回 403。
+- `enable_online_pdf`：内置教材 PDF 下载入口，默认关（关闭后前端 PDF tab 显示合法获取引导，后端 403 拦截下载/导入请求）；`enable_online_ctsf`：在线知识大纲（仅知识点元数据）；`enable_photo`：拍照教材同步；`enable_user_pdf`：自备教材 PDF 上传。
+- 修改后重启后端生效。
 
 ### 业务配置（`backend/config/`）
 
@@ -113,8 +131,17 @@ EasyFix-main/
 ├── frontend/
 │   └── dist/               # 前端构建产物（Vue3 SPA，由后端托管）
 ├── docs/SPEC.md            # 产品需求文档
+│   └── 教材同步使用协议.md   # 教材同步功能使用协议（用户自主发起声明）
 └── CHANGELOG.md            # 变更记录
 ```
+
+---
+
+## 📜 版权与使用协议
+
+- **教材同步功能**：教材内容版权归原出版社/著作权人所有。本软件不生产、不销售、不传播教材内容；教材同步由用户自主发起（拍照自购纸质教材 / 上传自己持有的电子教材 / 按需在线导入），平台仅提供从用户提供或指定的 PDF、图片中识别提取知识点的技术服务。
+- **数据本地化**：教材文件与识别成果均存储于用户本地设备，不上传云端、不向任何第三方分发；拍照上传的页面影像为临时处理数据、识别后自动清理；自备/在线导入的教材 PDF 保存于用户本地教材库，仅限个人学习使用、不得传播。
+- 使用教材同步功能即视为已阅读并同意 **《[教材同步使用协议](docs/教材同步使用协议.md)》**（软件内首次使用前需勾选确认）。
 
 ---
 
@@ -146,7 +173,7 @@ cd backend
 | 访问密码是什么 / 怎么改 | 默认 `32167`，改 `backend/app/access_config.py` 的 `ACCESS_PASSWORD` |
 | OCR 报错 | 检查 `backend/config/ocr.json` Provider 与对应 API 密钥；未配置时走 Multimodal 会报错，可切回 PaddleOCR 或关闭 |
 | 数据库想用 MySQL | 修改 `.env`：`DB_TYPE=mysql`，配置 `DB_HOST/PORT/USER/PASSWORD/NAME` |
-| 更换电脑如何迁移 | 拷贝整个项目目录（含 `.venv`、`backend/easyfix.db`、`backend/uploads/`）即可 |
+| 更换电脑如何迁移 | 拷贝整个项目目录（含 `.venv`、`backend/easyfix_main.db`、`backend/trial_data/`、`backend/uploads/`）即可 |
 
 ---
 

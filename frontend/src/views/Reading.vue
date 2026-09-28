@@ -79,8 +79,8 @@
           <el-divider />
 
           <div class="questions-section">
-            <h4>选择题（共 {{ selectedPassage.questions.length }} 题）</h4>
-            <div v-for="q in selectedPassage.questions" :key="q.id" class="question-item">
+            <h4>选择题（共 {{ passageQuestions.length }} 题）</h4>
+            <div v-for="q in passageQuestions" :key="q.id" class="question-item">
               <p class="question-text">{{ q.question_number }}. {{ q.question_text }}</p>
               <div class="options">
                 <div class="option">{{ formatOption('A', q.option_a) }}</div>
@@ -133,6 +133,16 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 家长验证：学生删除短文需家长认证 -->
+    <ParentLockDialog
+      v-model="parentGuardVisible"
+      title="家长验证"
+      tip="删除短文需要家长验证"
+      confirm-text="验证并删除"
+      @success="onParentVerified"
+      @update:model-value="!$event && onParentGuardCancel()"
+    />
   </div>
 </template>
 
@@ -141,7 +151,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useSubjectStore } from '@/stores/subject'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import api from '@/api/http'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import { useParentGuard } from '@/composables/useParentGuard'
 
 const readings = ref([])
 const topics = ref([])
@@ -161,7 +173,7 @@ const filters = reactive({
 })
 
 const generateForm = reactive({
-  grade: 7,
+  grade: null,        // 默认跟随当前学习空间年级（onMounted 里填），不再硬编码 7 年级
   topic: '校园生活',
   difficulty: 3,
 })
@@ -178,13 +190,16 @@ function formatOption(letter, text) {
 }
 
 const contentParagraphs = computed(() => {
-  if (!selectedPassage.value) return []
+  if (!selectedPassage.value || !selectedPassage.value.content) return []
   return selectedPassage.value.content.split('\n').filter(p => p.trim())
 })
 
+/** 详情可能缺 questions（如 generate 响应未加载关系）——统一取值防模板报错白屏 */
+const passageQuestions = computed(() => selectedPassage.value?.questions || [])
+
 async function fetchTopics() {
   try {
-    const res = await axios.get('/api/readings/topics')
+    const res = await api.get('/readings/topics')
     topics.value = res.data
   } catch {
     topics.value = []
@@ -198,7 +213,7 @@ async function fetchReadings() {
     if (filters.topic) params.topic = filters.topic
     if (filters.grade) params.grade = filters.grade
     if (filters.difficulty) params.difficulty = filters.difficulty
-    const res = await axios.get('/api/readings', { params })
+    const res = await api.get('/readings', { params })
     readings.value = res.data.items || []
   } catch {
     ElMessage.error('获取短文列表失败')
@@ -211,7 +226,7 @@ async function selectPassage(item) {
   selectedId.value = item.id
   selectedPassage.value = null
   try {
-    const res = await axios.get(`/api/readings/${item.id}`)
+    const res = await api.get(`/readings/${item.id}`)
     selectedPassage.value = res.data
   } catch {
     ElMessage.error('获取短文详情失败')
@@ -225,10 +240,20 @@ function toggleQuestionAnswer(q) {
 async function doGenerate() {
   generating.value = true
   try {
-    await axios.post('/api/readings/generate', generateForm)
+    const res = await api.post('/readings/generate', generateForm)
     ElMessage.success('生成成功')
     showGenerateDialog.value = false
+    // 同步筛选条件为本次生成条件：否则新短文会被现有 topic/grade/difficulty 筛掉，
+    // 列表看着还是空的（生成完却"看不到"）
+    filters.topic = generateForm.topic || ''
+    filters.grade = generateForm.grade ?? null
+    filters.difficulty = generateForm.difficulty ?? null
     await fetchReadings()
+    // 直接展示刚生成的短文：走详情接口（generate 响应不含 questions 关系，
+    // 直接拿它渲染会因 selectedPassage.questions 为 undefined 报错 → 右侧空白）
+    if (res.data && res.data.id) {
+      await selectPassage({ id: res.data.id })
+    }
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '生成失败')
   } finally {
@@ -236,11 +261,20 @@ async function doGenerate() {
   }
 }
 
+// 家长认证守卫：学生删除短文需家长验证
+const {
+  visible: parentGuardVisible,
+  guard,
+  onVerified: onParentVerified,
+  onCancel: onParentGuardCancel,
+} = useParentGuard()
+
 async function deletePassage() {
   if (!selectedPassage.value) return
   try {
     await ElMessageBox.confirm('确定删除这篇短文？')
-    await axios.delete(`/api/readings/${selectedPassage.value.id}`)
+    // 家长认证：学生（child）删除短文需家长验证；删除必须带家长 token（走 api 实例）
+    await guard(() => api.delete(`/readings/${selectedPassage.value.id}`))
     ElMessage.success('删除成功')
     selectedPassage.value = null
     selectedId.value = null
@@ -253,11 +287,13 @@ async function deletePassage() {
 async function createPracticeSet() {
   if (!selectedPassage.value) return
   try {
-    const res = await axios.post('/api/practice-sets/generate-from-reading', {
+    const res = await api.post('/practice-sets/generate-from-reading', {
       passage_id: selectedPassage.value.id,
     })
     ElMessage.success('练习集创建成功')
-    window.location.href = `/reading-test/${res.data.id}`
+    // 空间 SPA 是 hash 路由（/{key}/#/reading-test/:id）：用 hash 跳转，别用绝对路径
+    // （绝对路径会跳出 /{key}/ 前缀 → 落到官网 404）
+    window.location.hash = `#/reading-test/${res.data.id}`
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '创建失败')
   }
@@ -265,14 +301,15 @@ async function createPracticeSet() {
 
 onMounted(async () => {
   await appConfigStore.load()
-  // 学习空间指定年级优先，其次管理配置默认年级
+  // 学习空间指定年级优先，否则留空=全部（不再套用系统配置「默认年级」）
   if (subjectStore.activeGrade !== null) {
     filters.grade = subjectStore.activeGrade
-  } else if (filters.grade == null) {
-    filters.grade = appConfigStore.defaultGrade
+  } else {
+    filters.grade = null
   }
   if (generateForm.grade == null) {
-    generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : appConfigStore.defaultGrade
+    // 指定年级空间 → 跟随该年级；「全部年级」空间 → 中性默认 3 年级（grade 为必填，不能留空）
+    generateForm.grade = subjectStore.activeGrade ?? 3
   }
   fetchTopics()
   fetchReadings()

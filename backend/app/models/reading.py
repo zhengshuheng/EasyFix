@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class ReadingPassage(Base):
@@ -16,8 +17,8 @@ class ReadingPassage(Base):
     word_count = Column(Integer, nullable=True, comment="词数")
     source = Column(String(50), default="generated", comment="来源：generated/manual")
     deleted = Column(Boolean, default=False, nullable=False, comment="软删除标记")
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local, nullable=True)
 
     # Relationships
     questions = relationship("ReadingQuestion", back_populates="passage", cascade="all, delete-orphan")
@@ -38,7 +39,7 @@ class ReadingQuestion(Base):
     correct_answer = Column(String(1), nullable=False, comment="正确答案 A/B/C/D")
     explanation = Column(Text, nullable=True, comment="解析")
     deleted = Column(Boolean, default=False, nullable=False, comment="软删除标记")
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
     # Relationships
     passage = relationship("ReadingPassage", back_populates="questions")

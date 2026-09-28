@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean, Enum, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class PracticeSet(Base):
@@ -22,8 +23,14 @@ class PracticeSet(Base):
     last_reviewed_at = Column(DateTime, nullable=True)  # 最近复习时间
     review_images = Column(Text, nullable=True)  # JSON数组，复习完成上传的图片
     passage_id = Column(Integer, ForeignKey("reading_passage.id"), nullable=True, comment="关联短文ID（阅读理解练习集使用）")
+    grammar_lesson_id = Column(Integer, ForeignKey("grammar_lesson.id"), nullable=True, comment="关联语法点ID（语法专项练习集使用）")
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
-    created_at = Column(DateTime, server_default=func.now())
+    # 卷面分值：是否显示分数；计分方式 hundred=百分制(100分) / default=题型默认分值
+    show_score = Column(Boolean, default=True)
+    score_mode = Column(String(20), default="hundred")
+    # 卷面「出题人」是否署名「AI 出题助手」（默认 False = 留空白手填）
+    show_ai_author = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
     # Relationships
     subject = relationship("Subject", back_populates="practice_sets")
@@ -59,7 +66,7 @@ class WordReviewSession(Base):
     correct_count = Column(Integer, default=0)  # 正确数
     accuracy = Column(Integer, default=0)  # 正确率(%)
     duration = Column(Integer, default=0)  # 用时（秒）
-    reviewed_at = Column(DateTime, server_default=func.now())  # 复习时间
+    reviewed_at = Column(DateTime, default=now_local, server_default=func.now())  # 复习时间
     # JSON: [{"word_id":1,"is_correct":true}, ...] 删除练习时用于回滚单词复习计数
     word_results = Column(Text, nullable=True)
 

@@ -89,6 +89,8 @@ _ensure_column("error_book", "user_id", "user_id INTEGER")
 _ensure_column("learning_report", "user_id", "user_id INTEGER")
 # 能力评测集管理：评测集题目快照（start 时写入，供历史/重测/恢复）
 _ensure_column("assessment_record", "questions", "questions TEXT")
+# 专项评测：专项 key（None=综合评测；历史曲线/报告按专项归类）
+_ensure_column("assessment_record", "specialty", "specialty VARCHAR(50)")
 # 错题/练习分表 + 按小孩隔离（新表由 create_all 建，这里补结构变更列）
 _ensure_column("practice_set", "user_id", "user_id INTEGER")
 _ensure_column("practice_set_question", "practice_question_id", "practice_question_id INTEGER")
@@ -212,12 +214,18 @@ with engine.begin() as conn:
 # 历史事故：init_preset_data 查 star_action.ops_override，而 ensure_ops_override_columns
 # 在其之后调用 → 线上容器无限重启、8012 端口从未绑定、公网无法访问。
 # ============================================================
-from app.db_migrate import ensure_ops_override_columns, ensure_word_seen_column, ensure_account_space_key_column
+from app.db_migrate import ensure_ops_override_columns, ensure_word_seen_column, ensure_account_space_key_column, ensure_assessment_specialty_column, ensure_tenant_schema
+# 空间库 schema 整体补齐（治本）：create_all 补缺失表 + 按主库清单补列。
+# 必须最先执行——旧模板/旧空间库缺 word_progress 四维列等会导致空间端
+# 复习提交/需加强/今日任务 500（2026-09-28 云端"需加强没数据"根因）。
+ensure_tenant_schema()
 ensure_ops_override_columns()
 # word_progress.seen_at（"看过"标记）：必须覆盖空间库，否则空间端 daily-task 500
 ensure_word_seen_column()
 # accounts.space_key（辅助家长账号绑定空间）：主库 + 模板库补列，官网登录依赖
 ensure_account_space_key_column()
+# assessment_record.specialty（专项评测 key）：必须覆盖空间库，否则专项评测/练习 500
+ensure_assessment_specialty_column()
 
 # 初始化基础数据（学科/标签/错误类型）+ 默认家长账号 + 演示数据 + 激励系统预设数据
 with SessionLocal() as db:

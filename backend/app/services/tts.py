@@ -164,5 +164,46 @@ class TTSService:
             raise
 
 
+    def generate_sentence_audio(self, text: str, lang: str = "en-US") -> str:
+        """
+        生成句子/短语语音（edge-tts 微软免费语音，不依赖浏览器 speechSynthesis）
+
+        场景：例句朗读降级（Chrome 无 en-US 语音）、中文朗读降级（zh-CN）。
+        有道/Free Dictionary 只支持单词，mimo TTS 的 key 长期无效（401），
+        所以句子统一走 edge-tts。md5 缓存文件名，存 audio_dir/sentences/ 子目录，
+        避免句子文件名污染单词音频目录。
+
+        Args:
+            text: 要朗读的文本（英文句子/中文）
+            lang: 语言，en-US（默认）/ zh-CN
+
+        Returns:
+            str: 音频文件绝对路径（.mp3）
+        """
+        import asyncio
+        import hashlib
+
+        import edge_tts
+
+        voice = "en-US-AriaNeural" if lang.lower().startswith("en") else "zh-CN-XiaoxiaoNeural"
+        sub = os.path.join(self.audio_dir, "sentences")
+        os.makedirs(sub, exist_ok=True)
+        key = hashlib.md5(f"{lang}|{text}".encode("utf-8")).hexdigest()[:16]
+        mp3_path = os.path.join(sub, f"{key}.mp3")
+        if os.path.exists(mp3_path):
+            return mp3_path
+
+        async def _gen():
+            c = edge_tts.Communicate(text, voice=voice, rate="+0%")
+            await c.save(mp3_path)
+
+        try:
+            asyncio.run(_gen())
+        except Exception as e:
+            print(f"[TTS] edge-tts 生成失败 ({text}): {e}")
+            raise
+        return mp3_path
+
+
 # 全局单例
 tts_service = TTSService()

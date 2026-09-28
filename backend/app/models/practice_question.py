@@ -10,6 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class PracticeQuestion(Base):
@@ -45,9 +46,11 @@ class PracticeQuestion(Base):
         Integer, ForeignKey("error_question.id"), nullable=True,
         comment="该题复习的错题（错题复习卷有值）",
     )
+    # 配图场景：结构化 JSON（AI 出题时生成），如 {"type":"group","emoji":"🍪","groups":3,"per_group":5}
+    visual = Column(Text, nullable=True, comment="结构化配图场景描述（JSON）")
 
     deleted = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
     __table_args__ = (
         CheckConstraint("difficulty >= 1 AND difficulty <= 5", name="check_pquestion_difficulty"),

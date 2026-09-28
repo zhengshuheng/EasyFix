@@ -9,11 +9,15 @@
               <el-icon><EditPen /></el-icon>
               去做题
             </el-button>
+            <el-button type="warning" size="large" plain @click="openSelectPracticeSet('photo')">
+              <el-icon><Camera /></el-icon>
+              线下做题·拍照交卷
+            </el-button>
             <el-button type="success" size="large" @click="openSelectPracticeSet('grade')">
               <el-icon><MagicStick /></el-icon>
               批改
             </el-button>
-            <el-button type="primary" size="large" @click="showGenerateDialog">
+            <el-button type="primary" size="large" @click="generateDialogRef?.open()">
               <el-icon><Plus /></el-icon>
               出题
             </el-button>
@@ -29,6 +33,13 @@
         <el-select v-model="filters.reviewed" placeholder="复习状态" clearable @change="fetchPracticeSets" style="width: 120px">
           <el-option label="未复习" :value="false" />
           <el-option label="已复习" :value="true" />
+        </el-select>
+        <el-select v-model="filters.source_type" placeholder="卷子类型" clearable @change="fetchPracticeSets" style="width: 130px">
+          <el-option label="语法专项" value="grammar" />
+          <el-option label="单词复习" value="word" />
+          <el-option label="阅读理解" value="reading" />
+          <el-option label="AI练习" value="ai" />
+          <el-option label="错题练习" value="error" />
         </el-select>
         <el-date-picker
           v-model="filters.date_range"
@@ -114,12 +125,27 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="400" fixed="right">
+        <el-table-column :width="isMobile ? 90 : 400" fixed="right" label="操作">
           <template #default="{ row }">
-            <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
-            <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
-            <el-button v-else type="info" size="default" disabled>无PDF</el-button>
-            <el-button type="danger" size="default" @click="deletePracticeSet(row)">删除</el-button>
+            <template v-if="!isMobile">
+              <el-button type="primary" size="default" @click="showDetail(row)">查看详情</el-button>
+              <el-button v-if="row.pdf_path" type="primary" size="default" @click="downloadPdf(row)">下载PDF</el-button>
+              <el-button v-else type="info" size="default" disabled>无PDF</el-button>
+              <el-button type="danger" size="default" @click="deletePracticeSet(row)">删除</el-button>
+            </template>
+            <el-dropdown v-else trigger="click" @command="(cmd) => handleMobileAction(cmd, row)">
+              <el-button type="primary" size="small">
+                操作<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="detail">查看详情</el-dropdown-item>
+                  <el-dropdown-item v-if="row.pdf_path" command="pdf">下载PDF</el-dropdown-item>
+                  <el-dropdown-item v-else command="pdf" disabled>无PDF</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -254,17 +280,20 @@
       </template>
     </el-dialog>
 
-    <!-- 选择卷子弹窗（做题/批改） -->
+    <!-- 选择卷子弹窗（做题/拍照交卷/批改） -->
     <el-dialog
       v-model="selectPsDialogVisible"
-      :title="selectPsMode === 'do' ? '选择卷子 - 学生做题' : '选择卷子 - 家长批改'"
+      :title="selectPsMode === 'do' ? '选择卷子 - 学生做题'
+        : (selectPsMode === 'photo' ? '选择卷子 - 线下做题（拍照交卷）' : '选择卷子 - 家长批改')"
       width="760px"
       destroy-on-close
     >
       <div class="do-tip">
         {{ selectPsMode === 'do'
           ? '选择一份卷子开始做题，完成后提交作答，家长可在「批改」中查看结果'
-          : '选择一份未批改的卷子，查看学生作答并批改（可 AI 一键批改）' }}
+          : (selectPsMode === 'photo'
+            ? '孩子在打印出来的卷子上线下作答，做完后拍照上传，系统自动识别手写作答并自动批改交卷'
+            : '选择一份未批改的卷子，查看学生作答并批改（可 AI 一键批改）') }}
       </div>
       <div class="select-ps-list" v-loading="selectPsLoading">
         <div
@@ -293,7 +322,8 @@
             </div>
           </div>
           <el-button type="primary" size="default" @click.stop="enterSelectedPracticeSet(ps)">
-            {{ selectPsMode === 'do' ? '开始做题' : (ps.reviewed ? '重新批改' : '去批改') }}
+            {{ selectPsMode === 'do' ? '开始做题'
+              : (selectPsMode === 'photo' ? '上传照片交卷' : (ps.reviewed ? '重新批改' : '去批改')) }}
           </el-button>
         </div>
         <el-empty v-if="!selectPsLoading && selectPsList.length === 0" description="暂无可用卷子" />
@@ -303,10 +333,199 @@
       </template>
     </el-dialog>
 
+    <!-- 拍照交卷弹窗（线下做题：拍照 → 自动识别手写作答 → 自动批改交卷） -->
+    <el-dialog
+      v-model="photoDialogVisible"
+      title="线下做题 · 拍照交卷"
+      width="1000px"
+      destroy-on-close
+      :close-on-click-modal="false"
+    >
+      <div class="photo-ps-name" v-if="photoPs?.name">📄 {{ photoPs.name }}</div>
+
+      <!-- 步骤一：拍照 / 上传照片 -->
+      <div v-if="photoStep === 'upload'">
+        <div class="do-tip">
+          把孩子在纸上做完的整份卷子拍清楚（正对、光线均匀、每题都拍到，可多张：正面/反面分别拍）。
+          系统会自动识别手写作答，按卷面题号对号入座。
+        </div>
+        <div class="photo-actions">
+          <el-button type="primary" plain @click="openCamera">
+            <el-icon><Camera /></el-icon> 用电脑摄像头拍摄
+          </el-button>
+          <el-button plain @click="mobileCaptureInput?.click()">
+            📱 手机 / 平板拍照
+          </el-button>
+          <span class="photo-hint">也可以直接在下面选框里选已有照片</span>
+        </div>
+        <input
+          ref="mobileCaptureInput"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          style="display: none"
+          @change="handleMobileCapture"
+        />
+        <!-- 摄像头/手机拍到的照片 -->
+        <div v-if="cameraShots.length" class="photo-shots">
+          <div v-for="(shot, i) in cameraShots" :key="shot.key" class="photo-shot">
+            <img :src="shot.url" alt="拍摄的卷子照片" />
+            <span class="photo-shot-del" @click="removeCameraShot(i)">✕</span>
+            <span class="photo-shot-badge">已拍 {{ i + 1 }}</span>
+          </div>
+        </div>
+        <el-upload
+          :auto-upload="false"
+          :multiple="true"
+          :limit="9"
+          accept="image/*"
+          list-type="picture-card"
+          :on-change="handlePhotoFileChange"
+          :on-remove="handlePhotoFileChange"
+          :file-list="photoFiles"
+        >
+          <el-icon><Plus /></el-icon>
+        </el-upload>
+        <el-checkbox v-model="photoAutoSubmit" style="margin-top: 8px">
+          识别完成后立即自动交卷并批改（不勾选则先核对识别结果）
+        </el-checkbox>
+      </div>
+
+      <!-- 步骤二：核对识别结果 -->
+      <div v-else-if="photoStep === 'review'">
+        <el-alert
+          :title="photoSummary"
+          :type="photoMissingCount ? 'warning' : 'success'"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 10px"
+        />
+        <el-table :data="photoQuestions" max-height="460" size="small" border>
+          <el-table-column prop="no" label="题号" width="60" align="center" />
+          <el-table-column label="题型" width="92">
+            <template #default="{ row }">{{ QUESTION_TYPE_NAMES[row.question_type] || '题目' }}</template>
+          </el-table-column>
+          <el-table-column label="题干" min-width="260">
+            <template #default="{ row }">
+              <span class="photo-stem">{{ row.question_text || '（图片题）' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="识别到的作答（可修改）" width="290">
+            <template #default="{ row }">
+              <el-input v-model="row.recognized_answer" size="small" placeholder="未识别到，可手动填写" />
+            </template>
+          </el-table-column>
+          <el-table-column label="识别把握" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="!row.recognized_answer" type="info" size="small">未识别</el-tag>
+              <el-tag v-else-if="row.confidence === 'high'" type="success" size="small">高</el-tag>
+              <el-tag v-else-if="row.confidence === 'low'" type="warning" size="small">低</el-tag>
+              <el-tag v-else type="primary" size="small">中</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="photo-tip-small">提示：识别不准的题可以直接在上面改，空着的题会被判为「未作答」。</div>
+      </div>
+
+      <!-- 步骤三：交卷结果 -->
+      <div v-else>
+        <div class="photo-result">
+          <div class="photo-score">
+            <span class="photo-score-num">{{ photoResult?.accuracy ?? 0 }}%</span>
+            <span class="photo-score-label">正确率</span>
+          </div>
+          <div class="photo-result-stats">
+            <span class="text-green-600">✅ 对 {{ photoResult?.correct ?? 0 }} 题</span>
+            <span class="text-red-500">❌ 错 {{ photoResult?.wrong ?? 0 }} 题</span>
+            <span class="muted">共批改 {{ photoResult?.graded ?? 0 }} / {{ photoResult?.total ?? 0 }} 题</span>
+            <span v-if="photoResult?.wrong" class="muted">错题已自动进入错题库</span>
+          </div>
+        </div>
+        <el-table :data="photoResultRows" max-height="420" size="small" border>
+          <el-table-column prop="no" label="题号" width="60" align="center" />
+          <el-table-column label="题型" width="92">
+            <template #default="{ row }">{{ QUESTION_TYPE_NAMES[row.question_type] || '题目' }}</template>
+          </el-table-column>
+          <el-table-column label="孩子写的" width="200">
+            <template #default="{ row }">{{ row.answer || '（未作答）' }}</template>
+          </el-table-column>
+          <el-table-column label="判定" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="row.is_correct === true" type="success" size="small">对</el-tag>
+              <el-tag v-else-if="row.is_correct === false" type="danger" size="small">错</el-tag>
+              <el-tag v-else type="info" size="small">未批</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="评语" min-width="240">
+            <template #default="{ row }">{{ row.comment }}</template>
+          </el-table-column>
+        </el-table>
+        <div v-if="photoUnsupported.length" class="photo-tip-small">
+          有 {{ photoUnsupported.length }} 道图片题不支持自动批改，请到「批改」里人工确认。
+        </div>
+      </div>
+
+      <!-- 摄像头拍摄窗口 -->
+      <el-dialog
+        v-model="cameraVisible"
+        title="用摄像头拍卷子"
+        width="720px"
+        append-to-body
+        destroy-on-close
+        @closed="stopCamera"
+      >
+        <div v-if="cameraError" class="camera-error">
+          <el-alert :title="cameraError" type="warning" :closable="false" show-icon />
+          <div class="photo-tip-small">
+            摄像头需要浏览器授权，且页面必须是 http://localhost 或 https 打开；
+            如果用的是手机或无法授权，请改用「📱 手机 / 平板拍照」或直接选已有照片。
+          </div>
+        </div>
+        <div v-else class="camera-wrap">
+          <video ref="cameraVideo" autoplay playsinline muted class="camera-video"></video>
+          <div class="camera-hint">把整张卷子放进取景框，一页一张，拍完可继续拍下一页</div>
+        </div>
+        <div v-if="cameraShots.length" class="photo-shots">
+          <div v-for="(shot, i) in cameraShots" :key="shot.key" class="photo-shot">
+            <img :src="shot.url" alt="已拍照片" />
+            <span class="photo-shot-del" @click="removeCameraShot(i)">✕</span>
+          </div>
+        </div>
+        <template #footer>
+          <el-button @click="cameraVisible = false">拍好了</el-button>
+          <el-button type="warning" :disabled="!!cameraError" @click="captureShot">
+            📸 拍这一页
+          </el-button>
+        </template>
+      </el-dialog>
+
+      <template #footer>
+        <el-button @click="photoDialogVisible = false">关闭</el-button>
+        <el-button v-if="photoStep === 'upload'" type="warning" :disabled="!photoTotalFiles" :loading="photoRecognizing" @click="startPhotoRecognize">
+          {{ photoAutoSubmit ? '识别并自动交卷' : '开始识别' }}
+        </el-button>
+        <el-button v-else-if="photoStep === 'review'" @click="photoStep = 'upload'">重新拍照</el-button>
+        <el-button v-if="photoStep === 'review'" type="primary" :loading="photoSubmitting" @click="submitPhotoPaper">确认交卷（自动批改）</el-button>
+        <el-button v-if="photoStep === 'result'" @click="photoStep = 'review'">修正作答后重新判分</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 做题弹窗（学生做题，全屏便于一年级操作） -->
     <el-dialog v-model="studentDoDialogVisible" title="学生做题" fullscreen class="student-do-dialog" destroy-on-close>
       <div class="do-tip">
-        请逐题作答，完成后点「提交作答」。提交后家长可在「批改」中查看并确认结果。
+        <span class="do-tip-text">请逐题作答，完成后点「提交作答」。提交后家长可在「批改」中查看并确认结果。</span>
+        <span class="do-tip-actions">
+          <span class="do-tip-switch">🔊 自动读题 <el-switch v-model="autoReadPractice" size="small" /></span>
+          <el-button
+            size="small"
+            circle
+            :type="speakAllReading ? 'danger' : 'primary'"
+            plain
+            @click="speakAllPending"
+            :title="speakAllReading ? '停止朗读全部' : '朗读全部题目（未作答）'"
+          >🔊</el-button>
+        </span>
       </div>
       <div class="do-question-list">
         <template v-for="(group, gi) in groupedQuestions" :key="'group-' + gi">
@@ -320,6 +539,7 @@
             :key="question.question_id"
             class="do-question-row"
           >
+            <SceneVisual v-if="question.scene" :scene="question.scene" />
             <div class="do-question-header">
               <span class="do-question-number">{{ question.globalIndex }}.</span>
               <span v-if="group.score" class="do-question-score">({{ group.score }}分)</span>
@@ -372,11 +592,25 @@
                 >× 错</button>
               </div>
               <template v-else>
+                <!-- 填空题：题面有几个空就渲染几个输入框，逐空填写 -->
+                <div v-if="countBlanks(question) >= 2" class="do-blank-list">
+                  <div v-for="(_, bi) in countBlanks(question)" :key="bi" class="do-blank-item">
+                    <span class="do-blank-index">{{ bi + 1 }}</span>
+                    <el-input
+                      v-model="getBlankModel(question)[bi]"
+                      :placeholder="'第' + (bi + 1) + '空'"
+                      size="default"
+                      class="do-blank-input"
+                      @focus="readOnFocus(question)"
+                    />
+                  </div>
+                </div>
                 <el-input
+                  v-else
                   v-model="studentAnswers[question.question_id]"
-                  placeholder="请输入你的作答（可点右边麦克风语音输入）"
+                  :placeholder="doPlaceholder(question)"
                   size="default"
-                  @focus="onAnswerFocus(question.question_id)"
+                  @focus="readOnFocus(question)"
                 />
                 <el-button
                   size="small"
@@ -391,30 +625,6 @@
             </div>
           </div>
         </template>
-      </div>
-      <!-- 软键盘（点击输入框自动弹出，解决键盘字母数字模糊问题） -->
-      <div v-if="softKpVisible" class="soft-keyboard">
-        <div class="sk-header">
-          <span>软键盘 — 点击按键输入</span>
-          <el-button size="small" text type="primary" @click="softKpVisible = false">收起键盘</el-button>
-        </div>
-        <div class="sk-row">
-          <button v-for="k in ['1','2','3','4','5','6','7','8','9','0']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
-        </div>
-        <div class="sk-row">
-          <button v-for="k in ['q','w','e','r','t','y','u','i','o','p']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
-        </div>
-        <div class="sk-row">
-          <button v-for="k in ['a','s','d','f','g','h','j','k','l']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
-        </div>
-        <div class="sk-row">
-          <button v-for="k in ['z','x','c','v','b','n','m']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k }}</button>
-          <button type="button" class="sk-key sk-key-wide" @click="softKeyTap('⌫')">退格</button>
-        </div>
-        <div class="sk-row">
-          <button v-for="k in ['+','-','×','÷','=','.', '(', ')', '，', ' ']" :key="k" type="button" class="sk-key" @click="softKeyTap(k)">{{ k === ' ' ? '空格' : k }}</button>
-          <button type="button" class="sk-key sk-key-wide" @click="softKeyTap('清空')">清空</button>
-        </div>
       </div>
       <template #footer>
         <el-button @click="studentDoDialogVisible = false">返回</el-button>
@@ -538,8 +748,9 @@
     <el-dialog v-model="detailDialogVisible" :title="detailData.name || '练习集详情'" width="1200px" class="practice-detail-dialog" @opened="onDetailDialogOpened">
       <el-tabs v-model="detailActiveTab">
         <!-- 详情页 -->
-        <el-tab-pane label="详情" name="detail">
-          <div class="detail-info">
+﻿        <el-tab-pane label="详情" name="detail">
+          <!-- 单词复习：保留原卡片式（统计为主） -->
+          <div v-if="detailData.source_type === 'word'" class="detail-info">
             <div class="detail-card">
               <div class="card-header-gray">基本信息</div>
               <div class="card-content">
@@ -549,13 +760,12 @@
                   <el-descriptions-item label="类型">{{ getSourceTypeLabel(detailData.source_type) }}</el-descriptions-item>
                   <el-descriptions-item label="题目数">{{ detailData.total_questions }}</el-descriptions-item>
                   <el-descriptions-item label="复习次数">{{ detailData.review_count }}</el-descriptions-item>
+                  <el-descriptions-item label="出卷时间">{{ detailData.created_at ? formatDate(detailData.created_at) : '—' }}</el-descriptions-item>
                   <el-descriptions-item label="备注" :span="2">{{ detailData.notes || '无' }}</el-descriptions-item>
                 </el-descriptions>
               </div>
             </div>
-
-            <!-- 单词复习统计 -->
-            <div v-if="detailData.source_type === 'word' && detailData.word_review_stats" class="word-stats">
+            <div v-if="detailData.word_review_stats" class="word-stats">
               <div class="detail-card">
                 <div class="card-header-green">单词复习统计</div>
                 <div class="card-content">
@@ -568,13 +778,125 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- 错题练习集复习图片 -->
-            <div v-if="detailData.source_type !== 'word'" class="review-images">
-              <div class="detail-card">
-                <div class="card-header-orange">
-                  <span>复习完成图片</span>
-                  <div>
+          <!-- 试卷式详情：题目列表是主角，其他信息折叠为次要 -->
+          <div v-else class="exam-paper">
+            <div class="paper-head">
+              <div class="paper-title">{{ detailData.name || '练习集' }}</div>
+              <div class="paper-meta">
+                <span v-if="detailData.subject_name" class="pm-item">{{ detailData.subject_name }}</span>
+                <span class="pm-item">共 {{ detailData.total_questions || 0 }} 题</span>
+                <span v-if="showPaperScore && paperTotalScore" class="pm-item">满分 {{ paperTotalScore }} 分</span>
+                <span class="pm-item">{{ getSourceTypeLabel(detailData.source_type) }}</span>
+                <span v-if="detailData.created_at" class="pm-item">出卷时间 {{ formatDate(detailData.created_at) }}</span>
+                <span v-if="detailData.show_ai_author" class="pm-item">出题人 AI 出题助手</span>
+              </div>
+              <div v-if="paperMarkSummary.total" class="paper-marks">
+                <span class="pm ok">✓ 正确 {{ paperMarkSummary.correct }}</span>
+                <span class="pm bad">✗ 错误 {{ paperMarkSummary.wrong }}</span>
+                <span v-if="paperMarkSummary.pending" class="pm muted">— 未批改 {{ paperMarkSummary.pending }}</span>
+                <span v-if="detailData.accuracy !== null && detailData.accuracy !== undefined" class="pm muted">正确率 {{ detailData.accuracy }}%</span>
+              </div>
+            </div>
+
+            <div class="paper-toolbar">
+              <div class="paper-toolbar-left">
+                <el-switch v-model="detailShowAnswers" active-text="显示答案与解析" />
+                <el-switch v-model="detailShowWorkSpace" active-text="答题留白" />
+              </div>
+              <div class="paper-toolbar-right">
+                <el-button v-if="detailData.pdf_path" size="small" plain @click="downloadPdf(detailData)">下载 PDF</el-button>
+                <el-button size="small" plain :loading="pdfRegenerating" @click="regeneratePdf">重新生成 PDF</el-button>
+              </div>
+            </div>
+
+            <template v-if="detailData.questions && detailData.questions.length > 0">
+              <div v-for="(group, gi) in groupedDetailQuestions" :key="'dg-' + gi" class="paper-section">
+                <div class="paper-section-head">
+                  <span class="sec-no">{{ cnNumber(gi + 1) }}</span>
+                  <span class="sec-name">{{ group.name || '题目' }}</span>
+                  <span class="sec-meta">
+                    <template v-if="showPaperScore">
+                      <template v-if="group.uniform">共 {{ group.items.length }} 题，每题 {{ group.perScore }} 分，本大题 {{ group.sectionTotal }} 分</template>
+                      <template v-else>共 {{ group.items.length }} 题，本大题 {{ group.sectionTotal }} 分</template>
+                    </template>
+                    <template v-else>共 {{ group.items.length }} 题</template>
+                  </span>
+                </div>
+                <div
+                  v-for="row in group.items"
+                  :key="row.id"
+                  class="paper-question"
+                  :class="row.is_correct === false ? 'q-wrong' : ''"
+                >
+                  <div class="q-no">{{ row.globalIndex }}.</div>
+                  <div class="q-body">
+                    <div class="q-text">{{ row.original_question_text || '（题干缺失）' }}</div>
+                    <div v-if="row.original_image" class="q-image">
+                      <el-image
+                        :src="'/uploads/' + row.original_image"
+                        fit="contain"
+                        style="max-width: 220px; max-height: 150px; cursor: pointer;"
+                        @click="previewImage(row.original_image)"
+                      />
+                    </div>
+                    <div v-if="row.is_reading_question || row.option_a" class="q-options">
+                      <div v-for="opt in detailOptionList(row)" :key="opt.letter" class="q-option">{{ opt.text }}</div>
+                    </div>
+                    <!-- 答题留白：主观题（计算/应用/操作/写作）留出书写空间，与打印出来的卷子一致 -->
+                    <div
+                      v-if="detailShowWorkSpace && writingSpacePx(row)"
+                      class="q-write-space"
+                      :style="{ height: writingSpacePx(row) + 'px' }"
+                    ></div>
+                    <div v-if="detailShowAnswers" class="q-answer-block">
+                      <div class="q-answer-line">
+                        <span class="qa-label">答案</span>
+                        <span class="qa-text">{{ row.original_answer || '—' }}</span>
+                      </div>
+                      <div v-if="row.explanation" class="q-answer-line">
+                        <span class="qa-label">解析</span>
+                        <span class="qa-text explanation">{{ row.explanation }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="q-side">
+                    <span v-if="showPaperScore && !group.uniform && row.score" class="q-score">{{ row.score }}分</span>
+                    <span class="q-result" :class="row.is_correct === true ? 'ok' : row.is_correct === false ? 'bad' : 'muted'">
+                      {{ row.is_correct === true ? '✓' : row.is_correct === false ? '✗' : '—' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <el-empty v-else description="暂无题目" :image-size="80" />
+
+            <!-- 次要信息：默认收起，不抢题目列表的视线 -->
+            <el-collapse class="paper-extra">
+              <el-collapse-item name="info">
+                <template #title>
+                  <span class="extra-title">试卷信息</span>
+                  <span class="extra-hint">学科 / 类型 / 题数 / 复习次数 / 备注</span>
+                </template>
+                <el-descriptions :column="2" border size="small">
+                  <el-descriptions-item label="名称">{{ detailData.name }}</el-descriptions-item>
+                  <el-descriptions-item label="学科">{{ detailData.subject_name }}</el-descriptions-item>
+                  <el-descriptions-item label="类型">{{ getSourceTypeLabel(detailData.source_type) }}</el-descriptions-item>
+                  <el-descriptions-item label="题目数">{{ detailData.total_questions }}</el-descriptions-item>
+                  <el-descriptions-item label="复习次数">{{ detailData.review_count }}</el-descriptions-item>
+                  <el-descriptions-item label="出卷时间">{{ detailData.created_at ? formatDate(detailData.created_at) : '—' }}</el-descriptions-item>
+                  <el-descriptions-item label="正确率">{{ detailData.accuracy !== null && detailData.accuracy !== undefined ? detailData.accuracy + '%' : '未批改' }}</el-descriptions-item>
+                  <el-descriptions-item label="备注" :span="2">{{ detailData.notes || '无' }}</el-descriptions-item>
+                </el-descriptions>
+              </el-collapse-item>
+              <el-collapse-item name="images">
+                <template #title>
+                  <span class="extra-title">复习完成图片</span>
+                  <span class="extra-hint">{{ (detailData.review_images || []).length }} 张</span>
+                </template>
+                <div class="extra-images">
+                  <div class="extra-images-toolbar">
                     <template v-if="!isEditingImages">
                       <el-button type="primary" size="small" @click="startEditImages">编辑图片</el-button>
                     </template>
@@ -583,8 +905,6 @@
                       <el-button size="small" @click="cancelEditImages">取消</el-button>
                     </template>
                   </div>
-                </div>
-                <div class="card-content">
                   <div v-if="!isEditingImages" class="image-grid">
                     <template v-if="detailData.review_images && detailData.review_images.length > 0">
                       <div v-for="(img, idx) in detailData.review_images" :key="idx" class="image-item">
@@ -592,13 +912,12 @@
                           :src="'/uploads/' + img"
                           :preview-src-list="detailData.review_images.map(i => '/uploads/' + i)"
                           fit="cover"
-                          style="width: 120px; height: 120px; border-radius: 8px; cursor: pointer;"
+                          style="width: 110px; height: 110px; border-radius: 8px; cursor: pointer;"
                         />
                       </div>
                     </template>
                     <el-empty v-else description="暂无复习图片" :image-size="60" />
                   </div>
-                  <!-- 编辑模式 -->
                   <div v-else class="image-edit-grid">
                     <el-upload
                       ref="imageEditUploadRef"
@@ -615,70 +934,8 @@
                     </el-upload>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- 错题练习集题目列表 -->
-            <div v-if="detailData.source_type !== 'word' && detailData.questions && detailData.questions.length > 0" class="question-list-section">
-              <div class="detail-card">
-                <div class="card-header-blue">题目列表</div>
-                <div class="card-content">
-                  <div class="question-cards">
-                    <!-- 按题型分组（试卷式），无题型则平铺 -->
-                    <template v-for="(group, gi) in groupedDetailQuestions" :key="'dg-' + gi">
-                      <div v-if="group.name" class="detail-question-group-header">
-                        <span class="detail-group-title">{{ group.name }}</span>
-                        <span class="detail-group-meta">共{{ group.items.length }}题<template v-if="group.score">，每题{{ group.score }}分</template></span>
-                      </div>
-                      <div
-                        v-for="row in group.items"
-                        :key="row.id"
-                        :class="['question-card', row.is_correct === true ? 'card-correct' : row.is_correct === false ? 'card-wrong' : 'card-pending']"
-                      >
-                        <div class="card-header-small">
-                          <span class="card-index">{{ row.globalIndex }}</span>
-                          <span v-if="group.score" class="card-score">({{ group.score }}分)</span>
-                          <el-tag :type="row.is_correct === true ? 'success' : row.is_correct === false ? 'danger' : 'info'" size="small">
-                            {{ row.is_correct === true ? '正确' : row.is_correct === false ? '错误' : '未作答' }}
-                          </el-tag>
-                        </div>
-                        <div class="card-body">
-                          <div class="question-info">
-                            <div class="info-row">
-                              <span class="label">原题：</span>
-                              <span class="value">{{ row.original_question_text?.substring(0, 100) || '无' }}</span>
-                            </div>
-                            <!-- 选项：阅读理解题 / 选择题（AI 出题的选择题选项独立存储） -->
-                            <div v-if="row.is_reading_question || row.option_a" class="reading-options">
-                              <div class="option-row">{{ formatOption('A', row.option_a) }}</div>
-                              <div class="option-row">{{ formatOption('B', row.option_b) }}</div>
-                              <div class="option-row">{{ formatOption('C', row.option_c) }}</div>
-                              <div class="option-row">{{ formatOption('D', row.option_d) }}</div>
-                            </div>
-                            <div class="info-row">
-                              <span class="label">答案：</span>
-                              <span class="value answer">{{ row.original_answer || '-' }}</span>
-                            </div>
-                            <div v-if="row.explanation" class="info-row">
-                              <span class="label">解析：</span>
-                              <span class="value explanation">{{ row.explanation }}</span>
-                            </div>
-                          </div>
-                          <div v-if="row.original_image" class="question-image">
-                            <el-image
-                              :src="'/uploads/' + row.original_image"
-                              fit="contain"
-                              style="width: 60px; height: 60px; cursor: pointer;"
-                              @click="previewImage(row.original_image)"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </el-collapse-item>
+            </el-collapse>
           </div>
         </el-tab-pane>
 
@@ -750,227 +1007,38 @@
       </el-tabs>
     </el-dialog>
 
-    <!-- 出题弹窗：错题组卷 / AI 出题（自动生成PDF） -->
-    <el-dialog v-model="generateDialogVisible" title="出题" width="480px">
-      <el-tabs v-model="generateTab">
-        <el-tab-pane label="错题组卷" name="pool">
-          <el-form :model="generateForm" label-width="70px">
-            <el-form-item label="学科" required>
-              <el-select v-model="generateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll">
-                <el-option
-                  v-for="subject in subjects"
-                  :key="subject.id"
-                  :label="subject.name"
-                  :value="subject.id"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="年级">
-              <el-select v-model="generateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade">
-                <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="数量">
-              <el-input-number v-model="generateForm.count" :min="1" :max="99" />
-            </el-form-item>
-            <el-form-item>
-              <span style="color: #909399; font-size: 12px">优先选择未复习、低正确率的题目，生成后自动打印 PDF</span>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-        <el-tab-pane label="AI 出题" name="ai">
-          <el-form :model="aiGenerateForm" label-width="70px">
-            <el-form-item label="学科" required>
-              <el-select v-model="aiGenerateForm.subject_id" placeholder="选择学科" style="width: 100%" :disabled="!subjectStore.isAll" @change="loadAiKnowledgePoints">
-                <el-option
-                  v-for="subject in subjects"
-                  :key="subject.id"
-                  :label="subject.name"
-                  :value="subject.id"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="年级">
-              <el-select v-model="aiGenerateForm.grade" placeholder="全部" clearable style="width: 100%" :disabled="!subjectStore.isAllGrade" @change="loadAiKnowledgePoints">
-                <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="g.value" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="知识点">
-              <el-radio-group v-model="aiGenerateForm.knowledge_mode">
-                <el-radio value="auto">自动（按错题薄弱点）</el-radio>
-                <el-radio value="select">从知识点库选择</el-radio>
-                <el-radio value="manual">手动输入</el-radio>
-              </el-radio-group>
-              <div v-if="aiGenerateForm.knowledge_mode === 'select'" style="width: 100%; margin-top: 8px">
-                <el-button type="primary" plain style="width: 100%" @click="openKpPicker" :loading="aiKpLoading">
-                  <el-icon><Collection /></el-icon>
-                  &nbsp;选择知识点（{{ aiGenerateForm.selected_kp_ids.length }}）
-                </el-button>
-                <div v-if="aiSelectedKp.length" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px">
-                  <el-tag
-                    v-for="kp in aiSelectedKp"
-                    :key="kp.id"
-                    closable
-                    size="small"
-                    @close="toggleAiKp(kp.id)"
-                  >{{ kp.chapter ? kp.chapter + ' · ' : '' }}{{ kp.name }}</el-tag>
-                </div>
-                <div v-else-if="!aiKpLoading" style="color: #e6a23c; font-size: 12px; margin-top: 6px; line-height: 1.6">
-                  当前学科/年级暂无知识点：请在家长中心 → 题库管理 → 知识点管理用「按教材同步导入」，或切换到其他年级
-                </div>
-              </div>
-              <div v-else-if="aiGenerateForm.knowledge_mode === 'auto'" style="color: #909399; font-size: 12px; margin-top: 8px; line-height: 1.6">
-                自动统计当前学科错误最多的知识点出题（需有错题记录，否则请选择/输入知识点）
-              </div>
-              <el-input
-                v-if="aiGenerateForm.knowledge_mode === 'manual'"
-                v-model="aiGenerateForm.knowledge_text"
-                placeholder="多个知识点用逗号分隔，如：分数加减法,乘法分配律"
-                style="margin-top: 8px"
-              />
-            </el-form-item>
-            <el-form-item label="数量">
-              <el-select v-model="aiGenerateForm.count" style="width: 100%">
-                <el-option v-for="n in [3, 5, 10, 15, 20]" :key="n" :label="`${n} 题`" :value="n" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="难度">
-              <el-select v-model="aiGenerateForm.difficulty" placeholder="中等（默认）" clearable style="width: 100%">
-                <el-option label="简单" :value="1" />
-                <el-option label="基础" :value="2" />
-                <el-option label="中等" :value="3" />
-                <el-option label="偏难" :value="4" />
-                <el-option label="困难" :value="5" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="试卷结构">
-              <div style="width: 100%">
-                <el-radio-group v-model="aiPaperStructure" @change="applyPaperStructure" style="display: flex; flex-direction: column; gap: 6px; align-items: stretch">
-                  <el-radio v-for="(s, key) in PAPER_STRUCTURES" :key="key" :value="key" style="margin-right: 0; height: auto; line-height: 1.4; white-space: normal">
-                    <span style="font-weight: 600">{{ s.label }}</span>
-                    <span style="color: #909399; font-size: 12px; margin-left: 6px">{{ s.desc }}</span>
-                  </el-radio>
-                </el-radio-group>
-                <div style="display: flex; justify-content: space-between; margin-top: 6px">
-                  <span style="color: #c0c4cc; font-size: 12px">一键预设 题型+类型+难度，可再微调</span>
-                  <el-link v-if="aiPaperStructure" type="primary" :underline="false" style="font-size: 12px" @click="clearPaperStructure">清除预设</el-link>
-                </div>
-              </div>
-            </el-form-item>
-            <el-form-item label="题型">
-              <div style="width: 100%">
-                <el-checkbox-group v-model="aiGenerateForm.question_types" style="display: flex; flex-wrap: wrap; gap: 4px 12px">
-                  <el-checkbox
-                    v-for="t in filteredQuestionTypes"
-                    :key="t.value"
-                    :value="t.value"
-                    style="margin-right: 0"
-                  >{{ t.label }}</el-checkbox>
-                </el-checkbox-group>
-                <div style="display: flex; justify-content: space-between; margin-top: 6px">
-                  <span style="color: #c0c4cc; font-size: 12px">不选 = 混合出题</span>
-                  <el-link
-                    v-if="aiGenerateForm.question_types.length"
-                    type="primary"
-                    :underline="false"
-                    style="font-size: 12px"
-                    @click="aiGenerateForm.question_types = []"
-                  >清空</el-link>
-                </div>
-              </div>
-            </el-form-item>
-            <el-form-item label="类型">
-              <div style="width: 100%">
-                <div style="display: flex; flex-direction: column; gap: 8px">
-                  <el-checkbox-group v-model="aiGenerateForm.question_categories" style="display: flex; flex-direction: column; gap: 6px">
-                    <el-checkbox
-                      v-for="c in QUESTION_CATEGORIES"
-                      :key="c.value"
-                      :value="c.value"
-                    >
-                      <span style="font-weight: 600">{{ c.label }}</span>
-                      <span style="color: #909399; font-size: 12px; margin-left: 6px">{{ c.desc }}</span>
-                    </el-checkbox>
-                  </el-checkbox-group>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 6px">
-                  <span style="color: #c0c4cc; font-size: 12px">不选 = 按课标梯度（基础→情境→综合→拓展）编排</span>
-                  <el-link
-                    v-if="aiGenerateForm.question_categories.length"
-                    type="primary"
-                    :underline="false"
-                    style="font-size: 12px"
-                    @click="aiGenerateForm.question_categories = []"
-                  >清空</el-link>
-                </div>
-              </div>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
-      <template #footer>
-        <el-button @click="generateDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="generating"
-          @click="generateTab === 'ai' ? generateAiPractice() : generatePractice()"
-        >
-          {{ generateTab === 'ai' ? 'AI 生成' : '生成并打印' }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <GenerateDialog ref="generateDialogRef" :subjects="subjects" @created="onPracticeGenerated" />
 
-      <!-- 知识点选择弹窗（按单元分组标签点选） -->
-      <el-dialog v-model="kpPickerVisible" title="选择知识点" width="640px" append-to-body>
-        <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center">
-          <el-input v-model="kpSearch" placeholder="搜索知识点名称" clearable style="flex: 1">
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-button v-if="aiGenerateForm.selected_kp_ids.length" size="default" @click="clearAiKpSelection">清空已选</el-button>
-          <span v-if="aiGenerateForm.selected_kp_ids.length" style="color: #409eff; font-size: 13px; white-space: nowrap">已选 {{ aiGenerateForm.selected_kp_ids.length }} 个</span>
-        </div>
-        <div v-if="aiKpLoading" style="text-align: center; padding: 30px; color: #909399">知识点加载中…</div>
-        <div v-else style="max-height: 400px; overflow-y: auto">
-          <div v-for="g in filteredAiKpGroups" :key="g.key" style="margin-bottom: 10px">
-            <div
-              style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #f5f7fa; border-radius: 6px; cursor: pointer; user-select: none"
-              @click="toggleGroup(g)"
-            >
-              <el-checkbox :model-value="isGroupAllChecked(g)" @click.stop @change="toggleGroup(g)" />
-              <span style="font-weight: 600; font-size: 13px">{{ g.label }}</span>
-              <span style="color: #909399; font-size: 12px">{{ g.items.length }} 个</span>
-              <span v-if="isGroupAllChecked(g)" style="color: #409eff; font-size: 12px; margin-left: auto">已全选</span>
-              <span v-else style="color: #c0c4cc; font-size: 12px; margin-left: auto">全选本单元</span>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 6px 0 6px">
-              <el-check-tag
-                v-for="kp in g.items"
-                :key="kp.id"
-                :checked="aiGenerateForm.selected_kp_ids.includes(kp.id)"
-                @change="toggleAiKp(kp.id)"
-              >{{ kp.name }}</el-check-tag>
-            </div>
-          </div>
-          <div v-if="!filteredAiKpGroups.length" style="text-align: center; padding: 30px; color: #909399">
-            没有匹配的知识点，可在家长中心导入教材或切换学科/年级
-          </div>
-        </div>
-        <template #footer>
-          <el-button @click="kpPickerVisible = false">取消</el-button>
-          <el-button type="primary" @click="kpPickerVisible = false">确定（已选 {{ aiGenerateForm.selected_kp_ids.length }}）</el-button>
-        </template>
-      </el-dialog>
+    <!-- 家长验证：学生删除练习需家长认证 -->
+    <ParentLockDialog
+      v-model="parentGuardVisible"
+      title="家长验证"
+      tip="删除练习需要家长验证"
+      confirm-text="验证并删除"
+      @success="onParentVerified"
+      @update:model-value="!$event && onParentGuardCancel()"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Plus, Collection, Search } from '@element-plus/icons-vue'
+import { Plus, Collection, Search, Camera, ArrowDown, ArrowRight } from '@element-plus/icons-vue'
 import { questionApi } from '@/api/question'
 import { useSubjectStore } from '@/stores/subject'
+import { useKidStore } from '@/stores/kid'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import GenerateDialog from '@/components/GenerateDialog.vue'
+import { QUESTION_TYPE_SCORES, QUESTION_TYPE_NAMES, QUESTION_TYPE_ORDER } from '@/constants/questionTypes'
+import { useParentGuard } from '@/composables/useParentGuard'
+import SceneVisual from '@/components/SceneVisual.vue'
+import { speak, stopSpeech, installSpeechUnlock } from '@/utils/speech'
 
 const subjectStore = useSubjectStore()
+const kidStore = useKidStore()
+const route = useRoute()
 const practiceSets = ref([])
 const subjects = ref([])
 const total = ref(0)
@@ -978,6 +1046,7 @@ const selectedIds = ref([])
 const filters = reactive({
   subject_id: null,
   reviewed: null,
+  source_type: null,
   date_range: null,
 })
 const pagination = reactive({
@@ -986,76 +1055,6 @@ const pagination = reactive({
 })
 
 // 出题（生成练习）相关
-const generateDialogVisible = ref(false)
-const generating = ref(false)
-const generateTab = ref('pool') // pool=错题组卷 ai=AI出题
-const generateForm = reactive({
-  subject_id: null,
-  grade: null,
-  count: 5,
-})
-const aiGenerateForm = reactive({
-  subject_id: null,
-  grade: null,
-  knowledge_mode: 'auto', // auto=按错题薄弱点 select=从知识点库选择 manual=手动输入
-  knowledge_text: '',
-  selected_kp_ids: [],    // 从知识点库选择的 id 列表
-  count: 5,
-  difficulty: null,
-  question_types: [],       // 题型多选（空=混合）
-  question_categories: [],  // 类型多选（空=混合）
-})
-const aiPaperStructure = ref('') // 试卷结构预设：basic/standard/advanced
-function clearPaperStructure() {
-  aiPaperStructure.value = ''
-}
-
-// 题型配置（按学科过滤显示）：value -> 中文名
-const QUESTION_TYPES = [
-  { value: 'choice', label: '选择题' },
-  { value: 'fill', label: '填空题' },
-  { value: 'judge', label: '判断题' },
-  { value: 'calc', label: '计算题' },
-  { value: 'application', label: '应用题' },
-  { value: 'operation', label: '操作实践题' },
-  { value: 'reading', label: '阅读理解' },
-  { value: 'writing', label: '写话·习作' },
-  { value: 'sentence', label: '连词成句' },
-]
-// 题型按学科过滤
-const filteredQuestionTypes = computed(() => {
-  const sub = subjects.value.find(s => s.id === aiGenerateForm.subject_id)
-  const name = sub ? (sub.name || '') : ''
-  if (name.includes('语文')) return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'reading', 'writing'].includes(t.value))
-  if (name.includes('英语')) return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'sentence', 'reading'].includes(t.value))
-  return QUESTION_TYPES.filter(t => ['choice', 'fill', 'judge', 'calc', 'application', 'operation'].includes(t.value))
-})
-// 类型配置（对齐课标"四基四能"与核心素养）
-const QUESTION_CATEGORIES = [
-  { value: 'basic', label: '基础巩固', desc: '概念·公式·法则直接考查（四基）' },
-  { value: 'scene', label: '情境应用', desc: '生活真实情境解决问题（四能·情景设计）' },
-  { value: 'comprehensive', label: '综合提升', desc: '跨知识点·多步综合运用（综合与实践）' },
-  { value: 'thinking', label: '思维拓展', desc: '开放探究·规律推理（素养导向）' },
-]
-
-// 题型分值/名称/大题顺序（与后端 PDF 一致，参考学校试卷）
-const QUESTION_TYPE_SCORES = { choice: 3, fill: 3, judge: 2, calc: 4, application: 6, operation: 5, reading: 4, writing: 10, sentence: 2 }
-const QUESTION_TYPE_NAMES = { choice: '选择题', fill: '填空题', judge: '判断题', calc: '计算题', application: '应用题', operation: '操作实践题', reading: '阅读理解', writing: '写话·习作', sentence: '连词成句' }
-const QUESTION_TYPE_ORDER = ['choice', 'fill', 'judge', 'calc', 'application', 'operation', 'reading', 'writing', 'sentence']
-
-// 试卷结构预设（一键填充 题型+类型+难度）
-const PAPER_STRUCTURES = {
-  basic: { label: '基础卷', desc: '基础巩固为主（计算+填空，对应课标"四基"）', types: ['fill', 'calc', 'choice', 'application'], categories: ['basic'], difficulty: 2 },
-  standard: { label: '标准卷', desc: '均衡结构（模拟学校单元/期末卷，7:2:1 梯度）', types: ['fill', 'calc', 'choice', 'application'], categories: ['basic', 'scene'], difficulty: 3 },
-  advanced: { label: '拓展卷', desc: '素养拓展（应用+操作+思维，对应课标"四能"）', types: ['application', 'choice', 'fill', 'operation'], categories: ['comprehensive', 'thinking'], difficulty: 4 },
-}
-function applyPaperStructure(key) {
-  const s = PAPER_STRUCTURES[key]
-  if (!s) return
-  aiGenerateForm.question_types = [...s.types]
-  aiGenerateForm.question_categories = [...s.categories]
-  aiGenerateForm.difficulty = s.difficulty
-}
 
 // 题目按题型分组（做题/详情展示，试卷式大题结构）
 const groupedQuestions = computed(() => {
@@ -1084,7 +1083,14 @@ const groupedQuestions = computed(() => {
 const groupedDetailQuestions = computed(() => {
   const qs = detailData.value.questions || []
   const hasType = qs.some(q => q.question_type)
-  if (!hasType) return [{ key: '', name: '', score: null, items: qs.map((q, i) => ({ ...q, globalIndex: i + 1 })) }]
+  if (!hasType) {
+    const items = qs.map((q, i) => ({ ...q, globalIndex: i + 1 }))
+    const scores = items.map(q => q.score).filter(s => s !== null && s !== undefined)
+    const perScore = scores.length === items.length && items.length ? scores[0] : null
+    const uniform = perScore !== null && scores.every(s => s === scores[0])
+    const sectionTotal = scores.reduce((a, b) => a + b, 0)
+    return [{ key: '', name: '', score: perScore, perScore, uniform, sectionTotal, items }]
+  }
   const groups = {}
   for (const q of qs) {
     const t = q.question_type || '__other'
@@ -1099,218 +1105,56 @@ const groupedDetailQuestions = computed(() => {
   let gi = 1
   return keys.map(k => {
     const items = groups[k].map(q => ({ ...q, globalIndex: gi++ }))
-    return { key: k, name: QUESTION_TYPE_NAMES[k] || '其他', score: QUESTION_TYPE_SCORES[k] || null, items }
+    // 分值取后端算好的（与打印出来的 PDF 一致）：同一大题内每题分值相同才算「每题X分」
+    const scores = items.map(q => q.score).filter(s => s !== null && s !== undefined)
+    const perScore = scores.length === items.length ? scores[0] : (QUESTION_TYPE_SCORES[k] || null)
+    const uniform = scores.length === items.length && scores.every(s => s === scores[0])
+    const sectionTotal = scores.length === items.length
+      ? scores.reduce((a, b) => a + b, 0)
+      : (perScore ? perScore * items.length : 0)
+    return { key: k, name: QUESTION_TYPE_NAMES[k] || '其他', score: perScore, perScore, uniform, sectionTotal, items }
   })
 })
-// AI 出题知识点库（按学科+年级加载，按单元分组）
-const aiKpAll = ref([])
-const aiKpLoading = ref(false)
-const loadAiKnowledgePoints = async () => {
-  if (!aiGenerateForm.subject_id) return
-  aiKpLoading.value = true
-  try {
-    const params = { subject_id: aiGenerateForm.subject_id }
-    if (aiGenerateForm.grade) params.grade = aiGenerateForm.grade
-    const { data } = await questionApi.listKnowledgePoints(params)
-    aiKpAll.value = Array.isArray(data) ? data : []
-  } catch (e) {
-    console.error('加载知识点失败:', e)
-    aiKpAll.value = []
-  } finally {
-    aiKpLoading.value = false
-  }
+// 默认显示答案与解析（可一键隐藏，方便直接拿卷子给孩子做）
+const detailShowAnswers = ref(true)
+// 答题留白开关（主观题书写区，默认显示，与打印出来的卷子一致）
+const detailShowWorkSpace = ref(true)
+// 主观题答题留白高度（px，约按 1mm≈3.4px 对应 PDF 里的留白：计算26mm/应用42mm/写话70mm）
+const WRITING_SPACE_PX = {
+  fill: 34, calc: 90, application: 145, operation: 115,
+  reading: 48, sentence: 55, writing: 240,
 }
-const getGradeLabel = (g) => {
-  const map = { 1: '一年级', 2: '二年级', 3: '三年级', 4: '四年级', 5: '五年级', 6: '六年级', 7: '初一', 8: '初二', 9: '初三', 10: '高一', 11: '高二', 12: '高三' }
-  return map[g] || (g ? `${g}年级` : '')
-}
-
-const aiKpGroups = computed(() => {
-  const map = new Map()
-  for (const k of aiKpAll.value) {
-    const key = `${k.grade ?? ''}|${k.semester ?? ''}|${k.chapter ?? ''}`
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        label: [k.grade ? getGradeLabel(k.grade) : '', k.semester === 1 ? '上学期' : k.semester === 2 ? '下学期' : '', k.chapter || '未归类'].filter(Boolean).join(' · '),
-        items: [],
-      })
-    }
-    map.get(key).items.push(k)
+const writingSpacePx = (row) => (row ? WRITING_SPACE_PX[row.question_type] || 0 : 0)
+const CN_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五']
+const cnNumber = (n) => CN_NUMBERS[n - 1] || String(n)
+// 题目选项（A/B/C/D，空选项自动过滤）
+const detailOptionList = (row) => ['A', 'B', 'C', 'D']
+  .map(letter => ({ letter, text: formatOption(letter, row['option_' + letter.toLowerCase()]) }))
+  .filter(o => o.text)
+// 卷面是否显示分值（练习卷可以不出分数）
+const showPaperScore = computed(() => detailData.value.show_score !== false)
+// 试卷总分（后端按计分方式算好；旧数据兜底按题型默认分值 × 题数）
+const paperTotalScore = computed(() => {
+  if (!showPaperScore.value) return 0
+  if (detailData.value.total_score) return detailData.value.total_score
+  let sum = 0
+  for (const g of groupedDetailQuestions.value) {
+    if (g.score) sum += g.score * g.items.length
   }
-  return Array.from(map.values())
+  return sum
+})
+// 批改概况（正确/错误/未批改）
+const paperMarkSummary = computed(() => {
+  const qs = detailData.value.questions || []
+  let correct = 0, wrong = 0, pending = 0
+  for (const q of qs) {
+    if (q.is_correct === true) correct++
+    else if (q.is_correct === false) wrong++
+    else pending++
+  }
+  return { correct, wrong, pending, total: qs.length }
 })
 
-// 知识点选择弹窗（按单元分组标签点选）
-const kpPickerVisible = ref(false)
-const kpSearch = ref('')
-const openKpPicker = () => {
-  if (aiGenerateForm.subject_id) {
-    loadAiKnowledgePoints() // 打开时强制刷新，保证最新数据
-  }
-  kpSearch.value = ''
-  kpPickerVisible.value = true
-}
-const toggleAiKp = (id) => {
-  const i = aiGenerateForm.selected_kp_ids.indexOf(id)
-  if (i >= 0) aiGenerateForm.selected_kp_ids.splice(i, 1)
-  else aiGenerateForm.selected_kp_ids.push(id)
-}
-const clearAiKpSelection = () => {
-  aiGenerateForm.selected_kp_ids = []
-}
-// 已选知识点对象（用于标签回显）
-const aiSelectedKp = computed(() => {
-  const set = new Set(aiGenerateForm.selected_kp_ids)
-  return aiKpAll.value.filter(k => set.has(k.id))
-})
-// 按搜索词过滤后的分组
-const filteredAiKpGroups = computed(() => {
-  const q = kpSearch.value.trim()
-  if (!q) return aiKpGroups.value
-  return aiKpGroups.value
-    .map(g => ({ ...g, items: g.items.filter(k => k.name.includes(q)) }))
-    .filter(g => g.items.length)
-})
-const isGroupAllChecked = (g) => g.items.length > 0 && g.items.every(k => aiGenerateForm.selected_kp_ids.includes(k.id))
-const toggleGroup = (g) => {
-  const ids = g.items.map(k => k.id)
-  const all = isGroupAllChecked(g)
-  if (all) {
-    aiGenerateForm.selected_kp_ids = aiGenerateForm.selected_kp_ids.filter(id => !ids.includes(id))
-  } else {
-    const set = new Set(aiGenerateForm.selected_kp_ids)
-    ids.forEach(id => set.add(id))
-    aiGenerateForm.selected_kp_ids = Array.from(set)
-  }
-}
-const gradeOptions = [
-  { value: 1, label: '一年级' },
-  { value: 2, label: '二年级' },
-  { value: 3, label: '三年级' },
-  { value: 4, label: '四年级' },
-  { value: 5, label: '五年级' },
-  { value: 6, label: '六年级' },
-]
-
-const showGenerateDialog = () => {
-  // 学习空间指定学科/年级时，生成练习默认该空间且不可切换
-  const defaultSubjectId = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
-  generateForm.subject_id = defaultSubjectId
-  generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
-  generateForm.count = 5
-  aiGenerateForm.subject_id = defaultSubjectId
-  aiGenerateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
-  aiGenerateForm.knowledge_mode = 'auto'
-  aiGenerateForm.knowledge_text = ''
-  aiGenerateForm.selected_kp_ids = []
-  aiGenerateForm.count = 5
-  aiGenerateForm.difficulty = null
-  aiGenerateForm.question_types = []
-  aiGenerateForm.question_categories = []
-  aiPaperStructure.value = ''
-  generateTab.value = 'pool'
-  generateDialogVisible.value = true
-  if (defaultSubjectId) {
-    loadAiKnowledgePoints()
-  }
-}
-
-const generatePractice = async () => {
-  if (!generateForm.subject_id) {
-    ElMessage.warning('请选择学科')
-    return
-  }
-  generating.value = true
-  try {
-    const { data } = await questionApi.generateFromQuestions({
-      subject_id: generateForm.subject_id,
-      grade: generateForm.grade,
-      count: generateForm.count,
-    })
-    ElMessage.success('练习集已生成，可下载打印 PDF')
-    generateDialogVisible.value = false
-    await fetchPracticeSets()
-    if (data.id) {
-      showDetail(data)
-    }
-  } catch (error) {
-    ElMessage.error('生成失败')
-  } finally {
-    generating.value = false
-  }
-}
-
-const generateAiPractice = async () => {
-  if (!aiGenerateForm.subject_id) {
-    ElMessage.warning('请选择学科')
-    return
-  }
-  let knowledge_points = []
-  if (aiGenerateForm.knowledge_mode === 'manual') {
-    knowledge_points = aiGenerateForm.knowledge_text
-      .split(/[,，、;；]/)
-      .map(s => s.trim())
-      .filter(Boolean)
-    if (knowledge_points.length === 0) {
-      ElMessage.warning('请输入知识点（多个用逗号分隔）')
-      return
-    }
-  } else if (aiGenerateForm.knowledge_mode === 'select') {
-    if (aiGenerateForm.selected_kp_ids.length === 0) {
-      ElMessage.warning('请选择知识点（可多选）')
-      return
-    }
-    const idSet = new Set(aiGenerateForm.selected_kp_ids)
-    knowledge_points = aiKpAll.value.filter(k => idSet.has(k.id)).map(k => k.name)
-    if (knowledge_points.length === 0) {
-      ElMessage.warning('所选知识点不存在，请重新选择')
-      return
-    }
-  }
-  generating.value = true
-  try {
-    const { data } = await questionApi.generateAiPracticeSet({
-      subject_id: aiGenerateForm.subject_id,
-      grade: aiGenerateForm.grade,
-      knowledge_points,
-      count: aiGenerateForm.count,
-      difficulty: aiGenerateForm.difficulty,
-      question_types: aiGenerateForm.question_types,
-      question_categories: aiGenerateForm.question_categories,
-    })
-    ElMessage.success(`AI 已生成 ${data.total_questions} 道题，练习集已创建`)
-    generateDialogVisible.value = false
-    // 新卷刚创建，任何筛选都可能把它挡在列表外（日期范围、复习状态、学习空间的学科/年级）
-    // → 生成后主动清掉筛选并对齐空间，保证用户马上能在列表里看到它
-    filters.date_range = null
-    filters.reviewed = null
-    const newGrade = aiGenerateForm.grade
-    const newSubject = aiGenerateForm.subject_id
-    let switched = false
-    if (newGrade && subjectStore.activeGrade !== null && subjectStore.activeGrade !== newGrade) {
-      subjectStore.setGrade(newGrade)
-      switched = true
-    }
-    if (newSubject && subjectStore.activeSubjectId !== null && subjectStore.activeSubjectId !== newSubject) {
-      subjectStore.select(newSubject)
-      switched = true
-    }
-    if (switched) ElMessage.info('已切换到新卷所在的学科/年级，方便查看')
-    await fetchPracticeSets()
-    // 兜底提示：新卷仍不在列表里时明确告知，避免“生成完却不见了”
-    if (data.id && !practiceSets.value.some((x) => x.id === data.id)) {
-      ElMessage.warning(`新卷「${data.name}」已生成，但当前筛选条件下没显示出来，请检查列表筛选`)
-    }
-    if (data.id) {
-      showDetail(data)
-    }
-  } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'AI 出题失败，请检查 LLM 配置后重试')
-  } finally {
-    generating.value = false
-  }
-}
 
 // 复习完成上传相关
 const uploadDialogVisible = ref(false)
@@ -1344,6 +1188,7 @@ const fetchPracticeSets = async () => {
       limit: pagination.limit,
       subject_id: subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : filters.subject_id,
       reviewed: filters.reviewed,
+      source_type: filters.source_type || undefined,
     }
     if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
     if (filters.date_range && filters.date_range.length === 2) {
@@ -1353,6 +1198,17 @@ const fetchPracticeSets = async () => {
     const { data } = await questionApi.listPracticeSets(params)
     practiceSets.value = data.items
     total.value = data.total
+    // 语法专项等入口生成练习卷后直达做题：/practice-sets?auto_do=<id>
+    const autoDoId = Number(route.query.auto_do || '')
+    if (autoDoId > 0) {
+      const ps = practiceSets.value.find(p => p.id === autoDoId)
+      if (ps) {
+        selectPsMode.value = 'do'
+        openStudentDo(ps)
+      } else {
+        ElMessage.info('卷子已生成，可在列表中找到后开始做题')
+      }
+    }
   } catch (error) {
     ElMessage.error('获取练习集列表失败')
   }
@@ -1371,9 +1227,44 @@ const handleSelectionChange = (selection) => {
   selectedIds.value = selection.map(row => row.id)
 }
 
+// 移动端窄屏：操作列从 400px 固定列收敛为「操作」下拉菜单（列宽 90px），
+// 避免固定列占满 375px 屏导致数据列不可见、无法操作（9/28 反馈）
+const isMobile = ref(window.innerWidth <= 768)
+const mobileMq = window.matchMedia('(max-width: 768px)')
+const onMobileMq = (e) => { isMobile.value = e.matches }
+mobileMq.addEventListener('change', onMobileMq)
+onBeforeUnmount(() => mobileMq.removeEventListener('change', onMobileMq))
+
+const handleMobileAction = (cmd, row) => {
+  if (cmd === 'detail') showDetail(row)
+  else if (cmd === 'pdf') downloadPdf(row)
+  else if (cmd === 'delete') deletePracticeSet(row)
+}
+
 const downloadPdf = (ps) => {
   if (ps.pdf_path) {
     window.open(`/uploads/${ps.pdf_path}`, '_blank')
+  }
+}
+
+// 按最新的试卷样式重新生成 PDF（旧练习集的 PDF 还是老排版，点这里刷新）
+const pdfRegenerating = ref(false)
+const regeneratePdf = async () => {
+  const ps = detailData.value
+  if (!ps || !ps.id) return
+  pdfRegenerating.value = true
+  try {
+    const res = await questionApi.generatePracticeSetPdf(ps.id)
+    const url = res?.data?.pdf_url || res?.pdf_url
+    if (url) {
+      ps.pdf_path = url.replace(/^\/uploads\//, '')
+      window.open(url, '_blank')
+    }
+    ElMessage.success('已按试卷样式重新生成 PDF')
+  } catch (e) {
+    ElMessage.error('生成 PDF 失败')
+  } finally {
+    pdfRegenerating.value = false
   }
 }
 
@@ -1410,12 +1301,30 @@ const studentDoDialogVisible = ref(false)
 const studentAnswers = ref({}) // { questionId: 学生作答 }
 const studentDoSubmitting = ref(false)
 const currentDoPsId = ref(null)
+const currentDoPsMeta = ref(null) // 做题中的练习集：{ subject_id, grade }
 
-// 做题无障碍：语音读题 / 语音输入答案 / 软键盘
+// 做题自动带读（低年级数学默认开，家长可关；选择存 localStorage）
+const AUTO_READ_PRACTICE_KEY = 'easyfix_practice_autoread'
+function readPracticeAutoReadDefault() {
+  try {
+    const saved = localStorage.getItem(AUTO_READ_PRACTICE_KEY)
+    if (saved !== null) return saved === '1'
+  } catch (e) { /* ignore */ }
+  return true // 默认开；实际只在低年级数学自动生效
+}
+const autoReadPractice = ref(readPracticeAutoReadDefault())
+watch(autoReadPractice, (v) => {
+  try { localStorage.setItem(AUTO_READ_PRACTICE_KEY, v ? '1' : '0') } catch (e) { /* ignore */ }
+})
+// 低年级数学（1-2 年级）：自动带读 + 图文场景
+const isLowGradeMathDo = computed(() => {
+  const m = currentDoPsMeta.value
+  return !!(m && m.subject_id === 1 && m.grade && m.grade <= 2)
+})
+
+// 做题无障碍：语音读题 / 语音输入答案
 const ttsReadingId = ref(null)          // 正在朗读的题目 id
 const voiceInputingId = ref(null)       // 正在语音识别的题目 id
-const softKpVisible = ref(false)        // 软键盘显示
-const activeKpQuestionId = ref(null)    // 软键盘当前作用题目
 const speechRecognitionSupported = ref(typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition))
 let recognitionInstance = null          // 语音识别实例
 
@@ -1443,41 +1352,83 @@ const convertCnToArabic = (text) => {
 
 // 语音读题（SpeechSynthesis 本地中文朗读）
 const getQuestionSpeakText = (q) => {
-  let t = q.original_question_text || ''
+  let t = q.original_question_text || q.question_text || ''
   if (q.option_a) {
     t += '。选项A：' + (q.option_a || '')
     if (q.option_b) t += '；选项B：' + q.option_b
     if (q.option_c) t += '；选项C：' + q.option_c
     if (q.option_d) t += '；选项D：' + q.option_d
   }
+  // 低年级数学：应用题要求写算式+答案（单位可省略），操作题按题目要求操作
+  if (isLowGradeMathDo.value) {
+    if (q.question_type === 'application') t += '。想一想，写出算式和答案，不用写单位'
+    else if (q.question_type === 'operation') t += '。想一想，按题目要求操作，填上答案就行，不用写单位'
+    else if (!q.option_a && (q.question_type === 'fill' || q.question_type === 'calc')) t += '。把算出的答案填进去就可以'
+  }
   return t.trim()
 }
+// 语音读题：统一走 utils/speech（Chrome 中文语音不可用时自动降级服务器 TTS）
 const speakQuestion = (q) => {
-  if (!('speechSynthesis' in window)) {
-    ElMessage.warning('当前浏览器不支持语音读题')
-    return
-  }
-  if (ttsReadingId.value === q.question_id) {
-    window.speechSynthesis.cancel()
+  if (ttsReadingId.value === q.question_id) { // 再点一次 = 停止
+    stopSpeech()
     ttsReadingId.value = null
     return
   }
-  window.speechSynthesis.cancel()
   const text = getQuestionSpeakText(q)
   if (!text) {
     ElMessage.warning('该题没有可朗读的文字内容')
     return
   }
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'zh-CN'
-  u.rate = 0.9
-  const voices = window.speechSynthesis.getVoices()
-  const zh = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh'))
-  if (zh) u.voice = zh
-  u.onend = () => { ttsReadingId.value = null }
-  u.onerror = () => { ttsReadingId.value = null }
+  const id = q.question_id
+  ttsReadingId.value = id
+  speak(text, { lang: 'zh-CN', rate: 0.9 }).then((ok) => {
+    if (ttsReadingId.value === id) ttsReadingId.value = null
+    if (!ok) ElMessage.warning('朗读失败，请检查网络后重试')
+  })
+}
+
+// 依次朗读全部未作答题（间隔 0.8s；再点一次停止）
+const speakAllReading = ref(false)
+let speakAllQueue = []
+const speakNextInQueue = () => {
+  if (!speakAllReading.value || !speakAllQueue.length) { speakAllReading.value = false; return }
+  const q = speakAllQueue.shift()
+  const text = getQuestionSpeakText(q)
+  if (!text) { speakNextInQueue(); return }
   ttsReadingId.value = q.question_id
-  window.speechSynthesis.speak(u)
+  speak(text, { lang: 'zh-CN', rate: 0.9 }).then(() => {
+    ttsReadingId.value = null
+    if (speakAllReading.value) setTimeout(speakNextInQueue, 800)
+  })
+}
+const speakAllPending = () => {
+  if (speakAllReading.value) {
+    stopSpeech()
+    speakAllQueue = []
+    speakAllReading.value = false
+    return
+  }
+  const qs = currentPsQuestions.value.filter(q => {
+    const v = studentAnswers.value[q.question_id]
+    return !v || (Array.isArray(v) && v.every(x => !(x || '').trim()))
+  })
+  if (!qs.length) { ElMessage.info('题目都已作答完成'); return }
+  speakAllQueue = qs.slice()
+  speakAllReading.value = true
+  speakNextInQueue()
+}
+// 做题输入框占位提示（低年级数学：应用题写算式+答案，单位可省略）
+const doPlaceholder = (q) => {
+  if (isLowGradeMathDo.value && ['fill', 'calc', 'application', 'operation'].includes(q.question_type || '')) {
+    if (q.question_type === 'application') return '写出算式和答案，不用写单位（可点右边麦克风语音输入）'
+    if (q.question_type === 'operation') return '按题目要求操作，填上答案就行（可点右边麦克风语音输入）'
+    return '填数字就行（可点右边麦克风语音输入）'
+  }
+  return '请输入你的作答（可点右边麦克风语音输入）'
+}
+// 聚焦填空输入框时自动带读（低年级数学）
+const readOnFocus = (q) => {
+  if (autoReadPractice.value && isLowGradeMathDo.value) speakQuestion(q)
 }
 
 // 语音输入答案（Web Speech Recognition，需 Chrome/Edge 且可联网）
@@ -1505,13 +1456,21 @@ const startVoiceInput = (qid) => {
     }
     if (final) {
       const converted = convertCnToArabic(final)
-      studentAnswers.value[qid] = (studentAnswers.value[qid] || '') + converted
+      const cur = studentAnswers.value[qid]
+      if (Array.isArray(cur)) {
+        // 多空填空：语音内容追加到第一个未填的空，全填则追加到最后一空
+        let idx = cur.findIndex(x => !(x || '').trim())
+        if (idx === -1) idx = cur.length - 1
+        cur[idx] = (cur[idx] || '') + converted
+      } else {
+        studentAnswers.value[qid] = (cur || '') + converted
+      }
     }
   }
   rec.onerror = (e) => {
     voiceInputingId.value = null
     if (e.error === 'not-allowed') ElMessage.warning('未获得麦克风权限，请在浏览器地址栏允许麦克风后重试')
-    else if (e.error === 'network') ElMessage.error('语音识别服务不可用（需联网），请改用键盘或软键盘输入')
+    else if (e.error === 'network') ElMessage.error('语音识别服务不可用（需联网），请改用键盘输入')
     else ElMessage.warning('语音识别失败：' + e.error)
   }
   rec.onend = () => { voiceInputingId.value = null; recognitionInstance = null }
@@ -1533,21 +1492,37 @@ const pickOption = (qid, value) => {
   studentAnswers.value[qid] = studentAnswers.value[qid] === value ? '' : value
 }
 
-// 软键盘：聚焦输入框弹出，按键追加到当前题答案
-const onAnswerFocus = (qid) => {
-  activeKpQuestionId.value = qid
-  softKpVisible.value = true
+// ===== 填空题多空逐空填写 =====
+// 统计题面空位数量（支持（　）/（ ）/( )/____ 等占位写法）
+const countBlanks = (q) => {
+  const text = q.original_question_text || q.parsed_question || ''
+  const m = text.match(/（\s*）|\(\s*\)|_{2,}/g)
+  return m ? m.length : 0
 }
-const softKeyTap = (key) => {
-  const qid = activeKpQuestionId.value
-  if (qid == null) return
-  if (key === '⌫') {
-    studentAnswers.value[qid] = (studentAnswers.value[qid] || '').slice(0, -1)
-  } else if (key === '清空') {
-    studentAnswers.value[qid] = ''
-  } else {
-    studentAnswers.value[qid] = (studentAnswers.value[qid] || '') + key
+// 把已保存的字符串答案按常见分隔符切回各空（重做卷子时预填用）
+const splitSavedBlank = (text, n) => {
+  const parts = (text || '').split(/[、；;，,和\s]+/).filter(p => p.trim() !== '')
+  const arr = new Array(Math.max(n, 1)).fill('')
+  for (let i = 0; i < n && i < parts.length; i++) arr[i] = parts[i].trim()
+  return arr
+}
+// 确保多空题的答案数组已初始化并返回（模板 v-model 绑定数组元素用）
+const getBlankModel = (q) => {
+  const qid = q.question_id
+  if (!Array.isArray(studentAnswers.value[qid])) {
+    const saved = typeof studentAnswers.value[qid] === 'string' ? studentAnswers.value[qid] : ''
+    studentAnswers.value[qid] = splitSavedBlank(saved, countBlanks(q))
   }
+  return studentAnswers.value[qid]
+}
+// 提交时把多空数组合并成「空1、空2」字符串（批改/展示均按同一格式；全空视为未作答）
+const formatAnswer = (v) => {
+  if (Array.isArray(v)) {
+    const trimmed = v.map(x => (x || '').trim())
+    if (trimmed.every(x => !x)) return ''
+    return trimmed.join('、')
+  }
+  return (v || '').trim()
 }
 // 选择卷子（做题/批改入口）
 const selectPsDialogVisible = ref(false)
@@ -1626,6 +1601,8 @@ const initGrading = async (ps) => {
   // 获取练习集详情（含题目）
   try {
     const { data } = await questionApi.getPracticeSet(ps.id)
+    // 练习集无 grade 列：详情接口从题目快照推导（低年级数学自动带读/图文场景判定用）
+    currentDoPsMeta.value = { subject_id: data.subject_id ?? ps.subject_id, grade: data.grade ?? ps.grade }
     currentPsQuestions.value = data.questions || []
     gradingResults.value = {}
     aiComments.value = {}
@@ -1647,8 +1624,8 @@ const openSelectPracticeSet = async (mode) => {
     if (subjectStore.activeGrade !== null) params.grade = subjectStore.activeGrade
     const { data } = await questionApi.listPracticeSets(params)
     let items = data.items || []
-    if (mode === 'do') {
-      // 做题只针对错题练习/阅读理解卷，单词复习卷走独立流程
+    if (mode === 'do' || mode === 'photo') {
+      // 做题/拍照交卷只针对错题练习/阅读理解卷，单词复习卷走独立流程
       items = items.filter(ps => ps.source_type !== 'word')
     }
     selectPsList.value = items
@@ -1664,6 +1641,8 @@ const enterSelectedPracticeSet = (ps) => {
   selectPsDialogVisible.value = false
   if (selectPsMode.value === 'do') {
     openStudentDo(ps)
+  } else if (selectPsMode.value === 'photo') {
+    openPhotoSubmit(ps)
   } else {
     markReviewed(ps)
   }
@@ -1672,19 +1651,31 @@ const enterSelectedPracticeSet = (ps) => {
 const openStudentDo = async (ps) => {
   studentDoDialogVisible.value = true
   currentDoPsId.value = ps.id
+  currentDoPsMeta.value = { subject_id: ps.subject_id, grade: ps.grade }
   try {
     const { data } = await questionApi.getPracticeSet(ps.id)
+    // 练习集无 grade 列：详情接口从题目快照推导（低年级数学自动带读/图文场景判定用）
+    currentDoPsMeta.value = { subject_id: data.subject_id ?? ps.subject_id, grade: data.grade ?? ps.grade }
     currentPsQuestions.value = data.questions || []
     studentAnswers.value = {}
-    softKpVisible.value = false
-    activeKpQuestionId.value = null
     ttsReadingId.value = null
+    stopSpeech()
+    speakAllQueue = []
+    speakAllReading.value = false
     if (recognitionInstance) { recognitionInstance.stop(); recognitionInstance = null }
     voiceInputingId.value = null
-    // 预填已保存的作答（重新做题可修改）
+    // 预填已保存的作答（重新做题可修改；多空填空题切回逐空数组）
     currentPsQuestions.value.forEach(q => {
-      if (q.student_answer) studentAnswers.value[q.question_id] = q.student_answer
+      if (q.student_answer) {
+        const n = countBlanks(q)
+        if (n >= 2) studentAnswers.value[q.question_id] = splitSavedBlank(q.student_answer, n)
+        else studentAnswers.value[q.question_id] = q.student_answer
+      }
     })
+    // 低年级数学自动带读第一题（家长无需陪读）
+    if (autoReadPractice.value && isLowGradeMathDo.value && currentPsQuestions.value.length) {
+      speakQuestion(currentPsQuestions.value[0])
+    }
   } catch (error) {
     ElMessage.error('获取练习集详情失败')
     studentDoDialogVisible.value = false
@@ -1695,7 +1686,7 @@ const submitStudentAnswers = async () => {
   const answers = currentPsQuestions.value
     .map(q => ({
       question_id: q.question_id,
-      answer: (studentAnswers.value[q.question_id] || '').trim()
+      answer: formatAnswer(studentAnswers.value[q.question_id])
     }))
     .filter(a => a.answer)
 
@@ -1714,6 +1705,263 @@ const submitStudentAnswers = async () => {
     ElMessage.error(error.response?.data?.detail || '提交失败，请重试')
   } finally {
     studentDoSubmitting.value = false
+  }
+}
+
+// ============ 线下做题 · 拍照交卷 ============
+const photoDialogVisible = ref(false)
+const generateDialogRef = ref(null)
+// 出题弹窗（GenerateDialog.vue）生成成功回调：清筛选 + 切空间 + 刷新 + 打开详情
+const onPracticeGenerated = async (e) => {
+  const { data, kind, grade, subjectId } = e
+  if (kind === 'ai') {
+    // 新卷刚创建，任何筛选都可能把它挡在列表外（日期范围、复习状态、学习空间的学科/年级）
+    filters.date_range = null
+    filters.reviewed = null
+    filters.source_type = null
+    let switched = false
+    if (grade && subjectStore.activeGrade !== null && subjectStore.activeGrade !== grade) {
+      subjectStore.setGrade(grade)
+      switched = true
+    }
+    if (subjectId && subjectStore.activeSubjectId !== null && subjectStore.activeSubjectId !== subjectId) {
+      subjectStore.select(subjectId)
+      switched = true
+    }
+    if (switched) ElMessage.info('已切换到新卷所在的学科/年级，方便查看')
+  }
+  await fetchPracticeSets()
+  // 兜底提示：新卷仍不在列表里时明确告知，避免“生成完却不见了”
+  if (data.id && !practiceSets.value.some((x) => x.id === data.id)) {
+    ElMessage.warning(`新卷「${data.name}」已生成，但当前筛选条件下没显示出来，请检查列表筛选`)
+  }
+  if (data.id) {
+    showDetail(data)
+  }
+}
+const photoPs = ref(null)
+const photoStep = ref('upload') // upload | review | result
+const photoFiles = ref([])
+const photoAutoSubmit = ref(true)
+const photoRecognizing = ref(false)
+const photoSubmitting = ref(false)
+const photoQuestions = ref([])      // [{no, question_id, question_type, question_text, recognized_answer, confidence}]
+const photoImages = ref([])         // 已上传保存的照片路径
+const photoSummary = ref('')
+const photoMissingCount = ref(0)
+const photoPages = ref([])
+const photoResult = ref(null)
+const photoUnsupported = ref([])
+// 摄像头/手机拍照
+const cameraVisible = ref(false)
+const cameraError = ref('')
+const cameraShots = ref([])         // [{key, url, file}] 摄像头或手机拍到的照片
+const cameraVideo = ref(null)       // <video> 模板引用
+const cameraStream = ref(null)
+const mobileCaptureInput = ref(null)
+let shotSeq = 0
+
+const photoTotalFiles = computed(() =>
+  photoFiles.value.filter(f => f.raw).length + cameraShots.value.length)
+
+const photoResultRows = computed(() => {
+  if (!photoResult.value) return []
+  const byQid = {}
+  photoQuestions.value.forEach(q => { byQid[q.question_id] = q })
+  const results = photoResult.value.results || []
+  const rows = results.map(r => {
+    const q = byQid[r.question_id] || {}
+    return {
+      no: q.no ?? '-',
+      question_type: q.question_type,
+      answer: (q.recognized_answer || '').trim(),
+      is_correct: r.is_correct,
+      comment: r.comment || ''
+    }
+  })
+  // 未参与批改的题（如图片题）也列出来
+  const gradedIds = new Set(results.map(r => r.question_id))
+  photoQuestions.value.forEach(q => {
+    if (!gradedIds.has(q.question_id)) {
+      rows.push({
+        no: q.no, question_type: q.question_type,
+        answer: (q.recognized_answer || '').trim(),
+        is_correct: null, comment: '未参与自动批改'
+      })
+    }
+  })
+  return rows.sort((a, b) => (a.no === '-' ? 999 : a.no) - (b.no === '-' ? 999 : b.no))
+})
+
+const handlePhotoFileChange = (file, fileList) => {
+  photoFiles.value = fileList
+}
+
+// ---- 摄像头 / 手机拍照 ----
+const clearCameraShots = () => {
+  cameraShots.value.forEach(s => s.url && URL.revokeObjectURL(s.url))
+  cameraShots.value = []
+}
+
+const stopCamera = () => {
+  const stream = cameraStream.value
+  if (stream) {
+    try { stream.getTracks().forEach(t => t.stop()) } catch (e) { /* 忽略 */ }
+    cameraStream.value = null
+  }
+  if (cameraVideo.value) {
+    try { cameraVideo.value.srcObject = null } catch (e) { /* 忽略 */ }
+  }
+}
+
+const openCamera = async () => {
+  cameraError.value = ''
+  cameraVisible.value = true
+  await nextTick()
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('当前页面无法直接调用摄像头（需要 http://localhost 或 https 打开）')
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    })
+    cameraStream.value = stream
+    if (cameraVideo.value) {
+      cameraVideo.value.srcObject = stream
+      if (cameraVideo.value.play) await cameraVideo.value.play()
+    }
+  } catch (error) {
+    const name = error?.name || ''
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      cameraError.value = '摄像头权限被拒绝，请点地址栏左侧的锁形图标重新允许后再试'
+    } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      cameraError.value = '没有检测到可用摄像头'
+    } else {
+      cameraError.value = error?.message || '摄像头调用失败'
+    }
+    stopCamera()
+  }
+}
+
+const captureShot = () => {
+  const video = cameraVideo.value
+  if (!video || !video.videoWidth) {
+    ElMessage.warning('摄像头还没准备好，请稍等一秒再拍')
+    return
+  }
+  const canvas = document.createElement('canvas')
+  const maxWidth = 2000 // 控一下体积，同时保证 OCR 看得清
+  const scale = Math.min(1, maxWidth / video.videoWidth)
+  canvas.width = Math.round(video.videoWidth * scale)
+  canvas.height = Math.round(video.videoHeight * scale)
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+  canvas.toBlob(blob => {
+    if (!blob) {
+      ElMessage.error('拍照失败，请重试')
+      return
+    }
+    const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' })
+    shotSeq += 1
+    cameraShots.value.push({ key: `shot-${shotSeq}`, url: URL.createObjectURL(blob), file })
+    ElMessage.success(`已拍第 ${cameraShots.value.length} 张，可继续拍下一页`)
+  }, 'image/jpeg', 0.92)
+}
+
+const removeCameraShot = (index) => {
+  const shot = cameraShots.value[index]
+  if (shot?.url) URL.revokeObjectURL(shot.url)
+  cameraShots.value.splice(index, 1)
+}
+
+// 手机/平板：<input capture> 直接唤起系统相机（不需要 HTTPS）
+const handleMobileCapture = (event) => {
+  const files = Array.from(event.target?.files || [])
+  files.forEach(file => {
+    shotSeq += 1
+    cameraShots.value.push({ key: `shot-${shotSeq}`, url: URL.createObjectURL(file), file })
+  })
+  if (files.length) ElMessage.success(`已加入 ${files.length} 张照片`)
+  if (event.target) event.target.value = ''
+}
+
+const openPhotoSubmit = (ps) => {
+  photoPs.value = ps
+  photoStep.value = 'upload'
+  photoFiles.value = []
+  clearCameraShots()
+  cameraVisible.value = false
+  stopCamera()
+  photoQuestions.value = []
+  photoImages.value = []
+  photoResult.value = null
+  photoUnsupported.value = []
+  photoSummary.value = ''
+  photoMissingCount.value = 0
+  photoDialogVisible.value = true
+}
+
+const startPhotoRecognize = async () => {
+  if (!photoTotalFiles.value) {
+    ElMessage.warning('请先拍照或选择卷子照片')
+    return
+  }
+  stopCamera()
+  cameraVisible.value = false
+  photoRecognizing.value = true
+  try {
+    const files = [
+      ...photoFiles.value.map(f => f.raw).filter(Boolean),
+      ...cameraShots.value.map(s => s.file)
+    ]
+    const { data } = await questionApi.recognizePaperAnswers(photoPs.value.id, files)
+    photoQuestions.value = data.questions || []
+    photoImages.value = data.images || []
+    photoPages.value = data.pages || []
+    photoMissingCount.value = data.missing_count || 0
+    photoSummary.value = data.message || ''
+    if (data.pages?.some(p => !p.ok)) {
+      ElMessage.warning('有照片识别不完整，请核对识别结果')
+    }
+    if (!data.recognized_count) {
+      // 一题都没识别出来时不要直接交卷（否则整卷被判未作答）
+      photoStep.value = 'review'
+      ElMessage.warning('没有识别到手写作答，请核对照片是否清晰、是否拍全')
+      return
+    }
+    if (photoAutoSubmit.value) {
+      await submitPhotoPaper()
+    } else {
+      photoStep.value = 'review'
+      ElMessage.success(photoSummary.value)
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '识别失败，请重试或换张更清晰的照片')
+  } finally {
+    photoRecognizing.value = false
+  }
+}
+
+const submitPhotoPaper = async () => {
+  photoSubmitting.value = true
+  try {
+    const answers = photoQuestions.value
+      .map(q => ({ question_id: q.question_id, answer: (q.recognized_answer || '').trim() }))
+      .filter(a => a.answer)
+    const { data } = await questionApi.submitPaperPhotos(photoPs.value.id, {
+      answers,
+      images: photoImages.value,
+      auto_grade: true
+    })
+    photoResult.value = data
+    photoUnsupported.value = data.unsupported || []
+    photoStep.value = 'result'
+    ElMessage.success(`交卷完成：正确率 ${data.accuracy ?? 0}%，错 ${data.wrong ?? 0} 题已进错题库`)
+    fetchPracticeSets()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '交卷失败，请稍后重试')
+  } finally {
+    photoSubmitting.value = false
   }
 }
 
@@ -1939,9 +2187,18 @@ const getReviewTypeLabel = (type) => {
 const getSourceTypeLabel = (type) => {
   if (type === 'word') return '单词复习'
   if (type === 'reading') return '阅读理解'
+  if (type === 'grammar') return '语法专项'
   if (type === 'ai') return 'AI练习'
   return '错题练习'
 }
+
+// 家长认证守卫：学生删除练习需家长验证
+const {
+  visible: parentGuardVisible,
+  guard,
+  onVerified: onParentVerified,
+  onCancel: onParentGuardCancel,
+} = useParentGuard()
 
 const deletePracticeSet = async (ps) => {
   try {
@@ -1950,7 +2207,8 @@ const deletePracticeSet = async (ps) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await questionApi.deletePracticeSet(ps.id)
+    // 家长认证：学生（child）删除练习需家长验证
+    await guard(() => questionApi.deletePracticeSet(ps.id))
     ElMessage.success('删除成功')
     fetchPracticeSets()
   } catch (error) {
@@ -2004,7 +2262,8 @@ const batchDelete = async () => {
         type: 'warning',
       }
     )
-    await questionApi.batchDeletePracticeSets(selectedIds.value)
+    // 家长认证：学生（child）批量删除练习需家长验证
+    await guard(() => questionApi.batchDeletePracticeSets(selectedIds.value))
     ElMessage.success('批量删除成功')
     selectedIds.value = []
     fetchPracticeSets()
@@ -2101,6 +2360,7 @@ const formatDate = (dateStr) => {
 }
 
 onMounted(() => {
+  installSpeechUnlock() // 首次手势解锁 AudioContext：服务器 TTS 降级音任意时刻可播
   fetchPracticeSets()
   fetchSubjects()
 })
@@ -2500,6 +2760,190 @@ onMounted(() => {
 .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__label,
 .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__content {
   font-size: 16px !important;
+}
+
+/* ===== 试卷式详情（题目列表为主，其他信息为辅） ===== */
+.exam-paper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 24px 28px 18px;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+/* 弹窗底色在非 scoped 样式块里设置（el-dialog__body 是组件库内部节点） */
+.paper-head {
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #303133;
+}
+.paper-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+}
+.paper-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: #606266;
+}
+.paper-marks {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;  font-size: 13px;
+}
+.paper-marks .pm.ok { color: #67c23a; font-weight: 600; }
+.paper-marks .pm.bad { color: #f56c6c; font-weight: 600; }
+.paper-marks .pm.muted { color: #909399; }
+.paper-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px dashed #dcdfe6;
+}
+.paper-toolbar .paper-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+/* 主观题答题留白：淡色横线，像卷子上的书写区 */
+.q-write-space {
+  margin: 10px 0 4px;
+  border-radius: 4px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    #e9eef5 27px,
+    #e9eef5 28px
+  );
+}
+.paper-section {
+  margin-top: 18px;
+}
+.paper-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #303133;
+}
+.paper-section-head .sec-no { min-width: 22px; text-align: right; }
+.paper-section-head .sec-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: #909399;
+}
+.paper-question {
+  display: flex;
+  gap: 8px;
+  padding: 10px 10px 10px 4px;
+  border-bottom: 1px solid #f0f2f5;
+  border-radius: 6px;
+}
+.paper-question:hover { background: #fafcff; }
+.paper-question.q-wrong { background: #fef7f7; }
+.paper-question .q-no {
+  flex: none;
+  min-width: 28px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 16px;
+  color: #303133;
+  line-height: 1.9;
+}
+.paper-question .q-body { flex: 1; min-width: 0; }
+.paper-question .q-text {
+  font-size: 16px;
+  line-height: 1.9;
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.paper-question .q-image { margin: 8px 0; }
+.paper-question .q-options { margin: 8px 0 4px; }
+.paper-question .q-option {
+  padding-left: 10px;
+  font-size: 15px;
+  line-height: 1.9;
+  color: #303133;
+}
+.q-answer-block {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f6ffed;
+  border-left: 3px solid #b7eb8f;
+  border-radius: 4px;
+}
+.q-answer-line {
+  display: flex;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.q-answer-line .qa-label {
+  flex: none;
+  color: #67c23a;
+  font-weight: 600;
+}
+.q-answer-line .qa-text {
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.q-answer-line .qa-text.explanation {
+  color: #606266;
+  font-size: 14px;
+}
+.paper-question .q-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.paper-question .q-score {
+  font-size: 12px;
+  color: #e6a23c;
+  font-weight: 600;
+}
+.q-result {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.q-result.ok { color: #67c23a; }
+.q-result.bad { color: #f56c6c; }
+.q-result.muted { color: #c0c4cc; }
+.paper-extra {
+  margin-top: 22px;
+  border-top: 1px solid #ebeef5;
+  padding-top: 6px;
+}
+.paper-extra .extra-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
+}
+.paper-extra .extra-hint {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #b1b3b8;
+}
+.paper-extra .extra-images-toolbar {
+  margin-bottom: 10px;
 }
 
 /* 卡片通用样式 */
@@ -3011,6 +3455,22 @@ onMounted(() => {
   border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.do-tip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.do-tip-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #606266;
 }
 
 .do-question-list {
@@ -3057,8 +3517,7 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* 做题无障碍：语音读题 / 语音输入 / 软键盘 */
-/* 做题无障碍：语音读题 / 语音输入 / 软键盘 */
+/* 做题无障碍：语音读题 / 语音输入 */
 .do-question-text {
   flex: 1;
   line-height: 1.6;
@@ -3116,55 +3575,37 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.soft-keyboard {
-  margin-top: 14px;
-  padding: 10px;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  background: #fafafa;
-}
-
-.sk-header {
+/* 填空题多空逐空输入 */
+.do-blank-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.sk-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
   flex-wrap: wrap;
-}
-
-.sk-key {
+  gap: 10px;
+  align-items: center;
   flex: 1;
-  min-width: 42px;
-  height: 40px;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.15s;
 }
 
-.sk-key:hover {
+.do-blank-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.do-blank-index {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   background: #ecf5ff;
-  border-color: #409eff;
+  color: #409eff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.sk-key:active {
-  background: #d9ecff;
-}
-
-.sk-key-wide {
-  flex: 2;
-  font-size: 13px;
-  color: #606266;
+.do-blank-input {
+  width: 140px;
 }
 
 .do-question-header {
@@ -3357,6 +3798,12 @@ onMounted(() => {
 }
 </style>
 <style>
+/* 详情弹窗：白卷面放在浅灰底上，更像一张真实的卷子 */
+.practice-detail-dialog .el-dialog__body {
+  background: #f2f4f7;
+  padding-top: 10px;
+}
+
 .practice-detail-dialog .el-descriptions--small .el-descriptions__body .el-descriptions__table .el-descriptions__cell {
   font-size: 16px !important;
 }
@@ -3365,7 +3812,7 @@ onMounted(() => {
   font-size: 16px !important;
 }
 
-/* 做题弹窗全屏布局：题目列表滚动区 + 底部软键盘固定 */
+/* 做题弹窗全屏布局：题目列表滚动区 */
 .student-do-dialog .el-dialog__body {
   max-height: calc(100vh - 190px);
   overflow-y: auto;
@@ -3378,12 +3825,158 @@ onMounted(() => {
   overflow: visible;
 }
 
-/* 软键盘 sticky 固定底部：body 滚动时键盘始终可见 */
-.student-do-dialog .soft-keyboard {
-  position: sticky;
+/* ===== 线下做题 · 拍照交卷 ===== */
+.photo-ps-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 10px;
+}
+.photo-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.photo-hint {
+  font-size: 12px;
+  color: #909399;
+}
+.photo-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.photo-shot {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f5f7fa;
+}
+.photo-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-shot-del {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.photo-shot-badge {
+  position: absolute;
+  left: 0;
   bottom: 0;
-  z-index: 10;
-  margin-top: 14px;
-  border-top: 1px solid #e4e7ed;
+  padding: 0 6px;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+}
+.camera-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.camera-video {
+  width: 100%;
+  max-height: 420px;
+  background: #000;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.camera-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+.camera-error {
+  padding: 4px 0;
+}
+.photo-tip-small {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.6;
+}
+.photo-stem {
+  font-size: 13px;
+  color: #303133;
+}
+.photo-result {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+.photo-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.photo-score-num {
+  font-size: 34px;
+  font-weight: 700;
+  color: #e6a23c;
+}
+.photo-score-label {
+  font-size: 13px;
+  color: #909399;
+}
+.photo-result-stats {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.photo-result-stats .text-green-600 {
+  color: #67c23a;
+}
+.photo-result-stats .text-red-500 {
+  color: #f56c6c;
+}
+.photo-result-stats .muted {
+  color: #909399;
+}
+
+/* ============ 移动端 ============
+ * 日期范围选择器桌面强制 400px（inline style + :deep min-width:400px!important），
+ * 375px 屏必然横向溢出被裁；移动端改为 100% 全宽。
+ * 注意：本 @media 必须在文件末尾，保证 !important 同权重时后出现者生效。 */
+@media screen and (max-width: 768px) {
+  :deep(.el-date-editor.el-range-editor) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* 卡片头：隐藏"练习集管理"标题 + 按钮图标，
+     去做题/线下做题·拍照交卷/批改/出题 4 个按钮单行放下（不再第二行） */
+  .card-header > span:first-child {
+    display: none;
+  }
+  :deep(.header-actions .el-icon) {
+    display: none;
+  }
 }
 </style>

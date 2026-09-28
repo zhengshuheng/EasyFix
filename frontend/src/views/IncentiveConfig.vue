@@ -2,112 +2,7 @@
   <div class="incentive-config">
     <el-card shadow="never">
       <el-tabs v-model="activeTab" class="mgmt-tabs">
-        <!-- 行为配置 -->
-        <el-tab-pane label="行为配置" name="starActions">
-          <div class="tab-content">
-            <!-- 积分调整区块 -->
-            <div class="stars-adjust-section">
-              <h4>积分调整</h4>
-              <el-form :model="starsAdjustForm" :inline="true" size="default">
-                <el-form-item label="积分变动">
-                  <el-input-number
-                    v-model="starsAdjustForm.delta"
-                    :min="-9999"
-                    :max="9999"
-                    controls-position="right"
-                    style="width: 120px"
-                  />
-                  <span style="margin-left: 8px; color: #909399;">（正数增加，负数减少）</span>
-                </el-form-item>
-                <el-form-item label="调整原因" required>
-                  <el-input
-                    v-model="starsAdjustForm.reason"
-                    placeholder="请输入调整原因"
-                    maxlength="200"
-                    show-word-limit
-                    style="width: 300px"
-                  />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="handleStarsAdjust" :loading="starsAdjustLoading">
-                    确认调整
-                  </el-button>
-                </el-form-item>
-              </el-form>
-              <div v-if="starsAdjustResult !== null" class="adjust-result">
-                调整后积分余额：<span class="balance-value">{{ starsAdjustResult }}</span>
-              </div>
-            </div>
-
-            <div class="action-bar">
-              <el-button type="primary" @click="showStarActionDialog = true">
-                <el-icon><Plus /></el-icon>
-                新增行为
-              </el-button>
-            </div>
-            <el-table :data="starActions" stripe style="width: 100%; margin-top: 15px">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="code" label="行为代码" width="150" />
-              <el-table-column prop="name" label="行为名称" width="120" />
-              <el-table-column prop="star_value" label="积分值" width="100">
-                <template #default="{ row }">
-                  <span :class="row.star_value >= 0 ? 'text-success' : 'text-danger'">
-                    {{ row.star_value >= 0 ? '+' : '' }}{{ row.star_value }}
-                  </span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="enabled" label="启用" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '是' : '否' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="is_custom" label="类型" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.is_custom ? 'warning' : 'primary'">{{ row.is_custom ? '自定义' : '预设' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180">
-                <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="editStarAction(row)">编辑</el-button>
-                  <el-button link type="danger" size="small" @click="deleteStarAction(row)" :disabled="row.is_preset">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-tab-pane>
-
-        <!-- 成就管理 -->
-        <el-tab-pane label="成就管理" name="achievements">
-          <div class="tab-content">
-            <div class="action-bar">
-              <el-button type="primary" @click="showAchievementDialog = true">
-                <el-icon><Plus /></el-icon>
-                新增成就
-              </el-button>
-            </div>
-            <el-table :data="achievements" stripe style="width: 100%; margin-top: 15px">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="成就名称" width="120" />
-              <el-table-column prop="level" label="等级" width="80" />
-              <el-table-column prop="trigger_action" label="触发行为" width="150" />
-              <el-table-column prop="trigger_count" label="触发次数" width="100" />
-              <el-table-column prop="reward_stars" label="奖励积分" width="100" />
-              <el-table-column prop="is_preset" label="类型" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.is_preset ? 'primary' : 'warning'">{{ row.is_preset ? '预设' : '自定义' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180">
-                <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="editAchievement(row)" :disabled="row.is_preset">编辑</el-button>
-                  <el-button link type="danger" size="small" @click="deleteAchievement(row)" :disabled="row.is_preset">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-tab-pane>
-
-        <!-- 奖励管理 -->
+        <!-- 奖励管理（家长自主配置） -->
         <el-tab-pane label="奖励管理" name="rewards">
           <div class="tab-content">
             <div class="action-bar">
@@ -139,57 +34,157 @@
             </el-table>
           </div>
         </el-tab-pane>
+
+        <!-- 积分调整（家长家务奖励/惩罚） -->
+        <el-tab-pane label="积分调整" name="starsAdjust">
+          <div class="tab-content">
+            <div class="stars-adjust-section">
+              <h4>手动调整孩子积分</h4>
+              <el-form :model="starsAdjustForm" :inline="true" size="default">
+                <el-form-item label="选择小孩" required>
+                  <el-select
+                    v-model="starsAdjustForm.kid_id"
+                    placeholder="请选择小孩"
+                    style="width: 150px"
+                    @change="fetchBalance"
+                  >
+                    <el-option
+                      v-for="kid in kidsList"
+                      :key="kid.id"
+                      :label="kid.display_name || kid.username"
+                      :value="kid.id"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="积分变动">
+                  <el-input-number
+                    v-model="starsAdjustForm.delta"
+                    :min="-9999"
+                    :max="9999"
+                    controls-position="right"
+                    style="width: 120px"
+                  />
+                  <span style="margin-left: 8px; color: #909399;">（正数增加，负数减少）</span>
+                </el-form-item>
+                <el-form-item label="调整原因" required>
+                  <el-input
+                    v-model="starsAdjustForm.reason"
+                    placeholder="如: 帮忙做家务奖励"
+                    maxlength="200"
+                    show-word-limit
+                    style="width: 300px"
+                  />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="handleStarsAdjust" :loading="starsAdjustLoading">
+                    确认调整
+                  </el-button>
+                </el-form-item>
+              </el-form>
+              <div v-if="starsAdjustResult !== null" class="adjust-result">
+                当前积分余额：<span class="balance-value">{{ starsAdjustResult }}</span>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- 兑换记录（家长查看孩子兑换并线下发放） -->
+        <el-tab-pane label="兑换记录" name="redemptions">
+          <div class="tab-content">
+            <div class="stars-adjust-section" style="margin-bottom: 15px;">
+              <el-form :inline="true" size="default">
+                <el-form-item label="选择小孩">
+                  <el-select v-model="redemptionKidId" placeholder="请选择小孩" style="width: 150px" @change="fetchRedemptions">
+                    <el-option
+                      v-for="kid in kidsList"
+                      :key="kid.id"
+                      :label="kid.display_name || kid.username"
+                      :value="kid.id"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-form>
+            </div>
+            <el-table :data="redemptions" stripe style="width: 100%; margin-top: 15px">
+              <el-table-column prop="reward_name" label="奖励" width="160" />
+              <el-table-column prop="star_cost" label="消耗积分" width="110" />
+              <el-table-column prop="redeemed_at" label="兑换时间" width="200" />
+            </el-table>
+            <el-empty v-if="!loading && redemptions.length === 0" description="暂无兑换记录" />
+          </div>
+        </el-tab-pane>
+
+        <!-- 行为规则（家长可调整积分值，默认值由运营中心同步） -->
+        <el-tab-pane label="行为规则" name="starRules">
+          <div class="tab-content">
+            <div class="rule-tip">
+              默认值由运营中心统一配置；每个家长可在本空间调整积分值并保存，保存后仅对本空间生效。
+              运营中心更新默认值后，未自定义的规则自动跟随新默认。
+            </div>
+            <div class="action-bar">
+              <el-button type="primary" @click="saveStarActions" :loading="savingActions">保存修改</el-button>
+              <el-button @click="restoreAll">恢复全部默认</el-button>
+            </div>
+            <el-table :data="starActions" stripe style="width: 100%; margin-top: 15px">
+              <el-table-column prop="name" label="行为名称" width="180" />
+              <el-table-column label="积分值" width="170">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.star_value" :min="-9999" :max="9999" controls-position="right" style="width: 130px" />
+                </template>
+              </el-table-column>
+              <el-table-column label="来源" width="120">
+                <template #default="{ row }">
+                  <el-tag v-if="row.ops_override" type="warning" size="small">本空间自定义</el-tag>
+                  <el-tag v-else type="info" size="small">运营默认</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="enabled" label="状态" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用中' : '已停用' }}</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
+
+        <!-- 成就规则（家长可调整触发次数/奖励积分，默认值由运营中心同步） -->
+        <el-tab-pane label="成就规则" name="achievementRules">
+          <div class="tab-content">
+            <div class="rule-tip">
+              成就的触发次数与奖励积分默认值由运营中心统一配置；每个家长可在本空间调整并保存，
+              保存后仅对本空间生效。运营中心更新默认值后，未自定义的规则自动跟随新默认。
+            </div>
+            <div class="action-bar">
+              <el-button type="primary" @click="saveAchievements" :loading="savingAchievements">保存修改</el-button>
+              <el-button @click="restoreAll">恢复全部默认</el-button>
+            </div>
+            <el-table :data="achievements" stripe style="width: 100%; margin-top: 15px">
+              <el-table-column prop="name" label="成就名称" width="170" />
+              <el-table-column prop="level" label="等级" width="60" />
+              <el-table-column label="触发行为" width="150">
+                <template #default="{ row }">{{ actionName(row.trigger_action) }}</template>
+              </el-table-column>
+              <el-table-column label="触发次数" width="150">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.trigger_count" :min="1" :max="9999" controls-position="right" style="width: 120px" />
+                </template>
+              </el-table-column>
+              <el-table-column label="奖励积分" width="150">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.reward_stars" :min="0" :max="9999" controls-position="right" style="width: 120px" />
+                </template>
+              </el-table-column>
+              <el-table-column label="来源" width="120">
+                <template #default="{ row }">
+                  <el-tag v-if="row.ops_override" type="warning" size="small">本空间自定义</el-tag>
+                  <el-tag v-else type="info" size="small">运营默认</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
-
-    <!-- 新增/编辑行为弹窗 -->
-    <el-dialog v-model="showStarActionDialog" :title="editStarActionData ? '编辑行为' : '新增行为'" width="500px">
-      <el-form :model="starActionForm" label-width="100px">
-        <el-form-item label="行为代码" required>
-          <el-input v-model="starActionForm.code" placeholder="如: upload_question" :disabled="!!editStarActionData" />
-        </el-form-item>
-        <el-form-item label="行为名称" required>
-          <el-input v-model="starActionForm.name" placeholder="如: 上传错题" />
-        </el-form-item>
-        <el-form-item label="积分值" required>
-          <el-input-number v-model="starActionForm.star_value" :min="-999" :max="999" />
-        </el-form-item>
-        <el-form-item label="启用">
-          <el-switch v-model="starActionForm.enabled" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showStarActionDialog = false">取消</el-button>
-        <el-button type="primary" @click="createOrUpdateStarAction">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 新增/编辑成就弹窗 -->
-    <el-dialog v-model="showAchievementDialog" :title="editAchievementData ? '编辑成就' : '新增成就'" width="500px">
-      <el-form :model="achievementForm" label-width="100px">
-        <el-form-item label="成就名称" required>
-          <el-input v-model="achievementForm.name" placeholder="如: 学习达人" />
-        </el-form-item>
-        <el-form-item label="等级" required>
-          <el-input-number v-model="achievementForm.level" :min="1" :max="10" />
-        </el-form-item>
-        <el-form-item label="触发行为" required>
-          <el-select v-model="achievementForm.trigger_action" placeholder="选择触发行为" style="width: 100%">
-            <el-option v-for="a in starActions" :key="a.code" :label="a.name" :value="a.code" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="触发次数" required>
-          <el-input-number v-model="achievementForm.trigger_count" :min="1" :max="9999" />
-        </el-form-item>
-        <el-form-item label="奖励积分" required>
-          <el-input-number v-model="achievementForm.reward_stars" :min="0" :max="9999" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAchievementDialog = false">取消</el-button>
-        <el-button type="primary" @click="createOrUpdateAchievement">保存</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 新增/编辑奖励弹窗 -->
     <el-dialog v-model="showRewardDialog" :title="editRewardData ? '编辑奖励' : '新增奖励'" width="500px">
@@ -239,26 +234,48 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { uploadApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
+import { usersApi } from '@/api/users'
 
-const activeTab = ref('starActions')
-
-// 行为配置
-const starActions = ref([])
-const showStarActionDialog = ref(false)
-const editStarActionData = ref(null)
-const starActionForm = reactive({ code: '', name: '', star_value: 0, enabled: true })
+const activeTab = ref('rewards')
 
 // 积分调整相关
 const starsAdjustForm = reactive({
+  kid_id: null,
   delta: 0,
   reason: ''
 })
 const starsAdjustLoading = ref(false)
 const starsAdjustResult = ref(null)
+const kidsList = ref([])
+
+// 兑换记录
+const redemptionKidId = ref(null)
+const redemptions = ref([])
+const loading = ref(false)
+
+const loadKids = async () => {
+  try {
+    const { data } = await usersApi.listKids()
+    kidsList.value = data || []
+    if (kidsList.value.length > 0) {
+      if (!starsAdjustForm.kid_id) starsAdjustForm.kid_id = kidsList.value[0].id
+      if (!redemptionKidId.value) redemptionKidId.value = kidsList.value[0].id
+    }
+    if (starsAdjustForm.kid_id) {
+      fetchBalance()
+    }
+    if (redemptionKidId.value) {
+      fetchRedemptions()
+    }
+  } catch (e) {
+    console.error('获取小孩列表失败:', e)
+  }
+}
 
 const fetchBalance = async () => {
+  if (!starsAdjustForm.kid_id) return
   try {
-    const { data } = await motivationApi.getBalance()
+    const { data } = await motivationApi.getBalance({ kid_id: starsAdjustForm.kid_id })
     starsAdjustResult.value = data.balance
   } catch (e) {
     console.error('获取积分余额失败:', e)
@@ -266,6 +283,10 @@ const fetchBalance = async () => {
 }
 
 const handleStarsAdjust = async () => {
+  if (!starsAdjustForm.kid_id) {
+    ElMessage.warning('请先选择小孩')
+    return
+  }
   if (!starsAdjustForm.reason.trim()) {
     ElMessage.warning('请输入调整原因')
     return
@@ -273,6 +294,7 @@ const handleStarsAdjust = async () => {
   try {
     starsAdjustLoading.value = true
     const { data } = await motivationApi.adjustStars({
+      kid_id: starsAdjustForm.kid_id,
       delta: starsAdjustForm.delta,
       reason: starsAdjustForm.reason
     })
@@ -282,149 +304,110 @@ const handleStarsAdjust = async () => {
     ElMessage.success('积分调整成功')
     fetchBalance()
   } catch (error) {
-    ElMessage.error(error.detail || '调整失败')
+    ElMessage.error(error.detail || error?.response?.data?.detail || '调整失败')
   } finally {
     starsAdjustLoading.value = false
   }
 }
 
-// 成就管理
+const fetchRedemptions = async () => {
+  if (!redemptionKidId.value) return
+  loading.value = true
+  try {
+    const { data } = await motivationApi.getRedemptions({ kid_id: redemptionKidId.value })
+    redemptions.value = Array.isArray(data) ? data : (data.items || [])
+  } catch (e) {
+    console.error('获取兑换记录失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 行为规则（家长可调整积分值，默认值运营中心同步）
+const starActions = ref([])
+const savingActions = ref(false)
+const fetchStarActions = async () => {
+  try {
+    const { data } = await motivationApi.getActions()
+    starActions.value = Array.isArray(data) ? data : (data.items || [])
+  } catch (e) {
+    console.error('获取行为规则失败:', e)
+  }
+}
+
+// 成就规则（家长可调整触发次数/奖励积分，默认值运营中心同步）
 const achievements = ref([])
-const showAchievementDialog = ref(false)
-const editAchievementData = ref(null)
-const achievementForm = reactive({ name: '', level: 1, trigger_action: '', trigger_count: 1, reward_stars: 0 })
+const savingAchievements = ref(false)
+const fetchAchievements = async () => {
+  try {
+    const { data } = await motivationApi.getAchievements()
+    achievements.value = Array.isArray(data) ? data : (data.items || [])
+  } catch (e) {
+    console.error('获取成就规则失败:', e)
+  }
+}
+
+const actionName = (code) => {
+  const hit = starActions.value.find((a) => a.code === code)
+  return hit ? hit.name : (code || '-')
+}
+
+const saveStarActions = async () => {
+  savingActions.value = true
+  try {
+    await motivationApi.saveIncentiveSettings({
+      actions: starActions.value.map((a) => ({ code: a.code, star_value: a.star_value })),
+      achievements: []
+    })
+    ElMessage.success('行为规则已保存，本空间生效')
+    fetchStarActions()
+    fetchAchievements()
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.detail || '保存失败')
+  } finally {
+    savingActions.value = false
+  }
+}
+
+const saveAchievements = async () => {
+  savingAchievements.value = true
+  try {
+    await motivationApi.saveIncentiveSettings({
+      actions: [],
+      achievements: achievements.value.map((a) => ({
+        code: a.code,
+        level: a.level,
+        trigger_count: a.trigger_count,
+        reward_stars: a.reward_stars
+      }))
+    })
+    ElMessage.success('成就规则已保存，本空间生效')
+    fetchStarActions()
+    fetchAchievements()
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.detail || '保存失败')
+  } finally {
+    savingAchievements.value = false
+  }
+}
+
+const restoreAll = async () => {
+  try {
+    await ElMessageBox.confirm('将把本空间所有行为/成就恢复为运营中心默认值，确定吗？', '恢复默认', { type: 'warning' })
+    await motivationApi.saveIncentiveSettings({ actions: [], achievements: [], restore_all: true })
+    ElMessage.success('已恢复为运营中心默认')
+    fetchStarActions()
+    fetchAchievements()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('恢复默认失败')
+  }
+}
 
 // 奖励管理
 const rewards = ref([])
 const showRewardDialog = ref(false)
 const editRewardData = ref(null)
 const rewardForm = reactive({ name: '', description: '', cost_stars: 0, total_stock: -1, remaining_stock: -1, image_url: '' })
-
-// 获取行为列表
-const fetchStarActions = async () => {
-  try {
-    const { data } = await motivationApi.getActions()
-    starActions.value = Array.isArray(data) ? data : (data.items || [])
-  } catch (e) {
-    console.error('获取行为列表失败:', e)
-  }
-}
-
-// 创建或更新行为
-const createOrUpdateStarAction = async () => {
-  if (!starActionForm.code.trim()) {
-    ElMessage.warning('请输入行为代码')
-    return
-  }
-  if (!starActionForm.name.trim()) {
-    ElMessage.warning('请输入行为名称')
-    return
-  }
-  try {
-    if (editStarActionData.value) {
-      await motivationApi.updateAction(editStarActionData.value.id, starActionForm)
-      ElMessage.success('更新成功')
-    } else {
-      await motivationApi.createAction(starActionForm)
-      ElMessage.success('创建成功')
-    }
-    showStarActionDialog.value = false
-    editStarActionData.value = null
-    starActionForm.code = ''
-    starActionForm.name = ''
-    starActionForm.star_value = 0
-    starActionForm.enabled = true
-    fetchStarActions()
-  } catch (e) {
-    ElMessage.error('保存失败')
-  }
-}
-
-// 编辑行为
-const editStarAction = (row) => {
-  editStarActionData.value = row
-  starActionForm.code = row.code
-  starActionForm.name = row.name
-  starActionForm.star_value = row.star_value
-  starActionForm.enabled = row.enabled
-  showStarActionDialog.value = true
-}
-
-// 删除行为
-const deleteStarAction = async (row) => {
-  try {
-    await ElMessageBox.confirm('确定要删除该行为吗？', '删除确认', { type: 'warning' })
-    await motivationApi.deleteAction(row.id)
-    ElMessage.success('删除成功')
-    fetchStarActions()
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// 获取成就列表
-const fetchAchievements = async () => {
-  try {
-    const { data } = await motivationApi.getAchievements()
-    achievements.value = Array.isArray(data) ? data : (data.items || [])
-  } catch (e) {
-    console.error('获取成就列表失败:', e)
-  }
-}
-
-// 创建或更新成就
-const createOrUpdateAchievement = async () => {
-  if (!achievementForm.name.trim()) {
-    ElMessage.warning('请输入成就名称')
-    return
-  }
-  if (!achievementForm.trigger_action) {
-    ElMessage.warning('请选择触发行为')
-    return
-  }
-  try {
-    if (editAchievementData.value) {
-      await motivationApi.updateAchievement(editAchievementData.value.id, achievementForm)
-      ElMessage.success('更新成功')
-    } else {
-      await motivationApi.createAchievement(achievementForm)
-      ElMessage.success('创建成功')
-    }
-    showAchievementDialog.value = false
-    editAchievementData.value = null
-    achievementForm.name = ''
-    achievementForm.level = 1
-    achievementForm.trigger_action = ''
-    achievementForm.trigger_count = 1
-    achievementForm.reward_stars = 0
-    fetchAchievements()
-  } catch (e) {
-    ElMessage.error('保存失败')
-  }
-}
-
-// 编辑成就
-const editAchievement = (row) => {
-  editAchievementData.value = row
-  achievementForm.name = row.name
-  achievementForm.level = row.level
-  achievementForm.trigger_action = row.trigger_action
-  achievementForm.trigger_count = row.trigger_count
-  achievementForm.reward_stars = row.reward_stars
-  showAchievementDialog.value = true
-}
-
-// 删除成就
-const deleteAchievement = async (row) => {
-  try {
-    await ElMessageBox.confirm('确定要删除该成就吗？', '删除确认', { type: 'warning' })
-    await motivationApi.deleteAchievement(row.id)
-    ElMessage.success('删除成功')
-    fetchAchievements()
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
 
 // 获取奖励列表
 const fetchRewards = async () => {
@@ -510,7 +493,7 @@ onMounted(() => {
   fetchStarActions()
   fetchAchievements()
   fetchRewards()
-  fetchBalance()
+  loadKids()
 })
 </script>
 
@@ -560,11 +543,37 @@ onMounted(() => {
   color: #409eff;
 }
 
+.rule-tip {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 /* 激励配置子导航：顶部横向 tabs */
 .mgmt-tabs :deep(.el-tabs__item) {
   height: 44px;
   line-height: 44px;
   font-size: 14px;
+}
+
+/* 移动端适配：tab 多时横向滑动，避免展示不全 */
+@media (max-width: 768px) {
+  .mgmt-tabs :deep(.el-tabs__nav-wrap) {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .mgmt-tabs :deep(.el-tabs__nav) {
+    min-width: max-content;
+  }
+
+  .mgmt-tabs :deep(.el-tabs__item) {
+    padding: 0 14px;
+    font-size: 13px;
+  }
 }
 
 .mgmt-tabs :deep(.el-tabs__content) {

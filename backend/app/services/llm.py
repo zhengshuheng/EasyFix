@@ -4,6 +4,16 @@ import time
 from typing import Optional, List
 import anthropic
 from app.config import get_settings
+from app.services.ai_gateway import AIGatewayClient, get_gateway_config, resolve_gateway_config
+from app.services.question_prompts import (
+    get_subject_stage_prompt,
+    get_math_relevant,
+    validate_math_choice,
+    normalize_math_numbers,
+    math_expr_value,
+    extract_math_signatures,
+    math_signatures_conflict,
+)
 
 settings = get_settings()
 
@@ -30,42 +40,30 @@ class LLMService:
         self._config = load_llm_config()
         self._init_client()
 
-    def _is_openai_compat(self) -> bool:
-        """判断当前配置是否走 OpenAI 兼容协议（DeepSeek/DashScope/Moonshot/GLM 等）"""
-        provider = (self._config.get("provider") or "").strip().lower()
-        base_url = (self._config.get("base_url") or "").strip().lower()
-        if provider == "anthropic" or provider == "minimax":
-            # 这两个服务商走 Anthropic Messages 协议
-            return False
-        if provider:
-            # 显式配置了 provider 且不是 anthropic/minimax → 按 OpenAI 兼容处理
-            return True
-        return any(k in base_url for k in (
-            "deepseek", "openai", "dashscope", "moonshot", "zhipu",
-            "glm", "ollama", "siliconflow", "kimi",
-        ))
-
     def _init_client(self):
-        # 每次调用都重建 client，确保 Settings 中修改的 base_url/api_key 立即生效
-        api_key = self._config.get("api_key") or settings.ANTHROPIC_API_KEY
-        base_url = self._config.get("base_url")
-        self._openai_compat = self._is_openai_compat()
-        if self._openai_compat:
-            import openai
-            self._client = openai.OpenAI(
-                api_key=api_key,
-                base_url=base_url or "https://api.openai.com/v1",
-            )
-        elif base_url:
-            self._client = anthropic.Anthropic(
-                api_key=api_key,
-                base_url=base_url,
-            )
-        else:
-            self._client = anthropic.Anthropic(api_key=api_key)
+        """客户端构建已下沉到 AI 网关（AIGatewayClient，凭证由 ops 配置）。
+
+        保留空方法仅为兼容既有调用点（各公开方法开头都会重载配置并调它）；
+        实际协议适配/上游调用统一在网关内，未来消耗/价格计算只需改网关。
+        """
+        pass
 
     def _get_config(self, key: str, default: str = "") -> str:
-        """获取配置，优先从config文件"""
+        """获取配置（订阅制）：
+        - model      → config/llm.json 用户选择的模型名，未选则网关默认模型
+        - api_key/base_url/provider → AI 网关（ops 后台配置，用户无需 Key）
+        """
+        if key == "model":
+            chosen = (self._config.get("model") or "").strip()
+            if chosen:
+                return chosen
+            return get_gateway_config().get("default_model") or default
+        if key == "api_key":
+            return get_gateway_config().get("api_key") or getattr(settings, key, default)
+        if key == "base_url":
+            return get_gateway_config().get("base_url") or default
+        if key == "provider":
+            return get_gateway_config().get("provider") or default
         return self._config.get(key, getattr(settings, key, default))
 
     def generate_similar_question(
@@ -441,85 +439,23 @@ class LLMService:
                 raise
 
     def _call_messages_create(self, **kwargs):
+        """统一经 AI 网关转发上游（凭证由 ops 配置，用户无需 Key）。
+
+        按用户选择的厂商（llm.json vendor）解析网关配置；未选厂商时走默认厂商/旧配置。
+        兼容旧签名（model/max_tokens/messages/system/extra_body/thinking/timeout）；
+        RateLimitError 由网关原样冒泡，本方法及 _retry_on_rate_limit 行为不变。
+
+        注意：AI 网关 AIGatewayClient.chat() 只透传 extra_body 中的参数（thinking 不是顶层
+        参数，顶层传会 TypeError: unexpected keyword argument 'thinking'）——这里把旧调用方
+        传的顶层 thinking 自动合并进 extra_body（与 k12_import.py 的写法对齐）。
         """
-        调用 messages.create，兼容不支持 thinking 参数的模型/服务商。
-        部分 OpenAI 兼容接口（如 DeepSeek 等）不接收 thinking 参数，降级重试。
-        异常时附加当前 LLM 配置信息（model/base_url/key掩码），便于排查。
-        """
-        if self._openai_compat:
-            try:
-                return self._call_openai_compat(**kwargs)
-            except Exception as e:
-                raise Exception(self._format_llm_error(e, kwargs)) from e
-
-        try:
-            kwargs.pop("extra_body", None)  # anthropic 协议无此参数
-            return self._client.messages.create(**kwargs)
-        except TypeError as e:
-            if "thinking" in str(e):
-                kwargs.pop("thinking", None)
-                return self._client.messages.create(**kwargs)
-            raise
-        except anthropic.RateLimitError:
-            raise
-        except Exception as e:
-            raise Exception(self._format_llm_error(e, kwargs)) from e
-
-    def _call_openai_compat(self, **kwargs):
-        """OpenAI 兼容协议（DeepSeek 等）：转换 anthropic 参数为 chat.completions 格式，
-        并将响应归一化为 {content: [{type:'text', text: ...}]}，下游无需改动。"""
-        from types import SimpleNamespace
-
-        params: dict = {}
-        for key in ("model", "max_tokens", "temperature", "timeout"):
-            if key in kwargs:
-                params[key] = kwargs[key]
-        # 透传 extra_body（如 DeepSeek 关闭思考 thinking={"type":"disabled"}）；
-        # 不支持的接口可能报错，由上游 _call_messages_create 统一格式化
-        if kwargs.get("extra_body"):
-            params["extra_body"] = kwargs["extra_body"]
-
-        messages: list = []
-        if kwargs.get("system"):
-            messages.append({"role": "system", "content": kwargs["system"]})
-        for m in kwargs.get("messages", []):
-            content = m.get("content")
-            if isinstance(content, list):
-                # anthropic 内容块列表 → 拼接纯文本
-                parts = []
-                for b in content:
-                    if isinstance(b, dict):
-                        parts.append(b.get("text", ""))
-                    else:
-                        parts.append(getattr(b, "text", str(b)))
-                content = "\n".join(parts)
-            messages.append({"role": m.get("role", "user"), "content": content})
-        params["messages"] = messages
-
-        response = self._client.chat.completions.create(**params)
-        text = ""
-        if response.choices:
-            text = response.choices[0].message.content or ""
-            if not text:
-                # DeepSeek 等推理模型偶发 content 为空（思考在 reasoning_content），兜底取思考内容
-                text = getattr(response.choices[0].message, "reasoning_content", None) or ""
-        return SimpleNamespace(content=[SimpleNamespace(type="text", text=text)])
-
-    def _format_llm_error(self, e: Exception, kwargs: dict) -> str:
-        """格式化 LLM 错误：附带当前配置（model/base_url/key掩码），401 附排查提示"""
-        model = kwargs.get("model") or self._config.get("model") or "未配置"
-        base_url = self._config.get("base_url") or "https://api.anthropic.com（默认）"
-        api_key = self._config.get("api_key") or settings.ANTHROPIC_API_KEY or ""
-        if len(api_key) > 8:
-            masked = f"{api_key[:4]}****{api_key[-4:]}"
-        else:
-            masked = "未配置或过短"
-
-        msg = str(e)
-        if "401" in msg or "invalid_key" in msg or "Invalid API Key" in msg:
-            msg += "｜排查：① 复制 API Key 时是否带入多余空格/换行 ② Key 是否与 base_url 对应的是同一服务商（不同服务商 Key 不通用）③ Key 是否过期或未开通模型访问权限"
-
-        return f"{msg}（当前LLM配置：model={model}，base_url={base_url}，api_key={masked}）"
+        thinking = kwargs.pop("thinking", None)
+        if thinking is not None:
+            extra = dict(kwargs.get("extra_body") or {})
+            extra["thinking"] = thinking
+            kwargs["extra_body"] = extra
+        vendor = (self._config.get("vendor") or "").strip()
+        return AIGatewayClient(resolve_gateway_config(vendor or None)).chat(**kwargs)
 
     def generate_reading_passage(self, grade: int, topic: str, difficulty: int) -> dict:
         """
@@ -892,9 +828,17 @@ class LLMService:
                 text = text[start : end + 1]
         try:
             data = json.loads(text)
+            valid_ids = {q.get("question_id") for q in questions}
             results = []
-            for item in data:
+            for pos, item in enumerate(data, start=1):
                 qid = item.get("question_id")
+                # 模型经常返回 1..N 的位置序号（提示词里就是按序号列的），
+                # 这里统一映射回真实题号，否则前端/落库都匹配不上。
+                if qid not in valid_ids:
+                    if isinstance(qid, int) and 1 <= qid <= len(questions):
+                        qid = questions[qid - 1].get("question_id")
+                    elif pos <= len(questions):
+                        qid = questions[pos - 1].get("question_id")
                 is_correct = bool(item.get("is_correct"))
                 comment = item.get("comment", "")
                 results.append(
@@ -913,6 +857,7 @@ class LLMService:
         difficulty: int = None,
         question_types: List[str] = None,
         question_categories: List[str] = None,
+        avoid_stems: List[str] = None,
     ) -> dict:
         """
         AI 结合知识点出题（依据义务教育课程标准 2022 版设计）
@@ -940,15 +885,56 @@ class LLMService:
         if not knowledge_points:
             return {"error": "缺少知识点", "questions": []}
 
+        result = self._generate_raw(
+            knowledge_points, subject, grade, count, difficulty,
+            question_types=question_types or [],
+            question_categories=question_categories or [],
+            avoid_stems=avoid_stems,
+        )
+        if result.get("error"):
+            return result
+        # 质量过滤：剔除重复/数学选择题无唯一答案，数量不足自动补生成
+        questions = self._dedupe_questions(result["questions"], subject)
+        if len(questions) < count:
+            questions = self._quality_topup(
+                questions,
+                knowledge_points=knowledge_points,
+                subject=subject,
+                grade=grade,
+                count=count,
+                difficulty=difficulty,
+                question_types=question_types or [],
+                question_categories=question_categories or [],
+                avoid_stems=avoid_stems,
+            )
+        # 语义级复核：选择题必须恰好 1 个正确、干扰项与题干相容、题干不内嵌选项
+        # （数值校验拦不住的盲区：如"说法正确的是"出现两项都对、选项与题干矛盾）
+        questions = self._verify_choice_questions(questions, subject, grade)
+        # 严格截断到请求数量（LLM 多给时只取前 count 道）
+        return {"questions": questions[:count]}
+
+    def _generate_raw(
+        self,
+        knowledge_points: List[str],
+        subject: str,
+        grade: int,
+        count: int,
+        difficulty: int,
+        question_types: List[str],
+        question_categories: List[str],
+        avoid_stems: List[str] = None,
+    ) -> dict:
+        """调用一次 LLM 并解析题目（不做质量过滤；供主流程与质量补题共用，避免递归）"""
         model = self._get_config("model", "claude-sonnet-4-20250514")
         prompt = self._build_question_gen_prompt(
             knowledge_points, subject, grade, count, difficulty,
             question_types=question_types or [],
             question_categories=question_categories or [],
+            avoid_stems=avoid_stems,
         )
 
         # 推理模型偶发返回空/思考文本，自动重试最多 3 次（轮换关闭思考的参数写法）
-        # 注意：_call_openai_compat 只透传 extra_body 中的参数，thinking 必须以 extra_body 传递
+        # 注意：AI 网关（OpenAI 兼容协议）只透传 extra_body 中的参数，thinking 必须以 extra_body 传递
         thinking_variants = [
             {"extra_body": {"thinking": {"type": "disabled"}}},
             {"extra_body": {"enable_thinking": False}},
@@ -1067,6 +1053,7 @@ class LLMService:
         difficulty: int,
         question_types: List[str] = None,
         question_categories: List[str] = None,
+        avoid_stems: List[str] = None,
     ) -> str:
         grade_info = f"小学{grade}年级" if grade else "小学"
         diff_desc = {
@@ -1096,28 +1083,20 @@ class LLMService:
         else:
             cat_info = "类型要求：按'基础巩固→情境应用→综合提升→思维拓展'梯度递进编排，多数为基础巩固与情境应用，少量综合提升与思维拓展"
 
-        subject_guide = ""
-        if "数学" in subject:
-            subject_guide = (
-                "课标导向：\n"
-                "- 考查小学数学核心素养：数感、量感、符号意识、运算能力、几何直观、空间观念、推理意识、数据意识、模型意识、应用意识、创新意识\n"
-                "- 情境题必须来自儿童真实生活（购物、时间、长度测量、校园活动等），体现'会用数学的眼光观察现实世界'\n"
-                "- 答案必须唯一且可验算；应用题要体现数量关系（加法模型/乘法模型）\n"
-                "- 计算题数字要适合口算或竖式范围，避免超纲"
-            )
-        elif "语文" in subject:
-            subject_guide = (
-                "课标导向：\n"
-                "- 考查语文核心素养：语言运用、思维能力、审美创造、文化自信\n"
-                "- 阅读/写话情境贴近儿童生活，体现'识字与写字、阅读与鉴赏、表达与交流'等语文实践活动\n"
-                "- 字词句训练要结合语境，避免死记硬背"
-            )
-        elif "英语" in subject:
-            subject_guide = (
-                "课标导向：\n"
-                "- 考查英语核心素养：语言能力、文化意识、思维品质、学习能力\n"
-                "- 情境贴近小学生生活（学校、家庭、动物、颜色、数字等话题），体现真实语言运用\n"
-                "- 词汇句法不超纲，与课本话题一致"
+        # 学科×学段专属出题规则（按 科目×学段 单独维护，见 question_prompts.py；
+        # 运营后台可覆盖：prompt_rules_service.load_prompt_rule_map → DB 优先，未保存用内置默认）
+        from app.services.prompt_rules_service import load_prompt_rule_map, DEFAULT_GENERAL_RULES
+        _rules_map = load_prompt_rule_map()
+        general_rules = (_rules_map.get("general") or "").strip() or DEFAULT_GENERAL_RULES
+        subject_guide = get_subject_stage_prompt(subject, grade, overrides=_rules_map)
+
+        # 近期已展示过的题干 → 严禁重复出相同/高度相似题（举一反三核心：每次生成新变式）
+        avoid_text = ""
+        if avoid_stems:
+            _shown = [s[:60] for s in avoid_stems][:20]
+            avoid_text = (
+                "\n- 【严禁重复】以下题目近期已给该孩子做过，**严禁**出现相同题干或只改数字/人名的相似题，必须换成不同情境、物品或问法：\n"
+                + "\n".join("  - " + s for s in _shown)
             )
 
         return f"""你是一位经验丰富的{grade_info}{subject}老师，请依据《义务教育课程标准（2022年版）》围绕以下知识点出一套练习题：
@@ -1129,17 +1108,26 @@ class LLMService:
 - {type_info}
 - {cat_info}
 - 题干要表述清晰完整，适合{grade_info}学生作答，题目要有区分度
-- 计算题答案必须准确，可自行验算；应用题须给出完整算式与单位
+- {general_rules}
+- 【年级内容必须严格匹配】题目的词汇量、数字大小、运算难度、情境复杂度必须符合{grade_info}学生的真实水平：{grade_info}学生没学过的知识点、超纲词汇、过大的数字（如三年级以前不要出现四位数以上加减乘除）、过长的题目描述一律禁止。宁可出得简单，也不要出超纲题
+{avoid_text}
 {subject_guide}
-- 每道题必须给出：题目、选项、正确答案、简要解析、所属知识点、题型（choice/fill/judge/calc/application/operation/reading/writing/sentence）、类型（basic/scene/comprehensive/thinking）
+- 每道题必须给出：题目、选项、正确答案、简要解析、所属知识点、题型（choice/fill/judge/calc/application/operation/reading/writing/sentence）、类型（basic/scene/comprehensive/thinking）、难度（difficulty 1-5）
 - 【选择题硬性要求】choice 题必须真的给 4 个选项：题干只写问题本身（如"下面说法正确的是（　）"），四个选项放进 options 数组，不带"A."/"A、"/"A）"等字母前缀，且只有 1 个正确答案；answer 只填正确选项的字母（如 "B"）
 - 【非选择题】options 一律返回空数组 []
 - 【题型必须与内容一致】严禁为了凑配额把填空题/问答题贴上 choice 标签：没有 4 个选项的题不许标 choice；题干留括号横线的标 fill；纯算式标 calc；可判断对错的陈述句标 judge；解决实际问题的标 application。凑不齐某题型时宁可少出，也不要错标
+- 【配图场景 visual】数学小学阶段（1-3年级）的情景题（如"袋子里装饼干/盘子里放水果/每盒几支笔"）尽量带 visual 字段，让前端能画出示意图。visual 是结构化 JSON 对象，取值：
+  - 两数加减（低年级重点，如"有9本书又新买7本/原来有8个拿走3个"）：{{"type":"count-split","left_emoji":"📚","left_count":9,"right_emoji":"📚","right_count":7,"operator":"+","unknown":"sum","label":"书","max_count":16}}（left_count/right_count 必须**精确等于题干两个数字**，left/right 可用不同物品 emoji；加法求一共 unknown="sum"，减法求剩余 unknown="remainder"；max_count=总数或被减数）
+  - 物品成组摆放：{{"type":"group","emoji":"🍪","groups":3,"per_group":5,"label":"饼干"}}（emoji 用题中物品对应符号：苹果🍎 饼干🍪 糖🍬 花🌸 鸟🐦 书📚 笔✏️ 球⚽ 汽车🚗 星星⭐ 香蕉🍌 桃子🍑 鸡蛋🥚 树🌳 鱼🐟；groups=组数，per_group=每组个数，乘积不超过24，且 groups/per_group 必须精确等于题干数字）
+  - 数一数/一共多少个（题干只有一个数量）：{{"type":"count","emoji":"🍎","count":8,"label":"苹果"}}（count 必须精确等于题干数量）
+  - 认识几何图形：{{"type":"shape","shape":"三角形"}}（shape 取：三角形/正方形/长方形/圆/正方体/长方体/圆柱/球/五角星/梯形/平行四边形）
+  - 不适合配图的题（纯计算、判断题、选项是文字说法的选择题）visual 返回 null
+  - 【重要】1-2年级数学题 visual 的**数量必须与题干数字精确一致**（count-split 两堆=题干两个数、count=题干数量、group 组数×每组=题干结构）；凡题干含两个数量且是"一共/还剩"关系的，一律用 count-split 把两堆都画出来，不能只画一堆。**3年级起尽量少配图**（仅几何图形 shape 或必须图示的关键题），4年级以上一律 visual 返回 null，避免图例削弱学生读题建模能力考察。带单位（元/厘米/米/千克等）的测量计算题一律不配图
 
 请严格按以下JSON数组格式返回，只返回数组本身，不要包含多余文字：
 [
-  {{"question": "题目内容", "options": ["选项一", "选项二", "选项三", "选项四"], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "choice", "question_category": "basic"}},
-  {{"question": "填空/计算/应用题内容", "options": [], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "fill", "question_category": "basic"}}
+  {{"question": "题目内容", "options": ["选项一", "选项二", "选项三", "选项四"], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "choice", "question_category": "basic", "difficulty": 2, "visual": null}},
+  {{"question": "填空/计算/应用题内容", "options": [], "answer": "正确答案", "explanation": "简要解析", "knowledge_point": "所属知识点", "question_type": "fill", "question_category": "basic", "difficulty": 3, "visual": {{"type":"count","emoji":"🍎","count":8,"label":"苹果"}}}}
 ]
 """
 
@@ -1214,6 +1202,322 @@ class LLMService:
         if not questions:
             return {"error": "AI生成的题目为空或格式不正确", "questions": []}
         return {"questions": questions}
+
+    def _dedupe_questions(self, questions: List[dict], subject: str = "") -> List[dict]:
+        """生成后质量过滤：
+        1) 数学选择题硬校验：4 个选项且恰好 1 个等于正确答案（剔除无正确答案/多正确答案）；
+        2) 全卷去重：题干完全相同或高度相似；数学额外按算式数字组合去重
+           （8+5 与 5+8 视为同一算式），应用题与填空/计算题数字组合不得重复；
+        3) 保持题型顺序。
+        """
+        import difflib
+        import re as _re
+
+        math = get_math_relevant(subject)
+        kept: List[dict] = []
+        seen_stems: List[str] = []          # 归一化题干（去数字/标点/空白）
+        seen_math_nums: List[tuple] = []     # 数学题去重签名（算式对集合 + 数字元组）
+        dropped = 0
+
+        def _norm_stem(s: str) -> str:
+            t = _re.sub(r"\d+", "", s or "")
+            return _re.sub(r"\s+|[，。？！、,.?!；;：:（）()\"'“”]", "", t)
+
+        for q in questions:
+            stem = (q.get("question") or "").strip()
+            if not stem:
+                dropped += 1
+                continue
+            # 数学选择题唯一性校验
+            if math and (q.get("question_type") == "choice" or (q.get("options") or [])):
+                if (q.get("options") or []) and not validate_math_choice(q):
+                    dropped += 1
+                    continue
+            # 题干重复（含高度相似）
+            ns = _norm_stem(stem)
+            if ns and any(difflib.SequenceMatcher(None, ns, s).ratio() >= 0.9 for s in seen_stems):
+                dropped += 1
+                continue
+            # 数学算式/数字组合去重（填空/计算/应用题都参与；算式对 + 数字组合任一命中即判重）
+            if math:
+                sig = extract_math_signatures(stem)
+                if any(math_signatures_conflict(sig, s0) for s0 in seen_math_nums):
+                    dropped += 1
+                    continue
+                seen_math_nums.append(sig)
+            kept.append(q)
+            seen_stems.append(ns)
+        if dropped:
+            print(f"[llm] 出题质量过滤：剔除 {dropped} 道（重复/无唯一答案）")
+        return kept
+
+    def _verify_choice_questions(self, questions: List[dict], subject: str = "", grade: int = None) -> List[dict]:
+        """语义级选择题复核 —— 补齐数值校验的盲区：
+
+        数值校验（validate_math_choice）只在选项可解析出数值时查重/查唯一，
+        "说法正确的是"等语义类选择题四个选项都不可解析 → 双正确、矛盾干扰项会溜过。
+        策略：让 LLM 逐项独立判断每个选项本身是否正确（judgments），程序化统计：
+        - 正确项恰好 1 个 → 通过
+        - 正确项 ≥2 或 =0 → 要求 LLM 改写选项；程序化核对"多正确但选项原样没改" → 第二轮强制改写
+        只改选项与答案（题干/知识点/题型不动）；任何失败/解析异常都保留原题，绝不因校验丢题。
+        """
+        choices = [
+            (i, q) for i, q in enumerate(questions)
+            if (q.get("question_type") == "choice" or (q.get("options") or []))
+        ]
+        if not choices:
+            return questions
+
+        import re as _re
+        grade_label = f"{grade}年级" if grade else "（年级未知）"
+        total_changed = 0
+
+        def _build_lines(items_to_check):
+            """构建复核题目列表（第二轮只列待强制改写的题）"""
+            out = []
+            for i, (_, q) in enumerate(items_to_check):
+                stem = (q.get("question") or "").replace("\\n", "\n").strip()
+                opts = self._normalize_options(q.get("options"))
+                out.append(
+                    f"第{i + 1}题（知识点：{q.get('knowledge_point') or '未知'}）：\n"
+                    f"题干：{stem}\n"
+                    "选项：\n"
+                    + "\n".join(f"{'ABCD'[k]}. {o}" for k, o in enumerate(opts[:4]))
+                    + f"\n原答案：{q.get('answer') or ''}"
+                )
+            return out
+
+        def _build_prompt(items_to_check, force_rewrite: bool) -> str:
+            head = (
+                "你是小学数学命题质检员。下面每题是选择题：「题干：」之后那一行是题干原文，"
+                "「选项：」之后 A/B/C/D 是四个待判断的说法。"
+                "请逐项独立判断每个选项【作为一句说法本身】是否正确，不要脑补题干、不要把某个选项的内容当成题干。\n"
+            )
+            if force_rewrite:
+                head += (
+                    "注意：上一轮复核已确认下列题存在多个正确选项（或正确项为 0、或选项与题干矛盾），"
+                    "但你上一轮没有真正改写选项。【本轮必须改写选项内容】——把多余的正确答案/矛盾干扰项"
+                    "替换成一句明确错误或合理干扰的话，使每题恰好 1 个正确选项，并同步给出新答案字母。\n"
+                )
+            head += (
+                "规则：\n"
+                "1. judgments 逐项标注该说法本身是否正确（true=正确）；\n"
+                "2. 正确项恰好 1 个 → changed=false，options 原样返回；\n"
+                "3. 正确项 ≥2 个 → 必须把多余的正确说法改写为明确错误的话（如把「1~10中最大的数是10，最小的数是1」"
+                "改成「1~10中最大的数是9，最小的数是0」），只保留 1 个正确，changed=true；\n"
+                "4. 正确项 0 个 → 把其中一个选项改写为正确说法，changed=true；\n"
+                "5. 比较类题干（最多/最少/一样）不得出现「一样多」「无法确定」等与比较直接冲突的干扰项，"
+                "要改写为具体数量，changed=true；\n"
+                "6. 选项重复/同义/同值 → 改写其一，changed=true；\n"
+                "7. 题干里内嵌了 A. B. C. D. 选项列表 → 从题干移除（选项只放 options 数组），changed=true；\n"
+                "8. 判断无需修改时，reason 必须写出其余 3 个选项各自错误的具体原因。\n"
+                f"科目：{subject or '数学'}，年级：{grade_label}。\n"
+                "题目列表：\n"
+                + "\n\n".join(_build_lines(items_to_check))
+                + "\n\n请逐题检查，严格按以下 JSON 数组返回【所有题】的复核结果：\n"
+                '[{"index": 0, "stem": "题干原文（逐字复制）", "judgments": [true, false, false, false], "options": ["选项A","选项B","选项C","选项D"], "answer": "B", "changed": false, "reason": "..."}]'
+                "\n- index 从 0 开始编号（第 1 题 index=0……）；stem 必须逐字复制该题题干原文；"
+                "judgments 是 4 个布尔；options 是修正后的 4 个选项（按 A B C D 顺序，绝不能少于 4 个）；"
+                "answer 是修正后正确选项的字母（A/B/C/D）；changed=true 表示修改过（给出 reason）。"
+                "\n只输出 JSON，不要输出任何其他文字。"
+            )
+            return head
+
+        def _call_llm(prompt_text) -> List[dict]:
+            model = self._get_config("model", "claude-sonnet-4-20250514")
+            call_kwargs = {
+                "model": model,
+                "max_tokens": 4000,
+                "messages": [{"role": "user", "content": prompt_text}],
+                "timeout": 120,
+                "extra_body": {"thinking": {"type": "disabled"}},
+            }
+            response = self._retry_on_rate_limit(self._call_messages_create, **call_kwargs)
+            content = ""
+            for block in response.content:
+                if hasattr(block, 'type') and block.type == 'text' and hasattr(block, 'text'):
+                    content = block.text
+                    break
+            return self._parse_choice_verify_response(content)
+
+        pending = []
+        for round_no in range(2):
+            force = round_no == 1
+            to_check = pending if force else choices
+            if not to_check:
+                break
+            try:
+                items = _call_llm(_build_prompt(to_check, force))
+            except Exception as e:
+                print(f"[llm] 选择题语义复核失败，保留原题: {e}")
+                break
+            if not items:
+                print("[llm] 选择题语义复核：无法解析复核结果，保留原题")
+                break
+
+            round_pending = []
+            for item in items:
+                target = self._pick_choice_target(item, to_check)
+                if target is None:
+                    # 兜底：按 index 定位（0-based）
+                    try:
+                        idx = int(item.get("index"))
+                        if 0 <= idx < len(to_check):
+                            target = to_check[idx]
+                    except (TypeError, ValueError):
+                        pass
+                if target is None:
+                    continue
+                q = questions[target[0]]
+                prev_opts = self._normalize_options(q.get("options"))
+                opts = self._normalize_options(item.get("options"))
+                if len(opts) == 4:
+                    q["options"] = opts
+                ans = str(item.get("answer") or "").strip()
+                m = _re.fullmatch(r"([A-Da-d])", ans)
+                if m:
+                    q["answer"] = m.group(1).upper()
+                elif ans:
+                    # 答案不是字母时按内容匹配选项
+                    for k, o in enumerate(opts):
+                        if ans == str(o).strip():
+                            q["answer"] = "ABCD"[k]
+                            break
+                # 题干内嵌选项剥离（模型把选项写回题干时）
+                cleaned, inline = self._extract_options_from_text(q.get("question") or "")
+                if inline:
+                    q["question"] = cleaned
+                if item.get("changed"):
+                    total_changed += 1
+                # 程序化防线：judgments 显示正确项≠1 且选项原样没改 → 留到第二轮强制改写
+                judgments = item.get("judgments")
+                true_cnt = None
+                if isinstance(judgments, list) and len(judgments) >= 2:
+                    true_cnt = sum(1 for j in judgments if bool(j))
+                new_opts = self._normalize_options(q.get("options"))
+                if true_cnt is not None and true_cnt != 1 and new_opts == prev_opts:
+                    if not force:
+                        round_pending.append(target)
+            if round_pending and not force:
+                pending = round_pending
+            else:
+                pending = []
+        if total_changed:
+            print(f"[llm] 选择题语义复核：修正 {total_changed} 道（唯一正确/干扰项相容性）")
+        return questions
+
+    def _parse_choice_verify_response(self, content: str) -> List[dict]:
+        """解析选择题复核 JSON（容忍代码块/杂讯/截断）"""
+        import json
+        import re
+        text = (content or "").strip()
+        m = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.DOTALL)
+        if m:
+            text = m.group(1)
+        else:
+            start = text.find("[")
+            end = text.rfind("]")
+            if start != -1 and end != -1 and end > start:
+                text = text[start:end + 1]
+        try:
+            data = json.loads(text)
+        except Exception:
+            objects = re.findall(r"\{[^{}]*\}", text, re.DOTALL)
+            data = []
+            for obj in objects:
+                try:
+                    data.append(json.loads(obj))
+                except Exception:
+                    continue
+        if not isinstance(data, list):
+            return []
+        items = []
+        for it in data:
+            if isinstance(it, dict) and "index" in it:
+                items.append(it)
+        return items
+
+    def _pick_choice_target(self, item: dict, choices) -> Optional[tuple]:
+        """定位复核结果对应的选择题（免疫模型 index 0/1-based 错位）：
+        优先按题干原文相似度（stem 字段），其次按修正后选项与原选项的重叠数。"""
+        import difflib
+        stem = str(item.get("stem") or "").strip()
+        if stem:
+            def sim(c):
+                return difflib.SequenceMatcher(None, stem, (c[1].get("question") or "")).ratio()
+            best = max(choices, key=sim)
+            if sim(best) >= 0.7:
+                return best
+        opts = self._normalize_options(item.get("options"))
+        if opts:
+            def ov(c):
+                cur = self._normalize_options(c[1].get("options"))
+                return len(set(opts) & set(cur))
+            best = max(choices, key=ov)
+            if ov(best) >= 2:
+                return best
+        return None
+
+
+    def _quality_topup(
+        self,
+        questions: List[dict],
+        knowledge_points: List[str],
+        subject: str,
+        grade: int,
+        count: int,
+        difficulty: int,
+        question_types: List[str],
+        question_categories: List[str],
+        avoid_stems: List[str] = None,
+    ) -> List[dict]:
+        """质量过滤后数量不足 count 时，补生成缺失数量并再次过滤（最多补 3 轮，每轮多要一点）"""
+        math = get_math_relevant(subject)
+        missing = count - len(questions)
+        for _round in range(3):
+            if missing <= 0:
+                break
+            try:
+                result = self._generate_raw(
+                    knowledge_points=knowledge_points,
+                    subject=subject,
+                    grade=grade,
+                    count=max(missing + 2, int(missing * 1.5)),
+                    difficulty=difficulty,
+                    question_types=question_types,
+                    question_categories=question_categories,
+                    avoid_stems=avoid_stems,
+                )
+            except Exception as e:
+                print(f"[llm] 质量补题失败: {e}")
+                break
+            extras = result.get("questions", []) if isinstance(result, dict) else []
+            extras = self._dedupe_questions(extras, subject)
+            # 与已收题目再去重（题干相似 + 数学算式/数字组合）
+            import difflib, re as _re
+
+            def _norm(s: str) -> str:
+                t = _re.sub(r"\d+", "", s or "")
+                return _re.sub(r"\s+|[，。？！、,.?!；;：:（）()\"'“”]", "", t)
+
+            existing_norms = [_norm(q.get("question") or "") for q in questions]
+            existing_sigs = [extract_math_signatures(q.get("question") or "") for q in questions]
+            for q in extras:
+                ns = _norm(q.get("question") or "")
+                if ns and any(difflib.SequenceMatcher(None, ns, s).ratio() >= 0.9 for s in existing_norms):
+                    continue
+                if math:
+                    sig = extract_math_signatures(q.get("question") or "")
+                    if any(math_signatures_conflict(sig, s0) for s0 in existing_sigs):
+                        continue
+                    existing_sigs.append(sig)
+                questions.append(q)
+                existing_norms.append(ns)
+            missing = count - len(questions)
+            if len(questions) >= count:
+                break
+        # 严格截断到请求数量（补题多收时只取前 count 道）
+        return questions[:count]
 
     def _normalize_options(self, raw) -> List[str]:
         """规整选项：支持数组/单个字符串，剥离 "A."/"（A）" 等前缀"""

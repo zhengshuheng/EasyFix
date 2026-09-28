@@ -25,6 +25,7 @@ class StarActionUpdate(BaseModel):
 class StarActionResponse(StarActionBase):
     id: int
     is_custom: bool
+    ops_override: bool  # 家长（空间）自定义标记
     created_at: datetime
 
     class Config:
@@ -65,3 +66,25 @@ class StarsAdjustResponse(BaseModel):
     new_balance: int
     delta: int
     record_id: int
+
+
+class IncentiveActionSetting(BaseModel):
+    """家长（空间）激励自定义：行为项"""
+    code: str
+    star_value: int
+
+
+class IncentiveAchievementSetting(BaseModel):
+    """家长（空间）激励自定义：成就项"""
+    code: str
+    level: int
+    trigger_count: int
+    reward_stars: int = 0
+
+
+class IncentiveSettingsRequest(BaseModel):
+    """家长（空间）保存激励自定义：提交完整列表，与运营默认比较自动标记 ops_override；
+    restore_all=True 时忽略列表，把本空间全部规则恢复为跟随运营默认"""
+    actions: List[IncentiveActionSetting] = []
+    achievements: List[IncentiveAchievementSetting] = []
+    restore_all: bool = False

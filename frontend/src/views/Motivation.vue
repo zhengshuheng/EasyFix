@@ -81,7 +81,8 @@
 
         <!-- 奖励商城 Tab -->
         <el-tab-pane label="奖励商城" name="rewards">
-          <div class="rewards-section">
+          <el-empty v-if="rewards.length === 0" description="家长还没有配置奖励，先努力赚积分吧~" />
+          <div v-if="rewards.length > 0" class="rewards-section">
             <div class="rewards-layout">
               <!-- 左侧列表 -->
               <div class="reward-list">
@@ -142,6 +143,38 @@
                   <el-empty description="请选择一个奖励" />
                 </div>
               </div>
+            </div>
+
+            <!-- 我的兑换记录 -->
+            <div v-if="redemptionList.length > 0" class="redemption-section">
+              <h3 class="section-title">我的兑换记录</h3>
+              <el-table :data="redemptionList" stripe style="width: 100%">
+                <el-table-column label="奖励" min-width="160">
+                  <template #default="{ row }">
+                    <div class="redemption-reward-name">
+                      {{ row.reward?.name || '未知奖励' }}
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column label="消耗积分" width="110">
+                  <template #default="{ row }">
+                    <span class="text-danger">-{{ row.star_cost }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="redeemed_at" label="兑换时间" width="180">
+                  <template #default="{ row }">
+                    {{ formatDate(row.redeemed_at) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="120">
+                  <template #default="{ row }">
+                    <el-tag :type="row.status === 'granted' ? 'success' : 'warning'" size="small">
+                      {{ row.status === 'granted' ? '已发放' : '待发放' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div class="redemption-tip">兑换成功后，请提醒家长在「家长中心 → 激励配置」中查看并发放奖励。</div>
             </div>
           </div>
         </el-tab-pane>
@@ -204,6 +237,10 @@
         <el-descriptions :column="1" border class="detail-descriptions">
           <el-descriptions-item label="等级">{{ selectedAchievement.level }}</el-descriptions-item>
           <el-descriptions-item label="系列">{{ selectedAchievement.series_name }}</el-descriptions-item>
+          <el-descriptions-item label="触发条件">
+            {{ selectedAchievement.trigger_action_name }}达到 {{ selectedAchievement.trigger_count }} 次
+            （当前 {{ selectedAchievement.current_count }} 次）
+          </el-descriptions-item>
           <el-descriptions-item label="进度">
             <el-progress :percentage="selectedAchievement.progress" :color="selectedAchievement.unlocked ? '#67c23a' : '#409eff'" />
           </el-descriptions-item>
@@ -252,10 +289,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Coin, Calendar, Check, List, Star, Trophy, Medal, Present, Notebook, School, Timer, Aim } from '@element-plus/icons-vue'
 import { motivationApi } from '@/api/motivation'
+import { useKidStore } from '@/stores/kid'
+
+const kidStore = useKidStore()
+
+// 当前小孩 id：所有激励接口显式携带（跟随 store 实时状态），
+// 不依赖 localStorage 隐式头——切换小孩后即使请求头未同步，积分数据也跟随当前孩子
+const activeKidId = computed(() => kidStore.activeKid?.id)
 
 const activeTab = ref('achievements')
 
@@ -295,7 +339,7 @@ const loading = ref(false)
 // 获取概览数据
 const fetchOverview = async () => {
   try {
-    const res = await motivationApi.getOverview()
+    const res = await motivationApi.getOverview({ kid_id: activeKidId.value })
     userPoints.value = {
       balance: res.data.balance || 0,
       today_earned: res.data.today_stars || 0,
@@ -308,7 +352,7 @@ const fetchOverview = async () => {
 // 获取成就进度
 const fetchAchievements = async () => {
   try {
-    const res = await motivationApi.getAchievementProgress()
+    const res = await motivationApi.getAchievementProgress({ kid_id: activeKidId.value })
     // 转换后端数据为前端格式
     achievements.value = res.data.map((p, index) => {
       const progress = p.achievement.trigger_count > 0
@@ -320,6 +364,10 @@ const fetchAchievements = async () => {
         'review_word': 'review',
         'generate_similar': 'study',
         'create_practice_set': 'study',
+        'continuous_7day': 'continuous',
+        'continuous_14day': 'continuous',
+        'continuous_30day': 'continuous',
+        'review_word_accuracy': 'accuracy',
       }
       // 根据触发行为确定图标
       const iconMapAction = {
@@ -328,6 +376,22 @@ const fetchAchievements = async () => {
         'review_word': 'School',
         'generate_similar': 'Aim',
         'create_practice_set': 'Trophy',
+        'continuous_7day': 'Calendar',
+        'continuous_14day': 'Calendar',
+        'continuous_30day': 'Calendar',
+        'review_word_accuracy': 'Medal',
+      }
+      // 触发行为中文名
+      const actionNameMap = {
+        'upload_question': '上传错题',
+        'review_practice_set': '复习练习集',
+        'review_word': '背单词',
+        'generate_similar': '生成相似题',
+        'create_practice_set': '创建练习集',
+        'continuous_7day': '连续学习7天',
+        'continuous_14day': '连续学习14天',
+        'continuous_30day': '连续学习30天',
+        'review_word_accuracy': '单词正确率达标',
       }
       return {
         id: p.achievement_id,
@@ -335,7 +399,7 @@ const fetchAchievements = async () => {
         name: p.achievement.name,
         series_name: '学习成就',
         level: p.achievement.level === 1 ? '初级' : p.achievement.level === 2 ? '中级' : '高级',
-        icon: iconMapAction[p.achievement.trigger_action] || 'Notebook',
+        icon: p.achievement.icon || iconMapAction[p.achievement.trigger_action] || 'Notebook',
         color: '#409eff',
         progress,
         unlocked: p.is_unlocked,
@@ -343,6 +407,7 @@ const fetchAchievements = async () => {
         description: p.achievement.description,
         trigger_count: p.achievement.trigger_count,
         current_count: p.current_count,
+        trigger_action_name: actionNameMap[p.achievement.trigger_action] || p.achievement.trigger_action,
       }
     })
   } catch (error) {
@@ -354,6 +419,14 @@ const fetchAchievements = async () => {
 const fetchRewards = async () => {
   try {
     const res = await motivationApi.getRewards()
+    // 已兑换的奖励（按 reward_id 标记）
+    let redeemedIds = new Set()
+    try {
+      const redRes = await motivationApi.getRedemptions({ kid_id: activeKidId.value })
+      redeemedIds = new Set((redRes.data || []).map(r => r.reward_id))
+    } catch (e) {
+      console.error('获取兑换记录失败:', e)
+    }
     rewards.value = res.data.map(r => ({
       id: r.id,
       name: r.name,
@@ -363,7 +436,7 @@ const fetchRewards = async () => {
       stock: r.remaining_stock,
       color: r.color || '#409eff',
       icon: 'Present',
-      redeemed: false,
+      redeemed: redeemedIds.has(r.id),
     }))
     if (rewards.value.length > 0 && !selectedReward.value) {
       selectedReward.value = rewards.value[0]
@@ -391,7 +464,7 @@ const handleSizeChange = (val) => {
 const fetchRecords = async () => {
   try {
     const skip = (pointsQuery.page - 1) * pageSize.value
-    const res = await motivationApi.getRecords({ skip, limit: pageSize.value })
+    const res = await motivationApi.getRecords({ skip, limit: pageSize.value, kid_id: activeKidId.value })
     pointsRecords.value = res.data.items
     pointsRecordsTotal.value = res.data.total
   } catch (error) {
@@ -402,7 +475,7 @@ const fetchRecords = async () => {
 // 获取兑换记录
 const fetchRedemptions = async () => {
   try {
-    const res = await motivationApi.getRedemptions()
+    const res = await motivationApi.getRedemptions({ kid_id: activeKidId.value })
     redemptionList.value = res.data.map(r => ({
       ...r,
       reward: r.reward || { name: '未知奖励' }
@@ -435,6 +508,7 @@ const achievementGroups = computed(() => {
     'study': '学习成就',
     'review': '复习成就',
     'accuracy': '正确率成就',
+    'continuous': '连续学习成就',
   }
 
   for (const item of achievements.value) {
@@ -482,6 +556,7 @@ const actionNameMap = {
   'continuous_14day': '连续14天学习',
   'continuous_30day': '连续30天学习',
   'review_word_accuracy': '单词正确率',
+  'manual_adjustment': '家长调整',
   'reward': '成就奖励',
   'redeem': '兑换奖励',
 }
@@ -511,17 +586,25 @@ const redeemReward = async (reward) => {
         type: 'info',
       }
     )
-
-    // 模拟兑换
-    if (userPoints.value.balance >= reward.points_required) {
-      userPoints.value.balance -= reward.points_required
-      reward.redeemed = true
-      ElMessage.success(`恭喜！成功兑换「${reward.name}」`)
-    } else {
-      ElMessage.warning('积分不足，无法兑换')
-    }
   } catch (error) {
     // 用户取消
+    return
+  }
+
+  try {
+    // 调用后端真实兑换（扣积分 + 减库存 + 生成兑换记录）
+    await motivationApi.redeemReward(reward.id)
+    ElMessage.success(`恭喜！成功兑换「${reward.name}」，等待家长发放奖励~`)
+    // 刷新积分/奖励/兑换记录
+    await Promise.all([
+      fetchOverview(),
+      fetchRewards(),
+      fetchRedemptions(),
+    ])
+  } catch (error) {
+    console.error('兑换失败:', error)
+    const detail = error?.response?.data?.detail || error?.message || '兑换失败'
+    ElMessage.error(typeof detail === 'string' ? detail : '兑换失败')
   }
 }
 
@@ -531,6 +614,14 @@ const iconMap = {
 }
 
 onMounted(() => {
+  initData()
+})
+
+// 双保险：菜单切换小孩后，即使页面未被 spaceKey 强制重挂载，
+// 也监听 activeKid 变化重新拉取全部激励数据（避免积分记录停留在上一个孩子）
+watch(activeKidId, () => {
+  if (!activeKidId.value) return
+  pointsQuery.page = 1
   initData()
 })
 </script>
@@ -721,6 +812,22 @@ onMounted(() => {
 /* 奖励商城 */
 .rewards-section {
   margin-top: 20px;
+}
+
+/* 我的兑换记录 */
+.redemption-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed #e4e7ed;
+}
+.redemption-reward-name {
+  font-weight: 600;
+  color: #303133;
+}
+.redemption-tip {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #909399;
 }
 
 .rewards-layout {

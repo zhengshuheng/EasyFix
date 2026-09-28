@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class LearningReport(Base):
@@ -22,8 +23,8 @@ class LearningReport(Base):
     overall_accuracy = Column(Float, default=0.0)  # 整体准确率
     # 元数据
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local, nullable=True)
 
     # Relationships
     subject = relationship("Subject", back_populates="learning_reports")

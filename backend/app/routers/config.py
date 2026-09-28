@@ -17,19 +17,16 @@ class OCRConfig(BaseModel):
     tencent_secret_id: Optional[str] = ""
     tencent_secret_key: Optional[str] = ""
     tencent_bucket: Optional[str] = ""
-    multimodal_provider: Optional[str] = "none"
-    openai_vision_model: Optional[str] = "gpt-4o"
-    anthropic_api_key: Optional[str] = ""
-    claude_vision_model: Optional[str] = "claude-3-sonnet-20240229"
-    qwen_api_key: Optional[str] = ""
-    qwen_vision_model: Optional[str] = "qwen-vl-max"
+    # 多模态OCR：订阅制只保存用户选择的模型名（凭据由平台 AI 网关统一提供）
+    multimodal_model: Optional[str] = ""
+    # AI 模型市场：选择的厂商（vendor）；空=网关默认厂商
+    vendor: Optional[str] = ""
 
 
 class LLMConfig(BaseModel):
-    provider: str
-    api_key: str
-    base_url: str
-    model: str
+    model: str = ""
+    # AI 模型市场：选择的厂商（vendor）；空=网关默认厂商
+    vendor: str = ""
 
 
 class CustomOCRConfig(BaseModel):
@@ -46,28 +43,62 @@ class AppConfig(BaseModel):
     default_semester: Optional[int] = None
 
 
+def _providers_public() -> list:
+    """厂商公开信息（学生端下拉用）：只含启用厂商，不含 Key"""
+    from app.services.ai_gateway import list_providers
+
+    out = []
+    for p in list_providers(enabled_only=True):
+        out.append({
+            "vendor": p["vendor"],
+            "name": p["name"],
+            "models": p["models"],
+            "vision_models": p["vision_models"],
+            "is_default": p["is_default"],
+        })
+    return out
+
+
 @router.get("/ocr")
 def get_ocr_config():
-    """获取OCR配置"""
+    """获取OCR配置（订阅制：多模态OCR不再暴露 Key/提供商，只返回可选模型名；凭据由平台 AI 网关统一提供）"""
+    from app.services.ai_gateway import list_available_models, get_gateway_config
+
+    gateway = get_gateway_config()
     config_file = "config/ocr.json"
     if os.path.exists(config_file):
         with open(config_file) as f:
-            return json.load(f)
-    return {
-        "provider": settings.OCR_PROVIDER,
-        "baidu_api_key": settings.BAIDU_API_KEY,
-        "baidu_secret_key": settings.BAIDU_SECRET_KEY,
-        "tencent_app_id": settings.TENCENT_APP_ID,
-        "tencent_secret_id": settings.TENCENT_SECRET_ID,
-        "tencent_secret_key": settings.TENCENT_SECRET_KEY,
-        "tencent_bucket": settings.TENCENT_BUCKET,
-        "multimodal_provider": settings.MULTIMODAL_PROVIDER,
-        "openai_vision_model": settings.OPENAI_VISION_MODEL,
-        "anthropic_api_key": settings.ANTHROPIC_API_KEY,
-        "claude_vision_model": settings.CLAUDE_VISION_MODEL,
-        "qwen_api_key": settings.QWEN_API_KEY,
-        "qwen_vision_model": settings.QWEN_VISION_MODEL,
-    }
+            data = json.load(f)
+    else:
+        data = {
+            "provider": settings.OCR_PROVIDER,
+            "baidu_api_key": settings.BAIDU_API_KEY,
+            "baidu_secret_key": settings.BAIDU_SECRET_KEY,
+            "tencent_app_id": settings.TENCENT_APP_ID,
+            "tencent_secret_id": settings.TENCENT_SECRET_ID,
+            "tencent_secret_key": settings.TENCENT_SECRET_KEY,
+            "tencent_bucket": settings.TENCENT_BUCKET,
+        }
+    # 剔除订阅制改造前的遗留多模态字段（含旧 Key，不得回传前端）
+    for legacy in (
+        "multimodal_provider",
+        "openai_api_key",
+        "openai_vision_model",
+        "anthropic_api_key",
+        "claude_vision_model",
+        "qwen_api_key",
+        "qwen_vision_model",
+    ):
+        data.pop(legacy, None)
+    # 注入网关模型列表供前端下拉（用户只选模型名，Key 在运营后台）
+    data["multimodal_models"] = list_available_models()
+    data["multimodal_default_model"] = gateway["default_model"]
+    data["gateway_configured"] = bool(gateway["api_key"])
+    # AI 模型市场：视觉厂商列表（vision_models 非空）+ 用户已选 vendor
+    data["multimodal_providers"] = [p for p in _providers_public() if p["vision_models"]]
+    data["multimodal_vendor"] = str(data.get("vendor", ""))
+    data["vendor"] = str(data.get("vendor", ""))
+    return data
 
 
 @router.post("/ocr")
@@ -82,27 +113,64 @@ def save_ocr_config(config: OCRConfig):
 
 @router.get("/llm")
 def get_llm_config():
-    """获取LLM配置"""
-    config_file = "config/llm.json"
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            return json.load(f)
+    """获取LLM配置：模型列表 + 当前选择（订阅制，不暴露任何 Key/BaseURL）"""
+    from app.services.ai_gateway import list_available_models, get_gateway_config
+
+    gateway = get_gateway_config()
+    current = ""
+    vendor = ""
+    if os.path.exists("config/llm.json"):
+        with open("config/llm.json") as f:
+            cfg = json.load(f)
+            current = cfg.get("model", "")
+            vendor = cfg.get("vendor", "")
     return {
-        "provider": "openai",
-        "api_key": settings.OPENAI_API_KEY,
-        "base_url": settings.OPENAI_BASE_URL,
-        "model": settings.LLM_MODEL,
+        "model": current,
+        "vendor": vendor,
+        "models": list_available_models(),
+        "default_model": gateway["default_model"],
+        "gateway_configured": bool(gateway["api_key"]),
+        "providers": _providers_public(),
     }
 
 
 @router.post("/llm")
 def save_llm_config(config: LLMConfig):
-    """保存LLM配置"""
+    """保存LLM配置：只保存用户选择的厂商+模型名（Key/BaseURL 由平台 AI 网关统一提供）"""
+    from app.services.ai_gateway import list_available_models, resolve_gateway_config
+
+    model = (config.model or "").strip()
+    vendor = (config.vendor or "").strip()
+    if vendor:
+        cfg = resolve_gateway_config(vendor)
+        models = cfg.get("models") or list_available_models()
+    else:
+        models = list_available_models()
+    if model and models and model not in models:
+        raise HTTPException(status_code=400, detail=f"未知模型：{model}，可选：{'、'.join(models)}")
     os.makedirs("config", exist_ok=True)
     config_file = "config/llm.json"
     with open(config_file, 'w') as f:
-        json.dump(config.model_dump(), f, indent=2)
-    return {"message": "LLM配置已保存"}
+        json.dump({"model": model, "vendor": vendor}, f, indent=2)
+    return {"message": "LLM配置已保存", "model": model, "vendor": vendor}
+
+
+@router.get("/models")
+def get_llm_models():
+    """获取可用模型列表（订阅制：用户只需选模型名，无需配置 Key；含多厂商下拉数据）"""
+    from app.services.ai_gateway import list_available_models, get_gateway_config
+
+    gateway = get_gateway_config()
+    providers = _providers_public()
+    default_vendor = ""
+    if providers:
+        default_vendor = next((p["vendor"] for p in providers if p["is_default"]), providers[0]["vendor"])
+    return {
+        "models": list_available_models(),
+        "default_model": gateway["default_model"],
+        "providers": providers,
+        "default_vendor": default_vendor,
+    }
 
 
 @router.get("/custom-ocr")

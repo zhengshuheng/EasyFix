@@ -29,7 +29,6 @@
                 {{ k.display_name }}
                 <el-icon v-if="k.id === kidStore.activeKid?.id"><Check /></el-icon>
               </el-dropdown-item>
-              <el-dropdown-item divided command="reselect">重新选择</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -172,6 +171,23 @@
       </div>
     </section>
 
+    <!-- 单词学习进度（英语过程量化：跟读/认读/读词/说词/听写 已完成/总数） -->
+    <section v-if="showWordStats" class="word-dim-panel">
+      <div class="word-dim-head">
+        <h2 class="panel-title">单词学习进度</h2>
+        <span class="word-dim-desc">按记忆方式统计：已练过（答对过）的词数 / 当前空间单词总数</span>
+      </div>
+      <div class="word-dim-grid">
+        <div v-for="d in wordDimStats" :key="d.key" class="word-dim-item">
+          <div class="wd-top">
+            <span class="wd-label">{{ d.label }}</span>
+            <span class="wd-num">{{ d.done }} / {{ d.total }}</span>
+          </div>
+          <el-progress :percentage="pct(d)" :stroke-width="10" :color="dimColor(d.key)" />
+        </div>
+      </div>
+    </section>
+
     <!-- Global Grade Switcher（学习空间年级，与顶栏联动；指定年级后隐藏） -->
     <section v-if="subjectStore.isAllGrade" class="grade-switch-bar">
       <div class="grade-switch-label">年级</div>
@@ -191,6 +207,9 @@
           @click="onGradeChange(g.value)"
         >
           {{ g.label }}
+          <span v-if="kidGrade && g.value <= kidGrade" class="chip-badge" :class="{ 'is-current': g.value === kidGrade }">
+            {{ g.value === kidGrade ? '当前' : '已学' }}
+          </span>
         </button>
       </div>
       <div class="grade-switch-note">不区分上下学期 · 切换后整页数据联动（与顶部空间选择一致）</div>
@@ -357,6 +376,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { statsApi, statsOverviewApi } from '@/api/question'
+import { motivationApi } from '@/api/motivation'
 import { useAppConfigStore } from '@/stores/appConfig'
 import { useKidStore } from '@/stores/kid'
 import { useSubjectStore } from '@/stores/subject'
@@ -407,15 +427,12 @@ async function loadKids() {
 
 // 首页"切换小孩"下拉
 async function handleKidSwitch(cmd) {
-  if (cmd === 'reselect') {
-    kidStore.clear()
-    router.push('/')
-    return
-  }
   if (cmd.startsWith('kid:')) {
     const k = kids.value.find((x) => x.id === Number(cmd.split(':')[1]))
     if (k) {
       kidStore.select(k)
+      // 默认年级跟随小孩
+      subjectStore.applyKidDefaultGrade(k)
       ElMessage.success(`已切换到「${k.display_name}」`)
       loadAllStats()
     }
@@ -434,11 +451,20 @@ const stats = ref({
     total_words: 0,
     reviewed_words: 0,
     total_reviews: 0,
-    accuracy: 0
+    accuracy: 0,
+    dim_stats: []
   },
   word_accuracy_curve: [],
   question_accuracy_curve: []
 })
+
+// 单词学习过程五维（跟读/认读/读词/说词/听写）进度
+const wordDimStats = computed(() => stats.value.word_stats?.dim_stats || [])
+const pct = (d) => (d.total ? Math.round((d.done / d.total) * 100) : 0)
+const dimColor = (key) => {
+  const map = { listen: '#409eff', recognize: '#67c23a', read: '#e6a23c', speak: '#9b59b6', write: '#f56c6c' }
+  return map[key] || '#409eff'
+}
 
 const selectedSubject = ref('')
 
@@ -464,6 +490,13 @@ const gradeOptions = [
 ]
 
 const getGradeLabel = (g) => gradeLabelMap[g] || `${g}年级`
+
+// 当前小孩的年级（由入学日期动态推断）；未选小孩/未填入学日期时返回 null（不标"已学"）
+const kidGrade = computed(() => {
+  const g = kidStore.activeKid?.current_grade
+  const n = Number(g)
+  return n >= 1 && n <= 12 ? n : null
+})
 
 // 全局年级（学习空间年级）：与顶栏/其他页面联动，null = 全部年级
 const selectedGrade = computed({
@@ -750,17 +783,23 @@ const dualAccuracyCurveOption = computed(() => {
 })
 
 onMounted(async () => {
-  loadKids()
-  // 默认使用管理配置中的年级（当前为六年级）；配置接口仅家长会话可读
-  if (localStorage.getItem('easyfix_token')) {
-    try {
-      await appConfigStore.load()
-    } catch {
-      // 忽略：配置读取失败使用默认年级
-    }
-  }
-  selectedGrade.value = subjectStore.activeGrade ?? (appConfigStore.defaultGrade || 6)
+  await loadKids()
+  // 同步当前小孩的 current_grade（旧版 localStorage 里的小孩对象可能没有该字段，
+  // 不刷新的话「默认年级跟随小孩」会拿到空值而失效）
+  const cur = kids.value.find((x) => x.id === kidStore.kid?.id)
+  if (cur) kidStore.select(cur)
+  // 年级 = 当前小孩的当前年级（由入学日期推断）
+  subjectStore.applyKidDefaultGrade(kidStore.kid)
   await loadAllStats()
+  // 每日签到（激励中心）：当天首次进入自动 +积分，静默失败不影响学习
+  try {
+    const { data } = await motivationApi.checkin()
+    if (data && data.checked && !data.already) {
+      ElMessage.success(`每日签到成功，积分 +${data.star_delta}`)
+    }
+  } catch (e) {
+    // 忽略：激励系统不可用不影响首页
+  }
 })
 </script>
 
@@ -1043,6 +1082,60 @@ onMounted(async () => {
 .tone-lime .stat-icon { background: linear-gradient(135deg, #a3e635, #84cc16); }
 .tone-lime .stat-value { color: #3f6212; }
 
+/* 单词学习进度（英语过程量化） */
+.word-dim-panel {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(100, 116, 139, 0.08);
+}
+.word-dim-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.word-dim-head .panel-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.word-dim-desc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.word-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.word-dim-item {
+  padding: 12px 14px;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.wd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.wd-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+.wd-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Content Grid */
 .content-grid {
   display: grid;
@@ -1101,6 +1194,32 @@ onMounted(async () => {
   background: #4f46e5;
   color: #fff;
   box-shadow: 0 6px 14px rgba(79, 70, 229, 0.28);
+}
+
+/* 已学/当前年级标识 */
+.grade-switch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-badge {
+  font-size: 10px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: #64748b;
+  background: #e2e8f0;
+}
+
+.chip-badge.is-current {
+  color: #fff;
+  background: #4f46e5;
+}
+
+.grade-switch-chip.active .chip-badge {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .grade-switch-note {
@@ -1282,6 +1401,10 @@ onMounted(async () => {
     grid-column: span 2;
   }
 
+  .word-dim-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .content-grid {
     grid-template-columns: 1fr;
   }
@@ -1297,6 +1420,10 @@ onMounted(async () => {
   }
 
   .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .word-dim-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1321,6 +1448,29 @@ onMounted(async () => {
 
   .overview-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* panel-full 原为 grid-column: span 2，窄屏必须降为单列，
+     否则面板宽度会是 2 列之和，撑破视口导致整页横向滚动 */
+  .panel-full {
+    grid-column: span 1;
+  }
+
+  .panel {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .panel-title {
+    font-size: 16px;
+  }
+
+  .subject-select {
+    width: 110px;
+  }
+
+  .subject-table {
+    font-size: 12px;
   }
 }
 </style>

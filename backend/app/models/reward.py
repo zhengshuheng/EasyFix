@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class Reward(Base):
@@ -17,7 +18,7 @@ class Reward(Base):
     is_active = Column(Boolean, default=True)
     deleted = Column(Boolean, default=False)
     image_url = Column(String(500), nullable=True)  # 自定义图片路径，与 icon 二选一
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
 
 class Redemption(Base):
@@ -28,6 +29,6 @@ class Redemption(Base):
     user_id = Column(Integer, default=1)
     reward_id = Column(Integer, ForeignKey("reward.id"), nullable=False)
     star_cost = Column(Integer, nullable=False)
-    redeemed_at = Column(DateTime, server_default=func.now())
+    redeemed_at = Column(DateTime, default=now_local, server_default=func.now())
 
     reward = relationship("Reward")

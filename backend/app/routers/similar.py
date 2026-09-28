@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Question, SimilarQuestion, Subject
+from app.models import ErrorQuestion, SimilarQuestion, Subject
 from app.services.llm import llm_service
 from app.services.logger import logger_service
 from app.utils.html import decode_html
@@ -9,6 +9,14 @@ from pydantic import BaseModel
 from typing import List
 
 router = APIRouter(prefix="/api/questions", tags=["相似题"])
+
+
+def _subject_name(db: Session, subject_id) -> str:
+    """学科名称（error_question 只存 subject_id，无 relationship）"""
+    if not subject_id:
+        return ""
+    s = db.query(Subject).filter(Subject.id == subject_id).first()
+    return s.name if s else ""
 
 
 class BatchSimilarRequest(BaseModel):
@@ -23,8 +31,8 @@ def generate_similar_question(question_id: int, db: Session = Depends(get_db)):
     Returns:
         SimilarQuestion 对象
     """
-    # 只获取未删除的错题
-    question = db.query(Question).filter(Question.id == question_id, Question.deleted == False).first()
+    # 只获取未删除的错题（数据源：error_question）
+    question = db.query(ErrorQuestion).filter(ErrorQuestion.id == question_id, ErrorQuestion.deleted == False).first()  # noqa: E712
     if not question:
         raise HTTPException(status_code=404, detail="错题不存在")
 
@@ -35,9 +43,7 @@ def generate_similar_question(question_id: int, db: Session = Depends(get_db)):
         )
 
     # 获取学科名称
-    subject_name = ""
-    if question.subject:
-        subject_name = question.subject.name
+    subject_name = _subject_name(db, question.subject_id)
 
     # 调用LLM生成相似题
     try:
@@ -123,10 +129,10 @@ def batch_generate_similar(request: BatchSimilarRequest, db: Session = Depends(g
     failed_count = 0
 
     for question_id in request.question_ids:
-        # 获取错题
-        question = db.query(Question).filter(
-            Question.id == question_id,
-            Question.deleted == False
+        # 获取错题（数据源：error_question）
+        question = db.query(ErrorQuestion).filter(
+            ErrorQuestion.id == question_id,
+            ErrorQuestion.deleted == False  # noqa: E712
         ).first()
 
         if not question:
@@ -163,9 +169,7 @@ def batch_generate_similar(request: BatchSimilarRequest, db: Session = Depends(g
             continue
 
         # 获取学科名称
-        subject_name = ""
-        if question.subject:
-            subject_name = question.subject.name
+        subject_name = _subject_name(db, question.subject_id)
 
         # 调用LLM生成相似题
         try:

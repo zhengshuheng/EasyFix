@@ -48,6 +48,30 @@
     line-height: 1.6;
   }
 
+  /* EasyFix logo 移动端隐藏：浏览器标题已展示产品名，省头部空间
+     （回首页入口由菜单"首页"承担，9/28 用户反馈） */
+  .header-content .logo {
+    display: none;
+  }
+
+  /* 日期范围弹层：桌面两列日历约 646px，窄屏显示不完整、无法操作（9/28 反馈）
+     → 面板收窄到视口内，两列各 50%，内部横向滚动兜底 */
+  .el-picker-panel {
+    width: 94vw !important;
+    max-width: 94vw !important;
+  }
+  .el-date-range-picker .el-picker-panel__body {
+    min-width: 0 !important;
+  }
+  .el-date-range-picker__content.is-left,
+  .el-date-range-picker__content.is-right {
+    width: 50% !important;
+    min-width: 0 !important;
+  }
+  .el-picker-panel__body-wrapper {
+    overflow-x: auto;
+  }
+
   /* 一级菜单：允许换行 + 横向可滑（菜单项多时不会挤出屏幕） */
   .header-content .el-menu {
     flex-wrap: nowrap;
@@ -60,10 +84,10 @@
 
   .header-content .el-menu-item,
   .header-content .el-sub-menu .el-sub-menu__title {
-    font-size: 12px;
-    padding: 0 8px;
-    height: 36px !important;
-    line-height: 36px !important;
+    font-size: 14px;
+    padding: 0 10px;
+    height: 40px !important;
+    line-height: 40px !important;
   }
 
   .header-content .el-menu-item.is-active {
@@ -82,10 +106,25 @@
     justify-content: flex-end;
   }
 
-  /* 用户区内部各控件允许收缩，避免整体超出视口被裁掉（退出登录点不到） */
+  /* 用户区内部各控件保持自然宽度（不允许压缩），
+     超宽时在 .header-user 内横向滚动（overflow-x: auto 已启用）。
+     旧版 min-width:0 让 chips 可压缩 → 官网/小孩名/退出登录被压成"逐字换行"（9/28 修复）。 */
   .header-user > * {
-    min-width: 0;
-    max-width: 100%;
+    flex-shrink: 0;
+    min-width: max-content;
+    max-width: max-content;
+  }
+
+  .subject-chip,
+  .user-chip,
+  .site-link,
+  .logout-btn {
+    white-space: nowrap;
+  }
+
+  .subject-name,
+  .user-name {
+    white-space: nowrap;
   }
 
   .subject-chip,
@@ -412,6 +451,43 @@
   .el-tabs__nav-wrap {
     overflow-x: auto !important;
   }
+
+  /* ---------- 按钮容器兜底：直接含按钮的容器自动换行 + 间距 ----------
+   * 各页面按钮容器 class 不统一（action-bar/header-actions/batch-buttons/result-btns…），
+   * 逐页加规则效率低；用 :has() 一次性覆盖"直接含 el-button 的容器"
+   * （Chrome 105+ / Safari 15.4+，2026 年主流设备均支持），避免窄屏按钮挤成一团。 */
+  div:has(> .el-button),
+  .el-card__header:has(> .el-button) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 卡片头部 / 弹窗底部按钮区固定兜底（不依赖 :has） */
+  .el-card__header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .el-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* 相邻按钮间距：窄屏 EP 默认 12px 收到 8px */
+  .el-button + .el-button {
+    margin-left: 8px;
+  }
+
+  /* ---------- el-row/el-col 栅格：窄屏统一单列堆叠 ----------
+   * 页面常见 span=6/8/12 多列（统计卡/图表卡），375px 下每列只剩 90~180px，
+   * 内容必然挤压换行；移动端统一堆叠为整行。覆盖 el-main 内的页面栅格 +
+   * el-dialog（teleport 到 body，需全局选择器才能命中）。 */
+  .el-main .el-col,
+  .el-dialog .el-col {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 /* ==================== ≤480px：手机 ==================== */
@@ -423,10 +499,10 @@
 
   .header-content .el-menu-item,
   .header-content .el-sub-menu .el-sub-menu__title {
-    font-size: 11px;
-    padding: 0 6px;
-    height: 30px !important;
-    line-height: 30px !important;
+    font-size: 13px;
+    padding: 0 8px;
+    height: 34px !important;
+    line-height: 34px !important;
   }
 
   .subject-name,

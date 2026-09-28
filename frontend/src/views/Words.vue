@@ -23,7 +23,7 @@
             </el-button>
             <el-button type="warning" @click="showPrintDialog">
               <el-icon><Printer /></el-icon>
-              打印默写
+              打印
             </el-button>
           </div>
         </div>
@@ -643,13 +643,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Printer, Upload, Reading } from '@element-plus/icons-vue'
 import { wordApi } from '@/api/word'
 import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
+import { apiHeaders } from '@/api/http'
 import { useSubjectStore } from '@/stores/subject'
 import { useKidStore } from '@/stores/kid'
 import ParentLockDialog from '@/components/ParentLockDialog.vue'
@@ -782,8 +783,7 @@ const openLearnPage = () => {
 // 从学习模式进入复习（今日任务）
 const startLearnPractice = () => {
   // 停止自动带读
-  ++teachToken
-  stopSpeech()
+  stopTeaching()
   if (learnMode.value === 'list') {
     reviewVisible.value = false
     return
@@ -793,12 +793,12 @@ const startLearnPractice = () => {
 // 关闭学习/复习弹窗时停止带读
 watch(reviewVisible, (v) => {
   if (!v) {
-    ++teachToken
-    stopSpeech()
+    stopTeaching()
   }
 })
 // 学习卡自动带读：切卡时自动朗读新词（英语→中文→词根词源）
 watch(learnIndex, () => {
+  stopTeaching() // 先停上一张卡的朗读（正在播的音频会继续放完），再带读新卡
   autoTeach(learnWord.value)
   // 翻到该卡即标记「已学（看过）」——无答题也算学过，
   // 否则看完一遍没点开始复习，下次进来又是同一批词从头开始。
@@ -929,6 +929,13 @@ const sentenceZhVisible = () => dimConfigForm.learnMode !== 'advanced' || dimCon
 // opts.tip=题干文本（如「认一认：选出对应的中文意思」）→ 循环前先读一遍
 // opts.options=中文选项数组 → 循环后逐个读一遍（一年级不识字也能自己读题，无需家长在旁边读）
 let teachToken = 0
+// 停止一切朗读/带读：自动带读循环(teachToken) + 听音自动重播(autoPlayToken) + 正在播放的音频(stopSpeech)。
+// 提交/切题/完成/终止/关闭弹窗时调用，避免「上一个单词还在自动读」的竞态（旧循环 token 失效即中断）。
+const stopTeaching = () => {
+  teachToken++
+  autoPlayToken.value++
+  stopSpeech()
+}
 async function autoTeach(word, opts = {}) {
   if (!dimConfigForm.autoRead || !word?.english) return
   const token = ++teachToken
@@ -956,6 +963,11 @@ async function autoTeach(word, opts = {}) {
       for (const s of sentences) {
         await speakEn(s.en)
         if (token !== teachToken) return
+        // 例句中文翻译带读：复习题(noZh)不读防报答案；中文翻译隐藏时不读（9/28 修复：例句中文没声音）
+        if (!opts.noZh && s.zh && sentenceZhVisible()) {
+          await speakZh(s.zh, { force: true })
+          if (token !== teachToken) return
+        }
       }
     } catch (e) { /* 带读失败不打断学习 */ }
   }
@@ -1032,8 +1044,11 @@ async function loadDailyTask() {
   try {
     const params = { new_quota: 5, dimensions: enabledDims().join(','), per_word_dims: dimConfigForm.perWordDims, category_cap: dimConfigForm.categoryCap }
     if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
+    // 今日任务/新词学习跟随学习空间年级：否则全年级出词，答错后表格（默认按当前年级过滤）查不到"需加强"
+    if (subjectStore.activeGrade != null) params.grade = subjectStore.activeGrade
     const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
-    const res = await fetch(`/api/words/daily-task?${qs}`)
+    // 必须带 X-Trial-Key：裸 fetch 不带头会落主库，显示主库 demo 进度而非本空间数据
+    const res = await fetch(`/api/words/daily-task?${qs}`, { headers: apiHeaders() })
     if (!res.ok) return
     const data = await res.json()
     dailyTask.loaded = true
@@ -1061,7 +1076,8 @@ function buildDailyQuestions(data, category) {
       if (opts.length >= 4) break
       if (!opts.some(o => getLabel(o) === getLabel(w))) opts.push(w)
     }
-    while (opts.length < 4 && poolWords.length) {
+    let guard = 0
+    while (opts.length < 4 && poolWords.length && guard++ < 100) {
       const w = poolWords[Math.floor(Math.random() * poolWords.length)]
       if (!opts.some(o => getLabel(o) === getLabel(w))) opts.push(w)
     }
@@ -1131,13 +1147,18 @@ async function openDailyTask(category = 'due') {
     // 导致练完一批后今日学习列表纹丝不动（学过的词一直留在列表里）。
     const params = { count: 10, category }
     if (kidStore.activeKid?.id) params.user_id = kidStore.activeKid.id
+    // 与 daily-task 同年级出题：否则后端 category 从全库抽词，答错的词落在别的年级，
+    // 表格默认按当前年级过滤 → 需加强/薄弱查不到
+    if (subjectStore.activeGrade != null) params.grade = subjectStore.activeGrade
     const { data } = await wordApi.startReview(params)
     currentSessionId.value = data.session_id
 
     const qp = { new_quota: 5, dimensions: enabledDims().join(','), per_word_dims: dimConfigForm.perWordDims, category_cap: dimConfigForm.categoryCap }
     if (kidStore.activeKid?.id) qp.user_id = kidStore.activeKid.id
+    if (subjectStore.activeGrade != null) qp.grade = subjectStore.activeGrade
     const qs = Object.entries(qp).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
-    const res = await fetch(`/api/words/daily-task?${qs}`)
+    // 必须带 X-Trial-Key：裸 fetch 不带头会落主库，复习题/已学词会错读主库 demo 数据
+    const res = await fetch(`/api/words/daily-task?${qs}`, { headers: apiHeaders() })
     const task = await res.json()
     // 刷新顶部计数与「已学会的词」，让练完立即反映
     dailyTask.loaded = true
@@ -1319,16 +1340,15 @@ const importForm = reactive({
 })
 
 const currentQuestion = ref({})
-// 新词学习题：进入时自动带读（题干 → 英语 → 例句 → 中文选项）
-// 题干+选项也朗读：一年级孩子不识字时无需家长在旁边读题（不读中文释义=不报答案）
+// 新词学习题：进入时自动带读（题干 → 英语 → 例句英文；不读中文/选项=不报答案）
 watch(currentQuestion, (q) => {
   if (q && q.is_new && reviewStep.value === 'question' && dimConfigForm.autoRead) {
-    // 新词学习题（is_new 是"学习"不是"复习"）：完整带读 题干 → 英语 → 中文 → 词根 → 例句 → 选项
-    // 中文翻译必须读出来帮孩子理解（9/28 修复：上一版 noZh 一刀切导致新词学习中文没声音）
+    // 做题时只读 题干 → 英语 → 例句英文；中文意思就是本题正确答案，带读=报答案
+    // （9/28 曾为"新词学习中文没声音"改成 noZh:false，用户反馈做题带读中文等于泄题，改回 noZh:true；
+    //   选项也不自动读——选项含正确答案，需要时点选项旁喇叭手动读）
     setTimeout(() => autoTeach(q, {
-      noZh: false,
+      noZh: true,
       tip: '认一认：选出对应的中文意思',
-      options: q.options || [],
     }), 600)
   }
 })
@@ -1719,6 +1739,7 @@ const autoPlayWithReplay = async (wordId) => {
 }
 
 const submitAnswer = () => {
+  stopTeaching() // 答题即停：旧题带读可能正读到中文/例句，继续播会盖住下一题
   const q = currentQuestion.value
   if (currentType.value === 1) {
     // 默写：从字母格拼答案
@@ -1755,6 +1776,7 @@ const submitAnswer = () => {
 }
 
 const nextQuestion = () => {
+  stopTeaching() // 切题即停：防止上一题带读循环继续 + 与下一题自动播放交叉重叠
   currentIndex.value++
   currentQuestion.value = reviewQuestions.value[currentIndex.value]
   if (dimConfigForm.showPinyin) {
@@ -1788,6 +1810,7 @@ const nextQuestion = () => {
 
 // 终止答题，结算已答题目
 const terminateReview = async () => {
+  stopTeaching() // 终止即停：确认框弹出/结算期间不再读旧题
   try {
     await ElMessageBox.confirm('确定要终止答题吗？已答题目将按实际结果结算。', '终止确认', {
       confirmButtonText: '确定终止',
@@ -1807,7 +1830,7 @@ const terminateReview = async () => {
 }
 
 const finishReview = async () => {
-  autoPlayToken.value++
+  stopTeaching() // 完成/结算即停：带读与重播全部中断（原仅 ++autoPlayToken 停重播，漏了 autoTeach 循环）
   // 停止计时器
   if (reviewTimer.value) {
     clearInterval(reviewTimer.value)
@@ -2175,6 +2198,11 @@ onMounted(async () => {
   fetchWords()
   fetchTags()
   loadDailyTask()
+})
+
+// 路由离开本页时停掉一切朗读（弹窗开着切走路由，音频不能残留）
+onBeforeUnmount(() => {
+  stopTeaching()
 })
 </script>
 
@@ -3372,6 +3400,171 @@ onMounted(async () => {
 .words :deep(.el-card:hover) {
   transform: none;
   box-shadow: var(--shadow-sm) !important;
+}
+
+/* ===== 移动端适配：单词卡片/复习弹窗（9/28 修复） ===== */
+@media (max-width: 768px) {
+  /* 复习/学习弹窗宽度自适应（原固定 1200px 溢出视口导致卡片错位换行） */
+  :deep(.review-dialog) {
+    --el-dialog-width: 96vw !important;
+    --el-dialog-margin-top: 3vh !important;
+  }
+  /* 卡片头部：标题与按钮组换行 + 间距（学习本页/听写/打印默写等不再挤在一起） */
+  .card-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .review-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  /* 卡片头：隐藏"单词本"标题 + 按钮图标，
+     学习本页/听写/中-英/英-中/打印 5 个按钮单行放下（不再第二行） */
+  .card-header > span:first-child {
+    display: none;
+  }
+  :deep(.review-buttons .el-icon) {
+    display: none;
+  }
+  /* 筛选条件（搜索单词 180 + 年级 120 + 学期 100 + 标签 150 ≈ 590px）：
+     窄屏换行堆叠不美观 → 改单行横向滑动，高度仅 1 行 */
+  .filters {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .filters .el-select,
+  .filters .el-input {
+    flex: 0 0 auto;
+  }
+  /* 今日任务三项：窄屏保持 3 列横排，卡片内容纵向紧凑居中
+     （原横向一行在 ~110px 列宽里放不下、内容换行堆成高条，看起来像竖向展示） */
+  .dt-sections {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .dt-section {
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+    gap: 2px;
+    padding: 10px 4px;
+  }
+  .ds-dot { width: 8px; height: 8px; }
+  .ds-name { font-size: 14px; }
+  .ds-num { font-size: 18px; margin-left: 0; }
+  .ds-go { font-size: 12px; }
+  /* 学习模式卡片 */
+  .learn-flow {
+    padding: 12px 10px 8px;
+    min-height: 0;
+  }
+  .learn-title { font-size: 18px; }
+  .learn-progress { font-size: 18px; }
+  .learn-tip { margin-bottom: 10px; font-size: 12px; }
+  .learn-card {
+    padding: 16px 14px;
+  }
+  .lc-english {
+    font-size: 28px;
+    flex-wrap: wrap;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .lc-english .audio-btn { font-size: 18px; padding: 2px 8px; }
+  .lc-phonetic { font-size: 15px; }
+  .lc-chinese { font-size: 22px; }
+  .lc-section { padding: 10px 12px; }
+  .lc-section-body { font-size: 14px; }
+  .lc-ex-en { flex-wrap: wrap; }
+  .learn-nav { gap: 10px; }
+  .learn-footer { flex-wrap: wrap; gap: 10px; }
+  /* 复习题 */
+  .review-question {
+    padding: 14px;
+    height: auto;
+    min-height: 72vh;
+    max-height: none;
+  }
+  .question-header { gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .progress { font-size: 26px; }
+  .timer { font-size: 20px; }
+  /* 新词学习卡（认一认） */
+  .new-word-learn { padding: 12px; }
+  .nw-english {
+    font-size: 24px;
+    flex-wrap: wrap;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .nw-meta { margin: 6px 0; }
+  .nw-ex-en { word-break: break-word; }
+  /* 默写卡 */
+  .dictation { padding: 12px; }
+  .dictation .chinese { font-size: 26px; }
+  .dictation .hint { font-size: 18px; }
+  .dictation .answer-input { max-width: 100%; }
+  .dictation .answer-input :deep(.el-input__inner) { font-size: 34px; }
+  /* 答题底部按钮：终止/提交单行并排、缩小（原 28px 字+80px 横内边距窄屏放不下换行挤在一起） */
+  .question-actions {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  .question-actions .el-button {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 16px;
+    padding: 12px 4px;
+  }
+  /* 结果报告：顶部正确率卡+统计卡窄屏纵向堆叠，字号缩放；错误词条右列收窄为整行条 */
+  .review-result {
+    padding: 12px;
+    max-height: none;
+  }
+  .result-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .accuracy-display {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .accuracy-big { font-size: 44px; }
+  .accuracy-label { font-size: 15px; }
+  .stats-panel {
+    padding: 12px;
+    gap: 8px;
+  }
+  .stat-item { padding: 8px 6px; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 12px; }
+  .error-word-list .error-words-scroll {
+    grid-template-columns: 1fr;
+  }
+  .error-word-item {
+    flex-wrap: wrap;
+  }
+  .wrong-side {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    border-left: none;
+    border-top: 2px solid #f56c6c;
+    padding: 8px 12px;
+  }
+  .finish-btn {
+    height: 40px;
+  }
 }
 </style>
 

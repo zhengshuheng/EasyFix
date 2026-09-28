@@ -13,6 +13,7 @@ from app.database import get_db
 from app.models import Word, Tag, WordReviewLog, WordReview, WordAttempt
 from app.models.word import WordProgress
 from app.models.user import User
+from app.utils.auth import require_admin
 from app.schemas.word import (
     WordCreate, WordUpdate, WordResponse, WordListResponse,
     WordStatsResponse, ReviewSessionSubmit, ReviewStartResponse, ReviewQuestion,
@@ -134,7 +135,12 @@ def _get_progress(db: Session, word_id: int, user_id: int) -> WordProgress:
 
 
 def _get_accuracy_level(review_count: int, correct_count: int) -> str:
-    """计算正确率等级"""
+    """计算正确率等级
+
+    注意：仅答对 1 次**不算掌握**——必须累计≥3 次且正确率>80% 才判 mastered，
+    否则词会在第一次答对后立刻被判为"已掌握"而从今日任务里消失（曾导致
+    孩子只练一次就再也见不到这个词）。
+    """
     if review_count == 0:
         return "new"  # 新词
     accuracy = (correct_count / review_count * 100) if review_count > 0 else 0
@@ -142,10 +148,53 @@ def _get_accuracy_level(review_count: int, correct_count: int) -> str:
         return "weak"  # 需加强
     elif accuracy <= 60:
         return "learning"  # 薄弱
-    elif accuracy <= 80:
-        return "good"  # 一般
+    elif accuracy <= 80 or review_count < 3:
+        return "good"  # 一般（含"答对次数还不够"的情况）
     else:
         return "mastered"  # 掌握
+
+
+def _stable_shuffle(items: list, seed: str) -> list:
+    """按 seed 稳定打散（同一天同 seed 结果一致，跨天/换 seed 才变）
+
+    用于「今日新词」抽样：既避免每天固定吐同一批 id，又保证同一天内
+    多次刷新看到的是同一组词（孩子中途刷新不会换题）。
+    """
+    import hashlib
+    def _key(it):
+        raw = f"{seed}:{getattr(it, 'id', it)}"
+        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+    return sorted(items, key=_key)
+
+
+# ---- 科学记忆调度参数 ----
+MASTERED_PHASE = "牢记"
+# 牢记抽查：随机在这些天数里取一个作为下次抽查间隔（防短期记忆）
+MASTERED_REVIEW_INTERVALS = (5, 10, 15)
+# 牢记抽查答对后继续拉长（证明长期记忆稳固）
+MASTERED_EXTEND_INTERVALS = (20, 30, 60)
+# 牢记抽查答错后回落（它曾掌握过，不必从 1 天重来）
+MASTERED_RELAPSE_INTERVAL = 3
+# 牢记抽查比例：每天从「牢记池」里随机抽 10%
+MASTERED_SAMPLE_RATIO = 0.10
+MASTERED_SAMPLE_MIN = 1
+
+
+def _next_mastered_interval(interval: int, correct: bool) -> int:
+    """牢记阶段的抽查间隔推进。
+
+    答对：按 5→10→15→20→30→60 阶梯往上走（不再 30 天封顶）。
+    答错：回落到 3 天（不是 1 天——它曾掌握过）。
+    """
+    if not correct:
+        return MASTERED_RELAPSE_INTERVAL
+    cur = interval or 0
+    ladder = MASTERED_REVIEW_INTERVALS + MASTERED_EXTEND_INTERVALS
+    for step in ladder:
+        if step > cur:
+            return step
+    return ladder[-1]
+
 
 
 def _get_consecutive_correct(word_id: int, user_id: int, db: Session) -> int:
@@ -346,7 +395,18 @@ def get_memory_curve(word_id: int, user_id: Optional[int] = Query(None, descript
     uid = _resolve_user_id(db, user_id)
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
-        raise HTTPException(status_code=404, detail="单词不存在")
+        # 兜底：该 id 可能被 ops 同步软删（旧版全量替换导致 id 漂移）。
+        # 按原行 english 找当前 active 行（同步后的新行）生成音频；词被彻底移除时
+        # 用快照 english 现场 TTS，避免旧题目/进度引用的旧 id 直接 404。
+        stale = db.query(Word).filter(Word.id == word_id).first()
+        if stale and (stale.english or "").strip():
+            live = db.query(Word).filter(
+                func.lower(Word.english) == stale.english.strip().lower(),
+                Word.deleted == False,
+            ).first()
+            word = live or stale
+        else:
+            raise HTTPException(status_code=404, detail="单词不存在")
 
     progress = _get_progress(db, word_id, uid)
 
@@ -424,22 +484,56 @@ def daily_task(
     for a in attempts:
         attempt_map.setdefault(a.word_id, []).append(a)
 
-    due_words = []   # 到期词（有进度且到期，或低正确率；已在错词池的词归错题练习，不重复计）
-    new_words = []   # 新学词（无进度）
+    due_words = []       # 到期词（有进度且到期，或低正确率；已在错词池的词归错题练习，不重复计）
+    new_words = []       # 新学词（无进度，且未在学词卡里看过）
+    mastered_due = []    # 「牢记」到期抽查池（总体不出现，仅限量随机抽查）
+    today = now.date()
     for w in words:
         p = progress_map.get(w.id)
         if p is None or (p.review_count or 0) == 0:
+            # 复习次数为 0 时，若已「看过」（学词卡翻到过），也不再算新词——
+            # 否则孩子看了一遍没答题，下次点开还是这批词，等于白学。
+            if p is not None and p.seen_at is not None:
+                continue
             new_words.append(w)
             continue
         if attempt_map.get(w.id):
             continue  # 错池词优先归「错题练习」，不重复出现在到期复习
-        due = (p.next_review_at and p.next_review_at <= now) or (p.learning_phase in ("遗忘点", "在途") and (p.correct_count or 0) < (p.review_count or 0) * 0.6)
+
+        # 「当天学过的不进当天轮次」：今天已复习过的词，明天再排。
+        # 否则"上午答对、下午又出现"，孩子会觉得原地打转。
+        if p.last_reviewed_at and p.last_reviewed_at.date() >= today:
+            continue
+
+        # 「牢记」的词总体不再出现，只进专属抽查池
+        if p.learning_phase == MASTERED_PHASE:
+            if p.next_review_at and p.next_review_at <= now:
+                mastered_due.append((w, p))
+            continue
+
+        due = (p.next_review_at and p.next_review_at <= now) or (
+            p.learning_phase in ("遗忘点", "在途")
+            and (p.correct_count or 0) < (p.review_count or 0) * 0.6
+        )
         if due:
             due_words.append((w, p))
 
     # 错池词（按词去重，与到期词合并；错池优先；受单类上限控制）
-    wrong_words = [w for w in words if attempt_map.get(w.id)][:category_cap]
-    due_words = sorted(due_words, key=lambda x: x[1].next_review_at or now)[:category_cap]
+    # 打乱：不再按 Word.id 顺序取，避免孩子靠固定位置蒙对
+    wrong_pool = [w for w in words if attempt_map.get(w.id)]
+    wrong_words = _stable_shuffle(wrong_pool, f"wrong:{today}")[:category_cap]
+    # 打乱：不再按 next_review_at 升序（否则最早就到期的永远排前面，天天同一批）
+    due_shuffled = _stable_shuffle([w for w, _ in due_words], f"due:{today}")
+    due_words = [(w, progress_map[w.id]) for w in due_shuffled][:category_cap]
+
+    # 牢记抽查：从到期的牢记词里按比例随机抽（每天抽一部分，不一次全上）
+    if mastered_due:
+        sample_n = max(MASTERED_SAMPLE_MIN,
+                       int(round(len(mastered_due) * MASTERED_SAMPLE_RATIO)))
+        sample_n = min(sample_n, len(mastered_due), category_cap)
+        picked = _stable_shuffle([w for w, _ in mastered_due], f"mastered:{today}")[:sample_n]
+        for w in picked:
+            due_words.append((w, progress_map[w.id]))
 
     # 今日任务词 = 错池 ∪ 到期（按优先级排序：错池 > 到期 > 低正确率）
     task_words = []
@@ -452,6 +546,20 @@ def daily_task(
         if w.id not in seen:
             task_words.append(w)
             seen.add(w.id)
+
+    # ===== 例句懒生成（复习题卡）：缺例句的词临时 AI 生成并写回空间库 =====
+    # 运营词库 ops_word 无例句，同步后空间库词缺例句；学习时按需补一次，
+    # 写回后全部小孩共享（下次任何入口秒开），不阻塞学习（失败降级为无例句）。
+    missing_review = [w for w in task_words
+                      if not (w.example_sentences and w.example_sentences.strip() and w.example_sentences.strip() != "[]")]
+    if missing_review:
+        try:
+            _res = _fill_sentences_llm(db, missing_review)
+            if _res.get("ok_count"):
+                db.commit()
+        except Exception as _e:
+            db.rollback()
+            print(f"[words] 复习题卡例句懒生成失败({len(missing_review)}词): {_e}")
 
     items = []
     for w in task_words:
@@ -491,11 +599,35 @@ def daily_task(
         })
 
     # 新学词配额（取无进度中未在今日任务里的，优先带记忆增强的）
-    quota = min(new_quota, len(new_words))
+    #
+    # 关键：**必须随机打散**，不能按 Word.id 升序取前 quota 个。
+    # 旧实现按 id 取头 → 无进度词有几百个时，永远返回同一批（如 [6,7,8,9,10]），
+    # 而 review/start 是独立随机池、几乎抽不中这批词 → 那些词的 review_count
+    # 永远是 0 → 明天又原样出现，形成"学过的词/显示的新词"两套池永不相交的死锁。
+    # 打散 seed 用「日期 + 已练过词数」，既保证同一天内刷新结果稳定，
+    # 又能在练过词后自动换一批。
+    seed = f"{now.strftime('%Y-%m-%d')}:{len(progress_map)}"
+    new_candidates = [w for w in new_words if w.id not in seen]
+    # 先在组内稳定打散，再按「是否带口诀」稳定排序：
+    # 带记忆增强的词优先，同组内顺序由 seed 决定（同一天刷新结果一致）
+    new_candidates = _stable_shuffle(new_candidates, seed)
+    new_candidates.sort(key=lambda w: 0 if (w.mnemonic or "").strip() else 1)
+    quota = min(new_quota, len(new_candidates))
+
+    # ===== 例句懒生成（今日新词）：缺例句的新词临时 AI 生成并写回空间库 =====
+    missing_new = [w for w in new_candidates[:quota]
+                   if not (w.example_sentences and w.example_sentences.strip() and w.example_sentences.strip() != "[]")]
+    if missing_new:
+        try:
+            _res = _fill_sentences_llm(db, missing_new)
+            if _res.get("ok_count"):
+                db.commit()
+        except Exception as _e:
+            db.rollback()
+            print(f"[words] 今日新词例句懒生成失败({len(missing_new)}词): {_e}")
+
     new_items = []
-    for w in new_words:
-        if w.id in seen:
-            continue
+    for w in new_candidates[:quota]:
         new_items.append({
             "word_id": w.id,
             "english": w.english,
@@ -507,8 +639,44 @@ def daily_task(
             "dimensions": {d: {"count": 0, "correct": 0, "accuracy": 0, "weak": True, "in_pool": False} for d in enabled},
             "recommended_dimensions": [enabled[rotation % len(enabled)]],
         })
-        if len(new_items) >= quota:
-            break
+
+    # ---- 已学词明细（供前端展示"哪些单词学过了"）----
+    # 取该小孩有进度的词（含 learning_phase / 正确率），按最近复习时间倒序。
+    # 这些词不会再出现在 new_words 里（new_words 只取无进度词），
+    # 因此前端可以据此明确区分「新学」与「已学」。
+    learned_rows = []
+    for w in words:
+        p = progress_map.get(w.id)
+        if p is None:
+            continue
+        rc = p.review_count or 0
+        cc = p.correct_count or 0
+        # 只看过没答题（seen）也算"学过"——孩子确实学过了，只是还没测
+        if rc == 0 and p.seen_at is None:
+            continue
+        if rc == 0:
+            phase = "已学"
+        else:
+            phase = p.learning_phase or _get_accuracy_level(rc, cc)
+        learned_rows.append({
+            "word_id": w.id,
+            "english": w.english,
+            "chinese": w.chinese,
+            "phonetic": w.phonetic,
+            "learning_phase": phase,
+            "review_count": rc,
+            "correct_count": cc,
+            "accuracy": round(cc * 100.0 / rc, 1) if rc else 0,
+            "last_reviewed_at": p.last_reviewed_at.isoformat() if p.last_reviewed_at else None,
+            "next_review_at": p.next_review_at.isoformat() if p.next_review_at else None,
+            "seen_at": p.seen_at.isoformat() if p.seen_at else None,
+            "in_attempt": bool(attempt_map.get(w.id)),
+        })
+    learned_rows.sort(key=lambda x: (x["last_reviewed_at"] or x["seen_at"] or ""), reverse=True)
+    # learning_phase 文案映射（沿用四维记忆的阶段命名）
+    phase_counts = {}
+    for r in learned_rows:
+        phase_counts[r["learning_phase"]] = phase_counts.get(r["learning_phase"], 0) + 1
 
     return {
         "date": now.strftime("%Y-%m-%d"),
@@ -522,6 +690,12 @@ def daily_task(
         "total": len(items) + len(new_items),
         "task": items,
         "new_words": new_items,
+        # 今日新词 id（review/start 可据此消费同一批词，保证"练的=显示的"）
+        "new_word_ids": [w["word_id"] for w in new_items],
+        # 已学词（含阶段标记，供前端"已学会的词"展示）
+        "learned_words": learned_rows,
+        "learned_count": len(learned_rows),
+        "learned_phase_counts": phase_counts,
     }
 
 
@@ -531,7 +705,18 @@ def get_word(word_id: int, user_id: Optional[int] = Query(None, description="小
     uid = _resolve_user_id(db, user_id)
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
-        raise HTTPException(status_code=404, detail="单词不存在")
+        # 兜底：该 id 可能被 ops 同步软删（旧版全量替换导致 id 漂移）。
+        # 按原行 english 找当前 active 行（同步后的新行）生成音频；词被彻底移除时
+        # 用快照 english 现场 TTS，避免旧题目/进度引用的旧 id 直接 404。
+        stale = db.query(Word).filter(Word.id == word_id).first()
+        if stale and (stale.english or "").strip():
+            live = db.query(Word).filter(
+                func.lower(Word.english) == stale.english.strip().lower(),
+                Word.deleted == False,
+            ).first()
+            word = live or stale
+        else:
+            raise HTTPException(status_code=404, detail="单词不存在")
     progress = _get_progress(db, word_id, uid)
     return {
         "id": word.id,
@@ -800,7 +985,18 @@ def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
     """更新单词"""
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
-        raise HTTPException(status_code=404, detail="单词不存在")
+        # 兜底：该 id 可能被 ops 同步软删（旧版全量替换导致 id 漂移）。
+        # 按原行 english 找当前 active 行（同步后的新行）生成音频；词被彻底移除时
+        # 用快照 english 现场 TTS，避免旧题目/进度引用的旧 id 直接 404。
+        stale = db.query(Word).filter(Word.id == word_id).first()
+        if stale and (stale.english or "").strip():
+            live = db.query(Word).filter(
+                func.lower(Word.english) == stale.english.strip().lower(),
+                Word.deleted == False,
+            ).first()
+            word = live or stale
+        else:
+            raise HTTPException(status_code=404, detail="单词不存在")
 
     update_data = data.model_dump(exclude_unset=True)
     tag_ids = update_data.pop('tag_ids', None)
@@ -824,11 +1020,28 @@ def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{word_id}", status_code=204)
-def delete_word(word_id: int, db: Session = Depends(get_db)):
-    """删除单词（软删除）"""
+def delete_word(
+    word_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """删除单词（软删除）
+    家长认证：学生（child）不能删除单词，必须家长（admin）操作
+    """
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
-        raise HTTPException(status_code=404, detail="单词不存在")
+        # 兜底：该 id 可能被 ops 同步软删（旧版全量替换导致 id 漂移）。
+        # 按原行 english 找当前 active 行（同步后的新行）生成音频；词被彻底移除时
+        # 用快照 english 现场 TTS，避免旧题目/进度引用的旧 id 直接 404。
+        stale = db.query(Word).filter(Word.id == word_id).first()
+        if stale and (stale.english or "").strip():
+            live = db.query(Word).filter(
+                func.lower(Word.english) == stale.english.strip().lower(),
+                Word.deleted == False,
+            ).first()
+            word = live or stale
+        else:
+            raise HTTPException(status_code=404, detail="单词不存在")
 
     word.deleted = True
     db.commit()
@@ -842,7 +1055,18 @@ def get_word_audio(word_id: int, db: Session = Depends(get_db)):
 
     word = db.query(Word).filter(Word.id == word_id, Word.deleted == False).first()
     if not word:
-        raise HTTPException(status_code=404, detail="单词不存在")
+        # 兜底：该 id 可能被 ops 同步软删（旧版全量替换导致 id 漂移）。
+        # 按原行 english 找当前 active 行（同步后的新行）生成音频；词被彻底移除时
+        # 用快照 english 现场 TTS，避免旧题目/进度引用的旧 id 直接 404。
+        stale = db.query(Word).filter(Word.id == word_id).first()
+        if stale and (stale.english or "").strip():
+            live = db.query(Word).filter(
+                func.lower(Word.english) == stale.english.strip().lower(),
+                Word.deleted == False,
+            ).first()
+            word = live or stale
+        else:
+            raise HTTPException(status_code=404, detail="单词不存在")
 
     try:
         audio_path = tts_service.generate_word_audio(word.english)
@@ -1037,17 +1261,126 @@ def get_stats(
     }
 
 
+def _build_review_questions(selected_words: list, db: Session) -> list:
+    """把选中的单词构建成复习题目（选择题带 3 个干扰项）
+
+    干扰项从全库取（不限于本次选中的词），保证 4 选 1 始终成立。
+    """
+    all_words = db.query(Word).filter(Word.deleted == False).all()  # noqa: E712
+    questions = []
+    for word in selected_words:
+        other_words = [w for w in all_words if w.id != word.id]
+        options = None
+        if len(other_words) >= 3:
+            wrong_options = random.sample(other_words, 3)
+            options = [w.chinese for w in wrong_options] + [word.chinese]
+            random.shuffle(options)
+
+        questions.append(ReviewQuestion(
+            word_id=word.id,
+            english=word.english,
+            chinese=word.chinese,
+            word_length=len(word.english),
+            options=options
+        ))
+    return questions
+
+
+@router.post("/learn/seen")
+def mark_words_seen(
+    payload: dict,
+    user_id: Optional[int] = Query(None, description="小孩ID（不传则用 payload.user_id 或默认第一个小孩）"),
+    db: Session = Depends(get_db),
+):
+    """标记单词为「已学（看过）」——今日任务学词卡翻到即调用。
+
+    语义：只写 seen_at，**不改** review_count / 正确率 / 记忆曲线
+    （那些只由 /review/submit 的答题结果更新）。
+    效果：被标记的词立刻离开「新词学习」池，不会出现"看了一遍没答题、
+    下次点开又从头开始"。
+    """
+    uid = _resolve_user_id(db, user_id if user_id is not None else payload.get("user_id"))
+    ids = payload.get("word_ids") or []
+    if isinstance(ids, (int, str)):
+        ids = [ids]
+    try:
+        ids = [int(i) for i in ids if str(i).strip().isdigit()]
+    except Exception:
+        ids = []
+    if not ids:
+        return {"ok": True, "marked": 0}
+
+    now = datetime.now()
+    existing = {
+        p.word_id: p for p in db.query(WordProgress).filter(
+            WordProgress.user_id == uid,
+            WordProgress.word_id.in_(ids),
+        ).all()
+    }
+    marked = 0
+    for wid in ids:
+        p = existing.get(wid)
+        if p is None:
+            p = WordProgress(user_id=uid, word_id=wid, review_count=0, correct_count=0,
+                             learning_phase="已学", seen_at=now)
+            db.add(p)
+            marked += 1
+        elif p.seen_at is None:
+            p.seen_at = now
+            # 尚未答题的词，阶段显示为「已学」（答题后会由 review/submit 覆盖）
+            if (p.review_count or 0) == 0:
+                p.learning_phase = "已学"
+            marked += 1
+    db.commit()
+    return {"ok": True, "marked": marked, "user_id": uid}
+
+
 @router.post("/review/start", response_model=ReviewStartResponse)
 def start_review(
     count: int = Query(25, ge=10, le=100, description="复习单词数量"),
     user_id: Optional[int] = Query(None, description="小孩ID（复习进度按该小孩抽样；不传则默认第一个小孩）"),
     grade: Optional[int] = Query(None, description="按年级筛选"),
     word_ids: Optional[str] = Query(None, description="指定单词ID，多个用逗号分隔"),
+    category: Optional[str] = Query(None, description="今日任务分类：new=新词学习 / due=到期复习 / wrong=错词复习；"
+                                                     "传入时按今日任务池出词，保证「练的=今日任务显示的」"),
     db: Session = Depends(get_db)
 ):
     """开始复习 - 智能抽取单词，优先抽取该小孩未复习和低正确率的单词"""
     uid = _resolve_user_id(db, user_id)
     query = db.query(Word).filter(Word.deleted == False)
+
+    # 今日任务分类出词：直接消费 daily-task 决定的同一批词。
+    # 这是修复「学过的词一直留在今日学习」的关键——旧实现里 review/start 从
+    # 全库随机抽、daily-task 按 id 取头，两池互不相交，导致练的词和显示的
+    # 新词永远是两批，练完也不影响今日学习列表。
+    if category in ("new", "due", "wrong"):
+        pool = daily_task(
+            user_id=uid, grade=grade, dimensions=None, new_quota=5,
+            per_word_dims=1, category_cap=15, db=db,
+        )
+        if category == "new":
+            pool_ids = pool["new_word_ids"]
+        else:
+            want_wrong = (category == "wrong")
+            pool_ids = [t["word_id"] for t in pool["task"]
+                        if bool(t["in_attempt"]) == want_wrong]
+        if pool_ids:
+            words = db.query(Word).filter(
+                Word.id.in_(pool_ids), Word.deleted == False
+            ).all()
+            # 按 pool 顺序输出，并把数量收敛到 count
+            order = {wid: i for i, wid in enumerate(pool_ids)}
+            words.sort(key=lambda w: order.get(w.id, 1 << 30))
+            words = words[:max(count, 1)]
+            review_session = WordReview(user_id=uid, total_count=len(words))
+            db.add(review_session)
+            db.commit()
+            db.refresh(review_session)
+            return {
+                "session_id": review_session.id,
+                "questions": _build_review_questions(words, db),
+                "total": len(words),
+            }
 
     # 如果指定了单词ID，使用指定的单词（不走智能抽样）
     if word_ids:
@@ -1133,23 +1466,7 @@ def start_review(
     db.refresh(review_session)
 
     # 构建题目
-    questions = []
-    for word in selected_words:
-        # 为选择题生成选项
-        other_words = [w for w in all_words if w.id != word.id]
-        options = None
-        if len(other_words) >= 3:
-            wrong_options = random.sample(other_words, 3)
-            options = [w.chinese for w in wrong_options] + [word.chinese]
-            random.shuffle(options)
-
-        questions.append(ReviewQuestion(
-            word_id=word.id,
-            english=word.english,
-            chinese=word.chinese,
-            word_length=len(word.english),
-            options=options
-        ))
+    questions = _build_review_questions(selected_words, db)
 
     return {
         "session_id": review_session.id,
@@ -1208,19 +1525,28 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
         if result.is_correct:
             progress.correct_count = (progress.correct_count or 0) + 1
             correct_count += 1
-            # 艾宾浩斯间隔：答对则加倍，最多30天
-            progress.interval = min((progress.interval or 1) * 2, 30)
+            # 间隔推进：
+            #  - 牢记阶段按 5→10→15→20→30→60 阶梯（防短期记忆，不再 30 天封顶）
+            #  - 其余阶段艾宾浩斯加倍，最多 30 天
+            if progress.learning_phase == MASTERED_PHASE:
+                progress.interval = _next_mastered_interval(progress.interval, True)
+            else:
+                progress.interval = min((progress.interval or 1) * 2, 30)
             # 更新阶段
             consecutive_correct = _get_consecutive_correct(word.id, uid, db)
             if consecutive_correct >= 3 and progress.interval >= 7:
-                progress.learning_phase = "牢记"
+                progress.learning_phase = MASTERED_PHASE
             elif progress.next_review_at and progress.next_review_at <= datetime.now():
                 progress.learning_phase = "遗忘点"
             else:
                 progress.learning_phase = "在途"
         else:
             error_count += 1
-            progress.interval = 1  # 错误后重置为1天
+            if progress.learning_phase == MASTERED_PHASE:
+                # 牢记抽查答错：它曾掌握过，不必从 1 天重来
+                progress.interval = MASTERED_RELAPSE_INTERVAL
+            else:
+                progress.interval = 1  # 错误后重置为1天
             progress.learning_phase = "在途"  # 退回在途
 
         # 计算下次复习时间

@@ -5,12 +5,6 @@
       <span class="space-sub">{{ subjectStore.isAllGrade ? '全部年级' : subjectStore.activeGradeName }}</span>
     </div>
     <el-tabs v-model="activeTab" class="space-tabs" type="border-card">
-      <el-tab-pane label="错题" name="questions" lazy>
-        <QuestionsView />
-      </el-tab-pane>
-      <el-tab-pane label="练习" name="practice" lazy>
-        <PracticeSetsView />
-      </el-tab-pane>
       <template v-if="isEnglish">
         <el-tab-pane label="单词" name="words" lazy>
           <WordsView />
@@ -18,7 +12,18 @@
         <el-tab-pane label="阅读" name="reading" lazy>
           <ReadingView />
         </el-tab-pane>
-        <el-tab-pane label="学习报告" name="reports" lazy>
+      </template>
+      <el-tab-pane label="练习" name="practice" lazy>
+        <PracticeSetsView />
+      </el-tab-pane>
+      <el-tab-pane label="错题" name="questions" lazy>
+        <QuestionsView />
+      </el-tab-pane>
+      <el-tab-pane label="评测" name="assessment" lazy>
+        <AssessmentView />
+      </el-tab-pane>
+      <template v-if="isEnglish">
+        <el-tab-pane label="报告" name="reports" lazy>
           <LearningReportsView />
         </el-tab-pane>
       </template>
@@ -35,6 +40,7 @@ import PracticeSetsView from './PracticeSets.vue'
 import WordsView from './Words.vue'
 import ReadingView from './Reading.vue'
 import LearningReportsView from './LearningReports.vue'
+import AssessmentView from './Assessment.vue'
 
 const route = useRoute()
 const subjectStore = useSubjectStore()
@@ -44,13 +50,13 @@ const subject = computed(() => subjectStore.subjects.find((s) => s.id === subjec
 const subjectName = computed(() => subject.value?.name || '学科')
 const isEnglish = computed(() => subject.value?.name === '英语')
 
-const activeTab = ref('questions')
+const activeTab = ref('practice')
 
-// 学科变化时：同步空间学科并回到第一个 tab
+// 学科变化时：同步空间学科并回到第一个 tab（英语=单词，其他=练习）
 watch(
   subjectId,
   () => {
-    activeTab.value = 'questions'
+    activeTab.value = isEnglish.value ? 'words' : 'practice'
     if (subjectId.value) subjectStore.select(subjectId.value)
   },
   { immediate: true }

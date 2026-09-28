@@ -42,6 +42,11 @@ export const wordApi = {
     return api.post('/words/review/submit', data)
   },
 
+  // 标记单词为「已学（看过）」：今日任务学词卡翻到即调用，不含答题结果
+  markWordsSeen(data) {
+    return api.post('/words/learn/seen', data)
+  },
+
   // 获取错词列表
   getErrors(params) {
     return api.get('/words/errors', { params })
@@ -55,6 +60,11 @@ export const wordApi = {
   // 获取单词记忆曲线
   getMemoryCurve(wordId, params) {
     return api.get(`/words/${wordId}/memory-curve`, { params })
+  },
+
+  // 获取单词发音音频（走 axios 实例：自动带 X-Trial-Key，保证空间库单词可播；不要用裸 fetch）
+  getAudio(wordId) {
+    return api.get(`/words/${wordId}/audio`, { responseType: 'blob' })
   },
 
   // 教材单词表提取（多图/PDF → OCR + AI）

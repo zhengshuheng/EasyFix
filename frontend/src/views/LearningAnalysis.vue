@@ -731,6 +731,14 @@ const updateAccuracyLineChart = (data) => {
 }
 
 // 更新学习频率热力图（日历形式）
+// 本地日期字符串（不要用 toISOString：它是 UTC，北京时间 00:00-08:00 会差一天）
+const localDateStr = (d) => {
+  const dt = d instanceof Date ? d : new Date(d)
+  const m = String(dt.getMonth() + 1).padStart(2, '0')
+  const day = String(dt.getDate()).padStart(2, '0')
+  return `${dt.getFullYear()}-${m}-${day}`
+}
+
 const updateLearningHeatmap = (data) => {
   if (!learningHeatmap) return
 
@@ -738,7 +746,7 @@ const updateLearningHeatmap = (data) => {
   const heatmapData = Object.entries(data).map(([date, count]) => [date, count])
 
   if (heatmapData.length === 0) {
-    heatmapData.push([new Date().toISOString().split('T')[0], 0])
+    heatmapData.push([localDateStr(new Date()), 0])
   }
 
   // 获取日期范围
@@ -781,7 +789,7 @@ const updateLearningHeatmap = (data) => {
       top: 30,
       left: 50,
       cellSize: [cellSize, cellSize],
-      range: [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]],
+      range: [localDateStr(startDate), localDateStr(endDate)],
       itemStyle: { borderWidth: 2, borderColor: '#fff' },
       dayLabel: {
         firstDay: 1,

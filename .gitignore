@@ -10,7 +10,8 @@ backend/.env
 *.pem
 
 # DB dumps / local sqlite
-backend/easyfix.db
+backend/easyfix_main.db
+backend/trial_data/
 *.sqlite3
 
 # Logs
@@ -18,6 +19,9 @@ backend/easyfix.db
 backend/server*.log
 frontend/dev*.log
 frontend/dev.err.log
+
+# Session-local task notes
+*_TODO.md
 frontend/dev.out.log
 
 # Uploads generated at runtime
@@ -28,9 +32,18 @@ frontend/node_modules/
 
 # 前端构建产物（由源码构建生成，不入库）
 frontend/dist/
+frontend/dist-trial/
+frontend/dist-ops/
 
-TEXTBOOK_IMPORT_TODO.md
+# Agent 任务工作文档（会话临时，完成后归档到 docs/tasks/done/ 并入库）
+docs/tasks/active/
 *_TODO.md
+
+# 统一临时区（一次性脚本/测试产物/调试日志/截图，用后清理）
+tools/tmp/
+
+# 部署本地配置（deploy.bat 交互式域名记忆，不入库）
+deploy/domain.conf
 
 # K12 教材知识点数据集缓存（首次导入自动下载，不入库）
 backend/data/k12/
@@ -54,7 +67,6 @@ backend/config/llm.json
 .claude/settings.local.json
 .claude/**/__pycache__/
 report/
-*_TODO.md
 
 # Agent 测试用：devserver 启动状态文件（tools/devserver.py 生成）
 backend/.devserver_state.json
@@ -68,3 +80,22 @@ browser_screenshot_*.png
 Thumbs.db
 .DS_Store
 *.db.pre-kid-refactor-* 
+ASSESSMENT_MGMT_TODO.md  
+TTS_SENTENCE_FALLBACK_TODO.md
+ACCOUNT_TRIAL_NEXT_TODO.md 
+RENAME_MAINDB_TODO.md
+
+# 提交前审查排除（2026-09-28）：本地测试产物/敏感 token/误建文件，不入库
+/login.json
+/reg.json
+/detail.json
+/detail2.json
+/sets.json
+/sets2.json
+/sets3.json
+/frontend/build_out.txt
+/easyfix_main.db
+/backend/datetime('now'
+/backend/easyfix.db.pre-kp-fix-*
+/backend/speech_models/
+/backend/tools/tmp/

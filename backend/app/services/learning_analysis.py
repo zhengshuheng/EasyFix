@@ -2,17 +2,19 @@
 import re
 from sqlalchemy.orm import Session
 from sqlalchemy import func, Integer
-from app.models import Question, Subject, Word, WordReviewLog, PracticeSet, PracticeSetQuestion, KnowledgePoint
+from app.models import ErrorQuestion, Subject, Word, WordReviewLog, PracticeSet, PracticeSetQuestion, KnowledgePoint
+from app.models.practice_attempt import PracticeAttempt
 from app.models.tag import Tag
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import Counter
 
 class LearningAnalysisService:
-    def __init__(self, db: Session, subject_id: Optional[int] = None, grade: Optional[int] = None):
+    def __init__(self, db: Session, subject_id: Optional[int] = None, grade: Optional[int] = None, user_id: Optional[int] = None):
         self.db = db
         self.subject_id = subject_id
         self.grade = grade
+        self.user_id = user_id  # 当前小孩（None = 家长未选小孩，统计全部）
         self._subject = db.query(Subject).filter(Subject.id == subject_id).first() if subject_id else None
 
     def _is_english(self) -> bool:
@@ -22,12 +24,19 @@ class LearningAnalysisService:
         name = (self._subject.name or "").lower()
         return "英语" in name or "english" in name
 
+    def _kid(self, query, model=ErrorQuestion):
+        """按当前小孩过滤（None = 不过滤，即全部）"""
+        if self.user_id:
+            query = query.filter(model.user_id == self.user_id)
+        return query
+
     def _q(self, query):
-        """Question 查询按当前学科/年级过滤"""
+        """ErrorQuestion 查询按当前小孩/学科/年级过滤"""
+        query = self._kid(query, ErrorQuestion)
         if self.subject_id:
-            query = query.filter(Question.subject_id == self.subject_id)
+            query = query.filter(ErrorQuestion.subject_id == self.subject_id)
         if self.grade:
-            query = query.filter(Question.grade == self.grade)
+            query = query.filter(ErrorQuestion.grade == self.grade)
         return query
 
     def _w(self, query):
@@ -37,7 +46,8 @@ class LearningAnalysisService:
         return query
 
     def _ps(self, query):
-        """PracticeSet 查询按当前学科过滤（练习集无年级字段）"""
+        """PracticeSet 查询按当前小孩/学科过滤（练习集无年级字段）"""
+        query = self._kid(query, PracticeSet)
         if self.subject_id:
             query = query.filter(PracticeSet.subject_id == self.subject_id)
         return query
@@ -55,18 +65,18 @@ class LearningAnalysisService:
         """获取错题统计，使用数据库聚合避免加载所有记录"""
         try:
             # 使用数据库聚合计算总数
-            total = self._q(self.db.query(func.count(Question.id)).filter(Question.deleted == False)).scalar() or 0
+            total = self._q(self.db.query(func.count(ErrorQuestion.id)).filter(ErrorQuestion.deleted == False)).scalar() or 0
 
             # 难度分布 - 使用数据库分组聚合
             difficulty_results = (
                 self._q(
                     self.db.query(
-                        Question.difficulty,
-                        func.count(Question.id)
+                        ErrorQuestion.difficulty,
+                        func.count(ErrorQuestion.id)
                     )
-                    .filter(Question.deleted == False, Question.difficulty.isnot(None))
+                    .filter(ErrorQuestion.deleted == False, ErrorQuestion.difficulty.isnot(None))
                 )
-                .group_by(Question.difficulty)
+                .group_by(ErrorQuestion.difficulty)
                 .all()
             )
             by_difficulty = {d.difficulty: d[1] for d in difficulty_results}
@@ -75,8 +85,8 @@ class LearningAnalysisService:
             # 注意：错误类型存储为逗号分隔的字符串，需要在应用层拆分
             error_type_results = (
                 self._q(
-                    self.db.query(Question.error_type)
-                    .filter(Question.deleted == False, Question.error_type.isnot(None))
+                    self.db.query(ErrorQuestion.error_type)
+                    .filter(ErrorQuestion.deleted == False, ErrorQuestion.error_type.isnot(None))
                 )
                 .all()
             )
@@ -92,13 +102,13 @@ class LearningAnalysisService:
             kp_results = (
                 self._q(
                     self.db.query(
-                        Question.knowledge_point,
-                        func.count(Question.id)
+                        ErrorQuestion.knowledge_point,
+                        func.count(ErrorQuestion.id)
                     )
-                    .filter(Question.deleted == False, Question.knowledge_point.isnot(None))
+                    .filter(ErrorQuestion.deleted == False, ErrorQuestion.knowledge_point.isnot(None))
                 )
-                .group_by(Question.knowledge_point)
-                .order_by(func.count(Question.id).desc())
+                .group_by(ErrorQuestion.knowledge_point)
+                .order_by(func.count(ErrorQuestion.id).desc())
                 .limit(10)
                 .all()
             )
@@ -107,22 +117,22 @@ class LearningAnalysisService:
             # 复习效果 - 使用数据库聚合
             not_reviewed = (
                 self._q(
-                    self.db.query(func.count(Question.id))
-                    .filter(Question.deleted == False, (Question.review_count == 0) | (Question.review_count.is_(None)))
+                    self.db.query(func.count(ErrorQuestion.id))
+                    .filter(ErrorQuestion.deleted == False, (ErrorQuestion.review_count == 0) | (ErrorQuestion.review_count.is_(None)))
                 )
                 .scalar() or 0
             )
             reviewed_once = (
                 self._q(
-                    self.db.query(func.count(Question.id))
-                    .filter(Question.deleted == False, Question.review_count == 1)
+                    self.db.query(func.count(ErrorQuestion.id))
+                    .filter(ErrorQuestion.deleted == False, ErrorQuestion.review_count == 1)
                 )
                 .scalar() or 0
             )
             reviewed_multiple = (
                 self._q(
-                    self.db.query(func.count(Question.id))
-                    .filter(Question.deleted == False, Question.review_count > 1)
+                    self.db.query(func.count(ErrorQuestion.id))
+                    .filter(ErrorQuestion.deleted == False, ErrorQuestion.review_count > 1)
                 )
                 .scalar() or 0
             )
@@ -161,27 +171,25 @@ class LearningAnalysisService:
         """获取错题正确率趋势"""
         try:
             logs = (
-                self._ps(
-                    self.db.query(
-                        func.date(PracticeSet.created_at).label('date'),
-                        func.sum(func.cast(PracticeSetQuestion.is_correct, Integer)).label('correct'),
-                        func.count(PracticeSetQuestion.id).label('total')
-                    )
-                    .join(PracticeSet, PracticeSet.id == PracticeSetQuestion.practice_set_id)
-                    .join(Question, Question.id == PracticeSetQuestion.question_id)
-                    .filter(
-                        PracticeSet.deleted == False,
-                        PracticeSet.source_type == 'question',
-                        PracticeSet.reviewed == True,
-                        PracticeSetQuestion.is_correct.isnot(None),
-                        Question.deleted == False,
+                self._kid(
+                    self._ps(
+                        self.db.query(
+                            func.date(PracticeAttempt.answered_at).label('date'),
+                            func.sum(func.cast(PracticeAttempt.is_correct, Integer)).label('correct'),
+                            func.count(PracticeAttempt.id).label('total')
+                        )
+                        .join(ErrorQuestion, ErrorQuestion.id == PracticeAttempt.error_question_id)
+                        .filter(
+                            PracticeAttempt.is_correct.isnot(None),
+                            ErrorQuestion.deleted == False,
+                        )
                     )
                 )
-                .group_by(func.date(PracticeSet.created_at))
-                .order_by(func.date(PracticeSet.created_at))
+                .group_by(func.date(PracticeAttempt.answered_at))
+                .order_by(func.date(PracticeAttempt.answered_at))
             )
             if self.grade:
-                logs = logs.filter(Question.grade == self.grade)
+                logs = logs.filter(ErrorQuestion.grade == self.grade)
             logs = logs.all()
 
             cumulative_correct = 0
@@ -315,6 +323,8 @@ class LearningAnalysisService:
             )
             if self.grade:
                 logs = logs.filter(Word.grade == self.grade)
+            if self.user_id:
+                logs = logs.filter(WordReviewLog.user_id == self.user_id)
             logs = logs.group_by(func.date(WordReviewLog.reviewed_at)).order_by(func.date(WordReviewLog.reviewed_at)).all()
             return [
                 {"date": log.date.strftime('%Y-%m-%d') if hasattr(log.date, 'strftime') else str(log.date), "count": log.count}
@@ -375,11 +385,10 @@ class LearningAnalysisService:
             return []
         try:
             from app.models import WordReview
-            sessions = (
-                self.db.query(WordReview)
-                .order_by(WordReview.reviewed_at)
-                .all()
-            )
+            sessions = self._kid(
+                self.db.query(WordReview).order_by(WordReview.reviewed_at),
+                WordReview,
+            ).all()
 
             cumulative_correct = 0
             cumulative_total = 0
@@ -403,14 +412,18 @@ class LearningAnalysisService:
             edges = []
 
             # 获取知识点及其错误次数（使用数据库分组聚合）
+            # 归属小孩的错误计数放进 join 条件里，避免外连接被 where 过滤掉无错题的知识点
+            kp_join_cond = (KnowledgePoint.name == ErrorQuestion.knowledge_point) & (ErrorQuestion.deleted == False)  # noqa: E712
+            if self.user_id:
+                kp_join_cond = kp_join_cond & (ErrorQuestion.user_id == self.user_id)
             kp_error_results = (
                 self.db.query(
                     KnowledgePoint.id,
                     KnowledgePoint.name,
                     KnowledgePoint.subject_id,
-                    func.count(Question.id).label('error_count')
+                    func.count(ErrorQuestion.id).label('error_count')
                 )
-                .outerjoin(Question, (KnowledgePoint.name == Question.knowledge_point) & (Question.deleted == False))
+                .outerjoin(ErrorQuestion, kp_join_cond)
                 .filter(KnowledgePoint.deleted == False)
                 .group_by(KnowledgePoint.id, KnowledgePoint.name, KnowledgePoint.subject_id)
                 .all()

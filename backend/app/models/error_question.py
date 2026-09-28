@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class ErrorQuestion(Base):
@@ -64,8 +65,8 @@ class ErrorQuestion(Base):
     last_wrong_at = Column(DateTime, nullable=True)
 
     deleted = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local, nullable=True)
 
     __table_args__ = (
         CheckConstraint("difficulty >= 1 AND difficulty <= 5", name="check_equestion_difficulty"),

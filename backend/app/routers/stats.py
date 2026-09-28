@@ -1,15 +1,32 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, Integer
+from sqlalchemy import func, Integer, or_
 from typing import Optional
 import json
 from app.database import get_db
-from app.models import Question, Subject, ErrorBook, Word, WordReviewLog, PracticeSet, PracticeSetQuestion
-from app.models.practice_set import WordReviewSession
+from app.models import ErrorQuestion, Subject, ErrorBook, Word, WordProgress, WordReviewLog, PracticeSet, PracticeSetQuestion
+from app.models.practice_attempt import PracticeAttempt
+from app.utils.kid_context import get_current_kid_id
 from app.schemas import StatsResponse, SubjectStats, GradeStats, SemesterStats, WordStats, AccuracyCurvePoint, TodayStats, LearningOverview
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/stats", tags=["统计"])
+
+
+def _kid(q, kid_id: Optional[int], model=ErrorQuestion):
+    """按当前小孩过滤统计（家长未选小孩时不过滤 = 全部）"""
+    return q if kid_id is None else q.filter(model.user_id == kid_id)
+
+
+def _word_grade_ok(grade: Optional[int]):
+    """单词年级过滤：NULL 年级=通用词，任何年级空间都计入。
+
+    词表年级标注经常缺失/不精确，若硬按 `Word.grade == grade` 会把通用词
+    全部排除，导致首页/分析的单词进度、正确率、曲线全空。
+    """
+    if grade is None:
+        return None
+    return or_(Word.grade == grade, Word.grade.is_(None))
 
 
 def is_english_subject(db: Session, subject_id: Optional[int]) -> bool:
@@ -28,51 +45,55 @@ def get_stats_summary(
     grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤，不区分学期"),
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取统计概览（只统计未删除的记录；不含 AI 出题生成的练习题；可按年级/学科过滤）"""
-    q_base = db.query(Question).filter(
-        Question.deleted == False,
-        Question.exclude_ai_filter(),
+    """获取统计概览（只统计未删除的记录；不含 AI 出题生成的练习题；按孩子/年级/学科过滤）"""
+    q_base = _kid(
+        db.query(ErrorQuestion).filter(
+            ErrorQuestion.deleted == False,  # noqa: E712
+            ErrorQuestion.source != 'ai',
+        ),
+        kid_id,
     )
     w_base = db.query(Word).filter(Word.deleted == False)
     if grade is not None:
-        q_base = q_base.filter(Question.grade == grade)
-        w_base = w_base.filter(Word.grade == grade)
+        q_base = q_base.filter(ErrorQuestion.grade == grade)
+        w_base = w_base.filter(_word_grade_ok(grade))
     if subject_id is not None:
-        q_base = q_base.filter(Question.subject_id == subject_id)
+        q_base = q_base.filter(ErrorQuestion.subject_id == subject_id)
         # 单词无学科字段：仅英语学科保留单词统计，其他学科置空
         if not is_english_subject(db, subject_id):
             w_base = w_base.filter(Word.id == -1)
 
     total_questions = q_base.count()
     to_review_questions = q_base.filter(
-        (Question.review_count == 0) | (Question.review_count.is_(None)) |
-        ((Question.review_count > 0) & (Question.correct_count == 0))
+        (ErrorQuestion.review_count == 0) | (ErrorQuestion.review_count.is_(None)) |
+        ((ErrorQuestion.review_count > 0) & (ErrorQuestion.correct_count == 0))
     ).count() or 0
     total_subjects = db.query(func.count(Subject.id)).filter(Subject.deleted == False).scalar()
-    total_error_books = db.query(func.count(ErrorBook.id)).filter(ErrorBook.deleted == False).scalar()
+    total_error_books = _kid(db.query(func.count(ErrorBook.id)).filter(ErrorBook.deleted == False), kid_id, ErrorBook).scalar()  # noqa: E712
 
     difficulty_query = (
-        db.query(Question.difficulty, func.count(Question.id))
-        .filter(Question.deleted == False, Question.exclude_ai_filter())
+        db.query(ErrorQuestion.difficulty, func.count(ErrorQuestion.id))
+        .filter(ErrorQuestion.deleted == False, ErrorQuestion.source != 'ai')
     )
     if grade is not None:
-        difficulty_query = difficulty_query.filter(Question.grade == grade)
+        difficulty_query = difficulty_query.filter(ErrorQuestion.grade == grade)
     if subject_id is not None:
-        difficulty_query = difficulty_query.filter(Question.subject_id == subject_id)
-    difficulty_query = difficulty_query.group_by(Question.difficulty).all()
+        difficulty_query = difficulty_query.filter(ErrorQuestion.subject_id == subject_id)
+    difficulty_query = _kid(difficulty_query, kid_id).group_by(ErrorQuestion.difficulty).all()
     difficulty_distribution = {str(k): v for k, v in difficulty_query}
 
     error_type_query = (
-        db.query(Question.error_type)
-        .filter(Question.deleted == False, Question.error_type.isnot(None))
+        db.query(ErrorQuestion.error_type)
+        .filter(ErrorQuestion.deleted == False, ErrorQuestion.error_type.isnot(None))
     )
     if grade is not None:
-        error_type_query = error_type_query.filter(Question.grade == grade)
+        error_type_query = error_type_query.filter(ErrorQuestion.grade == grade)
     if subject_id is not None:
-        error_type_query = error_type_query.filter(Question.subject_id == subject_id)
+        error_type_query = error_type_query.filter(ErrorQuestion.subject_id == subject_id)
     error_type_counts = {}
-    for (et,) in error_type_query.all():
+    for (et,) in _kid(error_type_query, kid_id).all():
         if et:
             for single_et in et.split(','):
                 single_et = single_et.strip()
@@ -81,25 +102,25 @@ def get_stats_summary(
     error_type_distribution = error_type_counts
 
     subject_query = (
-        db.query(Subject.id, Subject.name, func.count(Question.id))
-        .join(Question, Subject.id == Question.subject_id)
-        .filter(Subject.deleted == False, Question.deleted == False)
+        db.query(Subject.id, Subject.name, func.count(ErrorQuestion.id))
+        .join(ErrorQuestion, Subject.id == ErrorQuestion.subject_id)
+        .filter(Subject.deleted == False, ErrorQuestion.deleted == False)
     )
     if grade is not None:
-        subject_query = subject_query.filter(Question.grade == grade)
+        subject_query = subject_query.filter(ErrorQuestion.grade == grade)
     if subject_id is not None:
         subject_query = subject_query.filter(Subject.id == subject_id)
-    subject_query = subject_query.group_by(Subject.id, Subject.name).all()
+    subject_query = _kid(subject_query, kid_id).group_by(Subject.id, Subject.name).all()
 
     by_subject = []
-    for subject_id, subject_name, question_count in subject_query:
+    for sid, subject_name, question_count in subject_query:
         error_counts = (
-            db.query(Question.error_type, func.count(Question.id))
-            .filter(Question.subject_id == subject_id, Question.deleted == False, Question.error_type.isnot(None))
+            db.query(ErrorQuestion.error_type, func.count(ErrorQuestion.id))
+            .filter(ErrorQuestion.subject_id == sid, ErrorQuestion.deleted == False, ErrorQuestion.error_type.isnot(None))
         )
         if grade is not None:
-            error_counts = error_counts.filter(Question.grade == grade)
-        error_counts = error_counts.group_by(Question.error_type).all()
+            error_counts = error_counts.filter(ErrorQuestion.grade == grade)
+        error_counts = _kid(error_counts, kid_id).group_by(ErrorQuestion.error_type).all()
         error_type_counts = {}
         for (et, count) in error_counts:
             if et:
@@ -109,29 +130,29 @@ def get_stats_summary(
                         error_type_counts[single_et] = error_type_counts.get(single_et, 0) + count
 
         difficulty_counts = (
-            db.query(Question.difficulty, func.count(Question.id))
-            .filter(Question.subject_id == subject_id, Question.deleted == False)
+            db.query(ErrorQuestion.difficulty, func.count(ErrorQuestion.id))
+            .filter(ErrorQuestion.subject_id == sid, ErrorQuestion.deleted == False)
         )
         if grade is not None:
-            difficulty_counts = difficulty_counts.filter(Question.grade == grade)
-        difficulty_counts = difficulty_counts.group_by(Question.difficulty).all()
+            difficulty_counts = difficulty_counts.filter(ErrorQuestion.grade == grade)
+        difficulty_counts = _kid(difficulty_counts, kid_id).group_by(ErrorQuestion.difficulty).all()
         difficulty_dist = {str(k): v for k, v in difficulty_counts}
 
         kp_counts = (
-            db.query(Question.knowledge_point, func.count(Question.id))
-            .filter(Question.subject_id == subject_id, Question.deleted == False, Question.knowledge_point.isnot(None))
+            db.query(ErrorQuestion.knowledge_point, func.count(ErrorQuestion.id))
+            .filter(ErrorQuestion.subject_id == sid, ErrorQuestion.deleted == False, ErrorQuestion.knowledge_point.isnot(None))
         )
         if grade is not None:
-            kp_counts = kp_counts.filter(Question.grade == grade)
-        kp_counts = kp_counts.group_by(Question.knowledge_point).all()
+            kp_counts = kp_counts.filter(ErrorQuestion.grade == grade)
+        kp_counts = _kid(kp_counts, kid_id).group_by(ErrorQuestion.knowledge_point).all()
         knowledge_point_counts = {k: v for k, v in kp_counts if k}
 
-        practice_count = db.query(func.count(PracticeSet.id)).filter(
-            PracticeSet.subject_id == subject_id, PracticeSet.deleted == False
-        ).scalar() or 0
+        practice_count = _kid(db.query(func.count(PracticeSet.id)).filter(
+            PracticeSet.subject_id == sid, PracticeSet.deleted == False
+        ), kid_id, PracticeSet).scalar() or 0
 
         by_subject.append(SubjectStats(
-            subject_id=subject_id,
+            subject_id=sid,
             subject_name=subject_name,
             question_count=question_count,
             error_type_counts=error_type_counts,
@@ -150,12 +171,12 @@ def get_stats_summary(
     word_grade_dist = {int(g): int(c) for g, c in word_grade_query}
 
     grade_query = (
-        db.query(Question.grade, func.count(Question.id))
-        .filter(Question.deleted == False)
+        db.query(ErrorQuestion.grade, func.count(ErrorQuestion.id))
+        .filter(ErrorQuestion.deleted == False)
     )
     if subject_id is not None:
-        grade_query = grade_query.filter(Question.subject_id == subject_id)
-    grade_query = grade_query.group_by(Question.grade).all()
+        grade_query = grade_query.filter(ErrorQuestion.subject_id == subject_id)
+    grade_query = grade_query.group_by(ErrorQuestion.grade).all()
     by_grade = []
     covered_grades = set()
     for g, count in grade_query:
@@ -163,12 +184,12 @@ def get_stats_summary(
             g = int(g)
             covered_grades.add(g)
             diff_counts = (
-                db.query(Question.difficulty, func.count(Question.id))
-                .filter(Question.deleted == False, Question.grade == g)
+                db.query(ErrorQuestion.difficulty, func.count(ErrorQuestion.id))
+                .filter(ErrorQuestion.deleted == False, ErrorQuestion.grade == g)
             )
             if subject_id is not None:
-                diff_counts = diff_counts.filter(Question.subject_id == subject_id)
-            diff_counts = diff_counts.group_by(Question.difficulty).all()
+                diff_counts = diff_counts.filter(ErrorQuestion.subject_id == subject_id)
+            diff_counts = _kid(diff_counts, kid_id).group_by(ErrorQuestion.difficulty).all()
             by_grade.append(GradeStats(
                 grade=g,
                 question_count=count,
@@ -181,26 +202,26 @@ def get_stats_summary(
     by_grade.sort(key=lambda x: x.grade)
 
     semester_query = (
-        db.query(Question.semester, func.count(Question.id))
-        .filter(Question.deleted == False)
+        db.query(ErrorQuestion.semester, func.count(ErrorQuestion.id))
+        .filter(ErrorQuestion.deleted == False)
     )
     if grade is not None:
-        semester_query = semester_query.filter(Question.grade == grade)
+        semester_query = semester_query.filter(ErrorQuestion.grade == grade)
     if subject_id is not None:
-        semester_query = semester_query.filter(Question.subject_id == subject_id)
-    semester_query = semester_query.group_by(Question.semester).all()
+        semester_query = semester_query.filter(ErrorQuestion.subject_id == subject_id)
+    semester_query = _kid(semester_query, kid_id).group_by(ErrorQuestion.semester).all()
     by_semester = []
     for semester, count in semester_query:
         if semester is not None:
             diff_q = (
-                db.query(Question.difficulty, func.count(Question.id))
-                .filter(Question.deleted == False, Question.semester == semester)
+                db.query(ErrorQuestion.difficulty, func.count(ErrorQuestion.id))
+                .filter(ErrorQuestion.deleted == False, ErrorQuestion.semester == semester)
             )
             if grade is not None:
-                diff_q = diff_q.filter(Question.grade == grade)
+                diff_q = diff_q.filter(ErrorQuestion.grade == grade)
             if subject_id is not None:
-                diff_q = diff_q.filter(Question.subject_id == subject_id)
-            diff_counts = diff_q.group_by(Question.difficulty).all()
+                diff_q = diff_q.filter(ErrorQuestion.subject_id == subject_id)
+            diff_counts = _kid(diff_q, kid_id).group_by(ErrorQuestion.difficulty).all()
             by_semester.append(SemesterStats(semester=semester, question_count=count, difficulty_distribution={str(k): v for k, v in diff_counts}))
 
     total_words = w_base.count()
@@ -208,18 +229,15 @@ def get_stats_summary(
 
     include_words = is_english_subject(db, subject_id)
 
-    # 复习次数 = 练习场次数（排除已删除练习集）
+    # 复习次数 = 答题次数（WordReviewLog 每次答题一条，覆盖词库复习/记忆模式/练习集复习）
     total_reviews = 0
     if include_words:
-        total_reviews = (
-            db.query(func.count(WordReviewSession.id))
-            .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
-            .filter(
-                (WordReviewSession.practice_set_id.is_(None))
-                | (PracticeSet.deleted == False)
+        word_rev_q = db.query(func.count(WordReviewLog.id)).filter(WordReviewLog.deleted == False)
+        if grade is not None:
+            word_rev_q = word_rev_q.join(Word, Word.id == WordReviewLog.word_id).filter(
+                Word.deleted == False, _word_grade_ok(grade)
             )
-            .scalar() or 0
-        )
+        total_reviews = _kid(word_rev_q, kid_id, WordReviewLog).scalar() or 0
 
     # 正确率按复习日志统计（排除已删日志；年级过滤时关联单词表）
     total_log_count = 0
@@ -231,18 +249,39 @@ def get_stats_summary(
         )
         if grade is not None:
             word_total_logs = word_total_logs.join(Word, Word.id == WordReviewLog.word_id).filter(
-                Word.deleted == False, Word.grade == grade
+                Word.deleted == False, _word_grade_ok(grade)
             )
             word_correct_logs = word_correct_logs.join(Word, Word.id == WordReviewLog.word_id).filter(
-                Word.deleted == False, Word.grade == grade
+                Word.deleted == False, _word_grade_ok(grade)
             )
-        total_log_count = word_total_logs.scalar() or 0
-        total_log_correct = word_correct_logs.scalar() or 0
+        total_log_count = _kid(word_total_logs, kid_id, WordReviewLog).scalar() or 0
+        total_log_correct = _kid(word_correct_logs, kid_id, WordReviewLog).scalar() or 0
     word_accuracy = round(total_log_correct / total_log_count * 100, 1) if total_log_count > 0 else 0.0
 
     to_review_count = w_base.filter(
         (Word.next_review_at == None) | (Word.next_review_at <= datetime.now())
     ).count() or 0
+
+    # 单词学习过程五维量化（按该小孩 WordProgress 维度进度统计）
+    # 口径：跟读=听得维度答对过、认读=认得维度答对过、读词=说得维度练过（开口读过）、
+    #       说词=说得维度答对过、听写=写得维度答对过；total=当前空间单词总数
+    dim_stats = []
+    if include_words:
+        wp_base = _kid(db.query(WordProgress), kid_id, WordProgress)
+        if grade is not None:
+            wp_base = wp_base.join(Word, Word.id == WordProgress.word_id).filter(
+                Word.deleted == False, _word_grade_ok(grade)
+            )
+        dim_defs = [
+            ("listen", "跟读", WordProgress.listen_correct),
+            ("recognize", "认读", WordProgress.recognize_correct),
+            ("read", "读词", WordProgress.speak_count),
+            ("speak", "说词", WordProgress.speak_correct),
+            ("write", "听写", WordProgress.write_correct),
+        ]
+        for key, label, col in dim_defs:
+            done = wp_base.filter(col > 0).count()
+            dim_stats.append({"key": key, "label": label, "done": done, "total": total_words})
 
     word_stats = WordStats(
         total_words=total_words,
@@ -251,20 +290,22 @@ def get_stats_summary(
         accuracy=word_accuracy,
         to_review_count=to_review_count,
         grade_distribution={str(k): v for k, v in word_grade_dist.items()},
+        dim_stats=dim_stats,
     )
 
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    # 准确率曲线取最近 180 天（前端 halfyear 档可看全；太短会误显示"无数据"）
+    curve_start = datetime.now() - timedelta(days=180)
     daily_word = {}
     if include_words:
         word_logs_q = (
             db.query(WordReviewLog.reviewed_at, WordReviewLog.is_correct)
-            .filter(WordReviewLog.deleted == False, WordReviewLog.reviewed_at >= thirty_days_ago)
+            .filter(WordReviewLog.deleted == False, WordReviewLog.reviewed_at >= curve_start)
         )
         if grade is not None:
             word_logs_q = word_logs_q.join(Word, Word.id == WordReviewLog.word_id).filter(
-                Word.deleted == False, Word.grade == grade
+                Word.deleted == False, _word_grade_ok(grade)
             )
-        word_logs = word_logs_q.order_by(WordReviewLog.reviewed_at).all()
+        word_logs = _kid(word_logs_q, kid_id, WordReviewLog).order_by(WordReviewLog.reviewed_at).all()
         for log in word_logs:
             date_str = log.reviewed_at.strftime('%Y-%m-%d')
             if date_str not in daily_word:
@@ -280,13 +321,37 @@ def get_stats_summary(
         word_accuracy_curve.append(AccuracyCurvePoint(date=date_str, accuracy=acc))
 
     question_accuracy_curve = []
-
-    active_days_query = db.query(func.count(func.distinct(func.date(Question.created_at)))).filter(Question.deleted == False)
+    qa_logs = (
+        db.query(PracticeAttempt.answered_at, PracticeAttempt.is_correct)
+        .join(ErrorQuestion, ErrorQuestion.id == PracticeAttempt.error_question_id)
+        .filter(
+            PracticeAttempt.answered_at >= curve_start,
+            PracticeAttempt.is_correct.isnot(None),
+        )
+    )
     if grade is not None:
-        active_days_query = active_days_query.filter(Question.grade == grade)
+        qa_logs = qa_logs.filter(ErrorQuestion.grade == grade)
     if subject_id is not None:
-        active_days_query = active_days_query.filter(Question.subject_id == subject_id)
-    active_days = active_days_query.scalar() or 0
+        qa_logs = qa_logs.filter(ErrorQuestion.subject_id == subject_id)
+    daily_question = {}
+    for log in _kid(qa_logs, kid_id, PracticeAttempt).all():
+        date_str = log.answered_at.strftime('%Y-%m-%d')
+        if date_str not in daily_question:
+            daily_question[date_str] = {'total': 0, 'correct': 0}
+        daily_question[date_str]['total'] += 1
+        if log.is_correct:
+            daily_question[date_str]['correct'] += 1
+    for date_str in sorted(daily_question.keys()):
+        d = daily_question[date_str]
+        acc = round(d['correct'] / d['total'] * 100, 1) if d['total'] > 0 else 0
+        question_accuracy_curve.append(AccuracyCurvePoint(date=date_str, accuracy=acc))
+
+    active_days_query = db.query(func.count(func.distinct(func.date(ErrorQuestion.created_at)))).filter(ErrorQuestion.deleted == False)
+    if grade is not None:
+        active_days_query = active_days_query.filter(ErrorQuestion.grade == grade)
+    if subject_id is not None:
+        active_days_query = active_days_query.filter(ErrorQuestion.subject_id == subject_id)
+    active_days = _kid(active_days_query, kid_id).scalar() or 0
 
     return StatsResponse(
         total_questions=total_questions,
@@ -306,49 +371,37 @@ def get_stats_summary(
 
 
 @router.get("/today", response_model=TodayStats)
-def get_today_stats(db: Session = Depends(get_db)):
-    """获取今日学习统计"""
+def get_today_stats(
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
+):
+    """获取今日学习统计（按当前小孩）"""
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
 
-    from app.models import WordReviewSession
-    word_sessions = (
-        db.query(WordReviewSession)
-        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
-        .filter(
-            WordReviewSession.reviewed_at >= today_start,
-            WordReviewSession.reviewed_at < today_end,
-            (WordReviewSession.practice_set_id.is_(None)) | (PracticeSet.deleted == False),
-        )
-        .all()
-    )
-
-    today_word_review_count = sum(s.total_count for s in word_sessions)
-    today_word_correct = sum(s.correct_count for s in word_sessions)
+    today_word_logs = _kid(
+        db.query(WordReviewLog).filter(
+            WordReviewLog.deleted == False,  # noqa: E712
+            WordReviewLog.reviewed_at >= today_start,
+            WordReviewLog.reviewed_at < today_end,
+        ),
+        kid_id,
+        WordReviewLog,
+    ).all()
+    today_word_review_count = len(today_word_logs)
+    today_word_correct = sum(1 for l in today_word_logs if l.is_correct)
     today_word_accuracy = round(today_word_correct / today_word_review_count * 100, 1) if today_word_review_count > 0 else 0.0
 
-    question_sets = db.query(PracticeSet).filter(
-        PracticeSet.source_type == 'question',
-        PracticeSet.last_reviewed_at >= today_start,
-        PracticeSet.last_reviewed_at < today_end,
-        PracticeSet.deleted == False
-    ).all()
+    # 错题练习统计：以作答记录（practice_attempt）为事实来源
+    attempt_rows = _kid(db.query(PracticeAttempt).filter(
+        PracticeAttempt.answered_at >= today_start,
+        PracticeAttempt.answered_at < today_end,
+    ), kid_id, PracticeAttempt).all()
+    question_ids_set = {a.error_question_id for a in attempt_rows if a.error_question_id}
+    question_correct_count = sum(1 for a in attempt_rows if a.is_correct)
 
-    question_ids_set = set()
-    question_correct_count = 0
-    for ps in question_sets:
-        questions = db.query(PracticeSetQuestion).filter(
-            PracticeSetQuestion.practice_set_id == ps.id,
-            PracticeSetQuestion.question_id.isnot(None),
-            PracticeSetQuestion.is_correct.isnot(None)
-        ).all()
-        for q in questions:
-            question_ids_set.add(q.question_id)
-            if q.is_correct:
-                question_correct_count += 1
-
-    today_question_review_count = len(question_ids_set)
-    today_question_accuracy = round(question_correct_count / today_question_review_count * 100, 1) if today_question_review_count > 0 else 0.0
+    today_question_review_count = len(question_ids_set) if question_ids_set else len(attempt_rows)
+    today_question_accuracy = round(question_correct_count / len(attempt_rows) * 100, 1) if attempt_rows else 0.0
 
     return TodayStats(
         today_word_review_count=today_word_review_count,
@@ -358,103 +411,62 @@ def get_today_stats(db: Session = Depends(get_db)):
     )
 
 
-def get_date_stats(db, date_start, date_end, grade: Optional[int] = None, subject_id: Optional[int] = None):
-    """获取指定日期范围的统计数据，可按年级/学科过滤"""
-    from app.models import PracticeSet, PracticeSetQuestion, WordReviewSession
+def get_date_stats(db, date_start, date_end, grade: Optional[int] = None, subject_id: Optional[int] = None, kid_id: Optional[int] = None):
+    """获取指定日期范围的统计数据，可按孩子/年级/学科过滤"""
+    from app.models import PracticeSet, PracticeSetQuestion
 
-    practice_sets = db.query(PracticeSet).filter(
-        PracticeSet.deleted == False,
+    practice_sets = _kid(db.query(PracticeSet).filter(
+        PracticeSet.deleted == False,  # noqa: E712
         PracticeSet.created_at >= date_start,
         PracticeSet.created_at < date_end
-    )
+    ), kid_id, PracticeSet)
     if subject_id is not None:
         practice_sets = practice_sets.filter(PracticeSet.subject_id == subject_id)
     practice_sets = practice_sets.all()
 
-    # 单词：优先按练习场次统计，并排除已删除练习
-    session_rows = (
-        db.query(WordReviewSession)
-        .outerjoin(PracticeSet, PracticeSet.id == WordReviewSession.practice_set_id)
-        .filter(
-            WordReviewSession.reviewed_at >= date_start,
-            WordReviewSession.reviewed_at < date_end,
-            (WordReviewSession.practice_set_id.is_(None)) | (PracticeSet.deleted == False),
-        )
-        .all()
-    )
-
+    # 单词：以 WordReviewLog（每次答题一条）为事实来源，覆盖词库复习/记忆模式/练习集复习
     include_words = is_english_subject(db, subject_id)
     if not include_words:
         word_review_count = 0
         word_correct = 0
-    elif grade is not None:
-        # 年级过滤：优先用场次明细中的单词结果
-        word_review_count = 0
-        word_correct = 0
-        used_detail = False
-        for s in session_rows:
-            if not s.word_results:
-                continue
-            used_detail = True
-            try:
-                items = json.loads(s.word_results)
-            except Exception:
-                continue
-            for item in items:
-                wid = item.get("word_id")
-                if not wid:
-                    continue
-                w = db.query(Word).filter(Word.id == wid, Word.deleted == False, Word.grade == grade).first()
-                if not w:
-                    continue
-                word_review_count += 1
-                if item.get("is_correct"):
-                    word_correct += 1
-        if not used_detail:
-            # 旧场次无明细时，退回日志关联（已删除练习的日志在删除时会软删）
-            word_logs = (
-                db.query(WordReviewLog.is_correct)
-                .join(Word, Word.id == WordReviewLog.word_id)
-                .filter(
-                    WordReviewLog.deleted == False,
-                    WordReviewLog.reviewed_at >= date_start,
-                    WordReviewLog.reviewed_at < date_end,
-                    Word.deleted == False,
-                    Word.grade == grade,
-                )
-                .all()
-            )
-            word_review_count = len(word_logs)
-            word_correct = sum(1 for (ok,) in word_logs if ok)
     else:
-        word_review_count = sum(s.total_count or 0 for s in session_rows)
-        word_correct = sum(s.correct_count or 0 for s in session_rows)
+        word_logs_q = (
+            db.query(WordReviewLog.is_correct)
+            .filter(
+                WordReviewLog.deleted == False,  # noqa: E712
+                WordReviewLog.reviewed_at >= date_start,
+                WordReviewLog.reviewed_at < date_end,
+            )
+        )
+        if grade is not None:
+            word_logs_q = word_logs_q.join(Word, Word.id == WordReviewLog.word_id).filter(
+                Word.deleted == False,  # noqa: E712
+                _word_grade_ok(grade),
+            )
+        word_logs = _kid(word_logs_q, kid_id, WordReviewLog).all()
+        word_review_count = len(word_logs)
+        word_correct = sum(1 for (ok,) in word_logs if ok)
     word_accuracy = round(word_correct / word_review_count * 100, 1) if word_review_count > 0 else 0.0
 
-    question_sets = [ps for ps in practice_sets if ps.source_type == 'question']
-    question_ids_set = set()
-    question_correct_count = 0
-    for ps in question_sets:
-        questions = db.query(PracticeSetQuestion).filter(
-            PracticeSetQuestion.practice_set_id == ps.id,
-            PracticeSetQuestion.question_id.isnot(None),
-            PracticeSetQuestion.is_correct.isnot(None)
-        ).all()
-        for q in questions:
-            if grade is not None:
-                qq = db.query(Question).filter(
-                    Question.id == q.question_id,
-                    Question.deleted == False,
-                    Question.grade == grade,
-                ).first()
-                if not qq:
-                    continue
-            question_ids_set.add(q.question_id)
-            if q.is_correct:
-                question_correct_count += 1
+    # 错题练习统计：以作答记录（practice_attempt）为事实来源，可按学科/年级过滤
+    attempt_q = (
+        db.query(PracticeAttempt)
+        .join(ErrorQuestion, ErrorQuestion.id == PracticeAttempt.error_question_id)
+        .filter(
+            PracticeAttempt.answered_at >= date_start,
+            PracticeAttempt.answered_at < date_end,
+        )
+    )
+    if subject_id is not None:
+        attempt_q = attempt_q.filter(ErrorQuestion.subject_id == subject_id)
+    if grade is not None:
+        attempt_q = attempt_q.filter(ErrorQuestion.grade == grade)
+    attempt_rows = _kid(attempt_q, kid_id).all()
 
-    question_review_count = len(question_ids_set)
-    question_accuracy = round(question_correct_count / question_review_count * 100, 1) if question_review_count > 0 else 0.0
+    question_ids_set = {a.error_question_id for a in attempt_rows if a.error_question_id}
+    question_correct_count = sum(1 for a in attempt_rows if a.is_correct)
+    question_review_count = len(question_ids_set) if question_ids_set else len(attempt_rows)
+    question_accuracy = round(question_correct_count / len(attempt_rows) * 100, 1) if attempt_rows else 0.0
 
     return {
         'word_review_count': word_review_count,
@@ -469,8 +481,9 @@ def get_learning_overview(
     grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤"),
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取学习概览（昨日 + 今日数据）"""
+    """获取学习概览（昨日 + 今日数据，按当前小孩）"""
     from datetime import datetime, timedelta
 
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -478,8 +491,8 @@ def get_learning_overview(
     yesterday_start = today_start - timedelta(days=1)
     yesterday_end = today_start
 
-    yesterday = get_date_stats(db, yesterday_start, yesterday_end, grade=grade, subject_id=subject_id)
-    today = get_date_stats(db, today_start, today_end, grade=grade, subject_id=subject_id)
+    yesterday = get_date_stats(db, yesterday_start, yesterday_end, grade=grade, subject_id=subject_id, kid_id=kid_id)
+    today = get_date_stats(db, today_start, today_end, grade=grade, subject_id=subject_id, kid_id=kid_id)
 
     return LearningOverview(
         yesterday_word_review_count=yesterday['word_review_count'],
@@ -498,31 +511,34 @@ def get_knowledge_point_stats(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取知识点掌握统计"""
+    """获取知识点掌握统计（按当前小孩）"""
     base_filters = [
-        Question.deleted == False,
-        Question.knowledge_point.isnot(None),
-        Question.knowledge_point != '',
+        ErrorQuestion.deleted == False,  # noqa: E712
+        ErrorQuestion.knowledge_point.isnot(None),
+        ErrorQuestion.knowledge_point != '',
     ]
+    if kid_id is not None:
+        base_filters.append(ErrorQuestion.user_id == kid_id)
     if subject_id is not None:
-        base_filters.append(Question.subject_id == subject_id)
+        base_filters.append(ErrorQuestion.subject_id == subject_id)
     if grade is not None:
-        base_filters.append(Question.grade == grade)
+        base_filters.append(ErrorQuestion.grade == grade)
     results = (
         db.query(
-            Question.knowledge_point,
-            func.count(Question.id).label('total'),
-            func.sum(func.cast(Question.review_count > 0, Integer)).label('reviewed'),
-            func.sum(Question.correct_count).label('total_correct'),
-            func.sum(Question.review_count).label('total_reviews'),
-            func.sum(Question.error_count).label('total_errors'),
-            Question.subject_id,
+            ErrorQuestion.knowledge_point,
+            func.count(ErrorQuestion.id).label('total'),
+            func.sum(func.cast(ErrorQuestion.review_count > 0, Integer)).label('reviewed'),
+            func.sum(ErrorQuestion.correct_count).label('total_correct'),
+            func.sum(ErrorQuestion.review_count).label('total_reviews'),
+            func.sum(ErrorQuestion.wrong_count).label('total_errors'),
+            ErrorQuestion.subject_id,
             Subject.name.label('subject_name'),
         )
-        .outerjoin(Subject, Subject.id == Question.subject_id)
+        .outerjoin(Subject, Subject.id == ErrorQuestion.subject_id)
         .filter(*base_filters)
-        .group_by(Question.knowledge_point, Question.subject_id, Subject.name)
+        .group_by(ErrorQuestion.knowledge_point, ErrorQuestion.subject_id, Subject.name)
         .all()
     )
     data = []
@@ -551,17 +567,21 @@ def get_full_analysis(
     subject_id: Optional[int] = Query(None, description="按学科过滤（学习空间指定学科时）"),
     grade: Optional[int] = Query(None, ge=1, le=12, description="按年级过滤（学习空间指定年级时）"),
     db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取完整学习分析数据"""
-    service = LearningAnalysisService(db, subject_id=subject_id, grade=grade)
+    """获取完整学习分析数据（按当前小孩）"""
+    service = LearningAnalysisService(db, subject_id=subject_id, grade=grade, user_id=kid_id)
     return service.get_full_stats()
 
 
 @router.post("/analysis/llm")
-def get_llm_analysis(db: Session = Depends(get_db)):
+def get_llm_analysis(
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
+):
     """获取LLM学习分析"""
     try:
-        service = LearningAnalysisService(db)
+        service = LearningAnalysisService(db, user_id=kid_id)
         stats = service.get_full_stats()
         analysis = service.analyze_with_llm(stats)
         return analysis

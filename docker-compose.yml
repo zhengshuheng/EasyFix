@@ -1,0 +1,46 @@
+# 可选方式：本地/服务器已装 Docker Compose v2 时，可用本文件代替 deploy.bat 手动管理
+#   docker compose up -d --build        # 构建并启动
+#   docker compose logs -f easyfix      # 看后端日志
+#   docker compose down                 # 停止（数据卷保留在 ${DATA_DIR}）
+# 与 deploy.bat 等价：easyfix(8012直连) + caddy(80/443，Caddyfile 在 ${DATA_DIR}/caddy)
+services:
+  easyfix:
+    build: .
+    image: easyfix
+    container_name: easyfix
+    restart: always
+    environment:
+      DB_PATH: /data/easyfix_main.db
+      HOST: 0.0.0.0
+      PORT: 8012
+    ports:
+      - "8012:8012"
+    volumes:
+      - ${DATA_DIR:-/opt/easyfix-data}/uploads:/app/backend/uploads
+      - ${DATA_DIR:-/opt/easyfix-data}/data:/app/backend/data
+      - ${DATA_DIR:-/opt/easyfix-data}:/data
+    networks:
+      - easyfix-net
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${DATA_DIR:-/opt/easyfix-data}/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - easyfix-net
+    depends_on:
+      - easyfix
+
+networks:
+  easyfix-net:
+
+volumes:
+  caddy_data:
+  caddy_config:

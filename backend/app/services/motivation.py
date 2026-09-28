@@ -9,6 +9,7 @@ from app.models.achievement import Achievement, AchievementProgress, Achievement
 from app.models.reward import Reward, Redemption
 from typing import Optional, List
 from datetime import datetime, timedelta
+import copy
 
 
 # 默认用户ID（单用户场景）
@@ -18,6 +19,186 @@ DEFAULT_USER_ID = 1
 class MotivationService:
     def __init__(self, db: Session):
         self.db = db
+        # 运营权威配置快照（主库差异集）：行为/成就规则统一由运营中心配置，
+        # 空间库同名表仅作兜底默认。主库有记录 → 覆盖；无 → 回退空间库。
+        self._ops_actions = {}
+        self._ops_achievements = {}
+        self._ops_word_config = {}
+        self._load_ops_snapshot()
+
+    # ================= 运营配置覆盖（主库优先，空间库兜底） =================
+
+    def _load_ops_snapshot(self):
+        """读取主库 star_action / achievement / achievement_config（运营权威差异集）"""
+        try:
+            from app.database import SessionLocal
+            with SessionLocal() as db:
+                actions = db.query(StarAction).filter(StarAction.deleted == False).all()
+                achievements = db.query(Achievement).filter(Achievement.deleted == False).all()
+                configs = db.query(AchievementConfig, Achievement.code).join(
+                    Achievement, AchievementConfig.achievement_id == Achievement.id
+                ).all()
+            self._ops_actions = {a.code: a for a in actions}
+            self._ops_achievements = {(a.code, a.level): a for a in achievements}
+            self._ops_word_config = {code: cfg for cfg, code in configs}
+        except Exception as e:
+            print(f"[motivation] 主库激励配置读取失败，回退空间库兜底: {e}")
+            self._ops_actions = {}
+            self._ops_achievements = {}
+            self._ops_word_config = {}
+
+    @staticmethod
+    def _overlay(sa, oa):
+        """以空间库记录为底（保留 id，进度记录稳定关联），用主库配置覆盖参数。
+        返回浅拷贝，绝不写库（避免把主库值悄悄同步回空间库表）。"""
+        merged = copy.copy(sa)
+        for f in ("name", "description", "icon", "trigger_count", "reward_stars", "is_active"):
+            setattr(merged, f, getattr(oa, f))
+        return merged
+
+    def _merge_achievement(self, sa: Achievement) -> Achievement:
+        """单条成就三层合并：家长（空间）覆盖优先 → 主库运营默认 → 空间库模板值。
+        未覆盖项用主库默认 overlay（保留空间库 id）；覆盖项数值用家长值，
+        但 is_active（启停）始终随主库运营默认。"""
+        oa = self._ops_achievements.get((sa.code, sa.level))
+        if sa.ops_override:
+            if oa is not None:
+                m = copy.copy(sa)
+                m.is_active = oa.is_active
+                return m
+            return sa
+        if oa:
+            return self._overlay(sa, oa)
+        return sa
+
+    def _space_achievement(self, code: str, level: int):
+        return self.db.query(Achievement).filter(
+            Achievement.code == code,
+            Achievement.level == level,
+            Achievement.deleted == False
+        ).first()
+
+    def _action(self, code: str):
+        """行为配置：家长（空间）覆盖优先 → 主库运营默认 → 空间库模板值。
+        家长覆盖项数值用家长值，但 enabled（启停）始终随主库运营默认。"""
+        sa = self.db.query(StarAction).filter(
+            StarAction.code == code,
+            StarAction.deleted == False
+        ).first()
+        oa = self._ops_actions.get(code)
+        if sa is not None and sa.ops_override:
+            if oa is not None:
+                m = copy.copy(sa)
+                m.enabled = oa.enabled
+                return m
+            return sa
+        if oa:
+            if sa is not None:
+                m = copy.copy(sa)
+                for f in ("name", "star_value", "enabled"):
+                    setattr(m, f, getattr(oa, f))
+                return m
+            return oa
+        return sa
+
+    def _achievement(self, code: str, level: int):
+        """单条成就：家长（空间）覆盖优先 → 主库运营默认 → 空间库模板值。"""
+        sa = self._space_achievement(code, level)
+        if sa is not None and sa.ops_override:
+            return sa
+        oa = self._ops_achievements.get((code, level))
+        if oa:
+            return self._overlay(sa, oa) if sa is not None else oa
+        return sa
+
+    def _achievements_by_action(self, action_code: str) -> List[Achievement]:
+        """某触发行为下的全部启用成就：逐条三层合并（家长覆盖 → 主库默认 → 模板）。"""
+        space = self.db.query(Achievement).filter(
+            Achievement.trigger_action == action_code,
+            Achievement.deleted == False
+        ).all()
+        merged = [self._merge_achievement(sa) for sa in space]
+        return [a for a in merged if a.is_active]
+
+    def _achievements_by_code(self, code: str) -> List[Achievement]:
+        """某系列（code）下的全部成就：逐条三层合并（家长覆盖 → 主库默认 → 模板）。"""
+        space = self.db.query(Achievement).filter(
+            Achievement.code == code,
+            Achievement.deleted == False
+        ).all()
+        return [self._merge_achievement(sa) for sa in space]
+
+    def _achievement_by_code_action(self, code: str, action_code: str):
+        """按 code + 触发行为定位单条成就（连续学习系列用）。"""
+        sa = self.db.query(Achievement).filter(
+            Achievement.code == code,
+            Achievement.trigger_action == action_code,
+            Achievement.deleted == False
+        ).first()
+        if sa is not None and sa.ops_override:
+            return sa
+        oa = next((a for a in self._ops_achievements.values()
+                   if a.code == code and a.trigger_action == action_code), None)
+        if oa:
+            return self._overlay(sa, oa) if sa is not None else oa
+        return sa
+
+    def _word_config(self, code: str = "word_accuracy"):
+        """单词正确率成就配置：主库优先，空间库兜底。"""
+        cfg = self._ops_word_config.get(code)
+        if cfg:
+            return cfg
+        ach = self.db.query(Achievement).filter(
+            Achievement.code == code,
+            Achievement.deleted == False
+        ).first()
+        if not ach:
+            return None
+        return self.db.query(AchievementConfig).filter(
+            AchievementConfig.achievement_id == ach.id
+        ).first()
+
+    def get_actions_merged(self) -> List[StarAction]:
+        """合并行为列表（家长端展示）：家长（空间）覆盖优先 → 主库运营默认 → 模板值。"""
+        space = self.db.query(StarAction).filter(StarAction.deleted == False).all()
+        merged = []
+        for sa in space:
+            if sa.ops_override:
+                oa = self._ops_actions.get(sa.code)
+                if oa is not None:
+                    m = copy.copy(sa)
+                    m.enabled = oa.enabled
+                    merged.append(m)
+                else:
+                    merged.append(sa)
+                continue
+            oa = self._ops_actions.get(sa.code)
+            if oa:
+                m = copy.copy(sa)
+                for f in ("name", "star_value", "enabled"):
+                    setattr(m, f, getattr(oa, f))
+                merged.append(m)
+            else:
+                merged.append(sa)
+        space_codes = {sa.code for sa in space}
+        for code, oa in self._ops_actions.items():
+            if code not in space_codes:
+                merged.append(oa)
+        return merged
+
+    def get_achievements_merged(self) -> List[Achievement]:
+        """合并成就列表：家长（空间）覆盖优先 → 主库运营默认 → 模板值。"""
+        space = self.db.query(Achievement).filter(Achievement.deleted == False).all()
+        merged = [self._merge_achievement(sa) for sa in space]
+        space_keys = {(sa.code, sa.level) for sa in space}
+        for key, oa in self._ops_achievements.items():
+            if key not in space_keys:
+                merged.append(oa)
+        return merged
+
+    def overlay_achievement(self, sa: Achievement) -> Achievement:
+        """对单条空间库成就应用三层合并（读接口用）。"""
+        return self._merge_achievement(sa)
 
     def get_or_create_balance(self, user_id: int = DEFAULT_USER_ID) -> StarBalance:
         """获取或创建用户积分余额"""
@@ -34,14 +215,9 @@ class MotivationService:
         触发积分行为
         返回：积分变动信息和成就解锁信息
         """
-        # 查找启用的行为
-        action = self.db.query(StarAction).filter(
-            StarAction.code == action_code,
-            StarAction.enabled == True,
-            StarAction.deleted == False
-        ).first()
-
-        if not action:
+        # 查找启用的行为（运营配置优先）
+        action = self._action(action_code)
+        if not action or not action.enabled:
             return None
 
         # 获取余额
@@ -78,12 +254,8 @@ class MotivationService:
         """检查并更新成就进度"""
         unlocked = []
 
-        # 查找所有因该行为触发的成就
-        achievements = self.db.query(Achievement).filter(
-            Achievement.trigger_action == action_code,
-            Achievement.is_active == True,
-            Achievement.deleted == False
-        ).all()
+        # 查找所有因该行为触发的成就（运营配置优先）
+        achievements = self._achievements_by_action(action_code)
 
         for achievement in achievements:
             # 计算该用户在该成就系列上的总进度
@@ -135,10 +307,7 @@ class MotivationService:
         if level <= 1:
             return True
 
-        previous_achievement = self.db.query(Achievement).filter(
-            Achievement.code == code,
-            Achievement.level == level - 1
-        ).first()
+        previous_achievement = self._achievement(code, level - 1)
 
         if not previous_achievement:
             return True
@@ -153,10 +322,7 @@ class MotivationService:
 
     def _create_next_level_progress(self, user_id: int, current_achievement: Achievement):
         """为当前成就的下一级创建进度记录"""
-        next_achievement = self.db.query(Achievement).filter(
-            Achievement.code == current_achievement.code,
-            Achievement.level == current_achievement.level + 1
-        ).first()
+        next_achievement = self._achievement(current_achievement.code, current_achievement.level + 1)
 
         if next_achievement:
             existing = self.db.query(AchievementProgress).filter(
@@ -174,22 +340,44 @@ class MotivationService:
                 self.db.add(progress)
 
     def _get_achievement_total_count(self, user_id: int, trigger_action: str) -> int:
-        """获取用户已完成该行为的总次数"""
+        """获取用户已完成该行为的总次数（按小孩隔离统计）"""
         from sqlalchemy import func
-        from app.models.word import Word
+        from app.models.word import WordProgress
         from app.models.practice_set import PracticeSet
+        from app.models.error_question import ErrorQuestion
+        from app.models.similar_question import SimilarQuestion
 
-        # 对于 review_word，使用 Word 表的 review_count 总和
+        # review_word：该小孩累计复习单词次数（WordProgress 按 user_id 隔离）
         if trigger_action == "review_word":
-            count = self.db.query(func.coalesce(func.sum(Word.review_count), 0)).filter(
-                Word.deleted == False
+            count = self.db.query(func.coalesce(func.sum(WordProgress.review_count), 0)).filter(
+                WordProgress.user_id == user_id
             ).scalar() or 0
             return count
 
-        # 对于 review_practice_set，使用 PracticeSet 表的 review_count 总和
+        # review_practice_set：该小孩累计复习练习集次数
         if trigger_action == "review_practice_set":
             count = self.db.query(func.coalesce(func.sum(PracticeSet.review_count), 0)).filter(
+                PracticeSet.user_id == user_id,
                 PracticeSet.deleted == False
+            ).scalar() or 0
+            return count
+
+        # upload_question：该小孩手动录入/导入的错题数
+        if trigger_action == "upload_question":
+            count = self.db.query(func.count(ErrorQuestion.id)).filter(
+                ErrorQuestion.user_id == user_id,
+                ErrorQuestion.deleted == False
+            ).scalar() or 0
+            return count
+
+        # generate_similar：该小孩错题生成的相似题数（SimilarQuestion 经 source_question 归属小孩）
+        if trigger_action == "generate_similar":
+            count = self.db.query(func.count(SimilarQuestion.id)).join(
+                ErrorQuestion, SimilarQuestion.source_question_id == ErrorQuestion.id
+            ).filter(
+                ErrorQuestion.user_id == user_id,
+                ErrorQuestion.deleted == False,
+                SimilarQuestion.deleted == False
             ).scalar() or 0
             return count
 
@@ -261,11 +449,7 @@ class MotivationService:
 
         # 检查每个连续学习成就
         for action_code in continuous_actions:
-            achievement = self.db.query(Achievement).filter(
-                Achievement.code == 'continuous_learning',
-                Achievement.trigger_action == action_code,
-                Achievement.deleted == False
-            ).first()
+            achievement = self._achievement_by_code_action('continuous_learning', action_code)
 
             if not achievement:
                 continue
@@ -325,10 +509,8 @@ class MotivationService:
         每次复习满足条件（≥min_words且正确率≥min_accuracy%）时增加进度
         进度达到trigger_count时解锁对应等级
         """
-        # 获取成就配置
-        config = self.db.query(AchievementConfig).join(Achievement).filter(
-            Achievement.code == "word_accuracy"
-        ).first()
+        # 获取成就配置（运营配置优先）
+        config = self._word_config("word_accuracy")
 
         min_words = config.min_words if config else 10
         min_accuracy = config.min_accuracy if config else 90
@@ -340,11 +522,11 @@ class MotivationService:
         if total_count < min_words or accuracy < min_accuracy:
             return None
 
-        # 获取所有单词正确率成就（按等级排序）
-        achievements = self.db.query(Achievement).filter(
-            Achievement.code == "word_accuracy",
-            Achievement.deleted == False
-        ).order_by(Achievement.level).all()
+        # 获取所有单词正确率成就（按等级排序，运营配置优先）
+        achievements = sorted(
+            self._achievements_by_code("word_accuracy"),
+            key=lambda a: a.level
+        )
 
         if not achievements:
             return None

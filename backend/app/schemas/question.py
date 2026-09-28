@@ -78,6 +78,7 @@ class QuestionResponse(BaseModel):
     original_images: Optional[List[str]] = None  # 多个图片
     original_text: Optional[str] = None
     parsed_question: Optional[str] = None
+    visual: Optional[dict] = None  # 原题配图场景（来自 source_practice_question.visual，图例渲染用）
     grade: Optional[int] = None  # 年级 1-12
     semester: Optional[int] = None  # 学期 1-2
     answer: Optional[str] = None
@@ -86,8 +87,19 @@ class QuestionResponse(BaseModel):
     difficulty: int
     error_type: Optional[str] = None
     knowledge_point: Optional[str] = None
+    question_type: Optional[str] = None  # 题型：choice/fill/judge/calc/...
+    question_category: Optional[str] = None  # 类型：basic/scene/comprehensive/thinking
+    option_a: Optional[str] = None
+    option_b: Optional[str] = None
+    option_c: Optional[str] = None
+    option_d: Optional[str] = None
     correct_count: Optional[int] = 0
     error_count: Optional[int] = 0
+    review_count: Optional[int] = 0  # 复习（作答）次数
+    accuracy: Optional[float] = None  # 正确率百分比（缓存）
+    correct_streak: Optional[int] = 0  # 连续答对次数（>=2 已掌握）
+    status: Optional[str] = "active"  # active=在错题本 / mastered=已掌握
+    source: Optional[str] = None  # practice=批改判错派生 / upload=手动上传
     created_at: datetime
     updated_at: Optional[datetime] = None
     tags: List[TagResponse] = []

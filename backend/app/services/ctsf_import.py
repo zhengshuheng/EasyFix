@@ -1,6 +1,12 @@
-"""ChinaStudyFree 在线知识大纲导入
+"""GitHub 权威在线知识大纲导入
 
 数据源：https://github.com/wuwangzhang1216/ChinaTextbookStudyFree（MIT 协议）
+定位：权威在线知识源第二优先（第一优先为官网/教育部公开大纲，若有接入则置于其前；
+      当前无稳定的官网知识点公开 API，实际权威源即此 GitHub 大纲——由教材官网公开内容整理）。
+
+识别方式标注：本数据源导入的知识点 ocr_mode='authority'（权威在线源），
+      命中权威源时系统不再走教材 OCR 提取。
+
 覆盖：数学(人教版1-6) / 语文(统编版1-6) / 英语(人教版PEP 3-6) / 科学(教科版1-6)，共 44 本
 数据：output/{subject}/outlines/{教材}.json
       {"textbook": "三年级上册", "units": [{"unit_number":1, "title":"时、分、秒",
@@ -119,18 +125,63 @@ def get_catalog() -> dict:
         db.close()
 
 
-def fetch_outline(source: str, fn: str) -> dict:
-    """拉取 outline JSON（raw → ghproxy 镜像容错）"""
+def _outline_cache_path(source: str, fn: str) -> str:
+    """在线大纲本地缓存路径：backend/data/textbooks/{source}/outlines/{fn}"""
+    import os as _os
+    return _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
+                         "data", "textbooks", source, "outlines", fn)
+
+
+def local_outline_exists(source: str, fn: str) -> bool:
+    """本地是否已有在线大纲缓存文件（离线可用）"""
+    import os as _os
+    return _os.path.exists(_outline_cache_path(source, fn))
+
+
+def fetch_outline(source: str, fn: str, use_cache: bool = True) -> dict:
+    """拉取 outline JSON（raw → ghproxy 镜像容错）。
+
+    use_cache=True：在线失败时回退本地缓存（缓存目录
+    data/textbooks/{source}/outlines/{fn}）；use_cache=False：纯在线（决策用）。
+    """
+    import os as _os
     url = f"{RAW_BASE}/{source}/outlines/{fn}"
     errors = []
     for u in [url] + [m + url for m in GH_MIRRORS]:
         try:
             r = requests.get(u, headers=UA, timeout=60)
             r.raise_for_status()
-            return r.json()
+            data = r.json()
+            try:
+                cache_p = _outline_cache_path(source, fn)
+                _os.makedirs(_os.path.dirname(cache_p), exist_ok=True)
+                with open(cache_p, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass  # 缓存失败不阻塞
+            return data
         except Exception as e:
             errors.append(f"{u.split('/')[2]}: {e}")
+    # 在线失败 → 本地缓存兜底（仅 use_cache 模式）
+    if use_cache:
+        cache_p = _outline_cache_path(source, fn)
+        if _os.path.exists(cache_p):
+            try:
+                with open(cache_p, encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
     raise RuntimeError("下载知识大纲失败：" + "; ".join(errors[-3:]))
+
+
+def load_local_outline(source: str, fn: str) -> dict:
+    """直接读取本地大纲缓存文件（离线导入用）"""
+    import os as _os
+    cache_p = _outline_cache_path(source, fn)
+    if not _os.path.exists(cache_p):
+        raise RuntimeError("本地大纲缓存不存在")
+    with open(cache_p, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _load_index() -> list:

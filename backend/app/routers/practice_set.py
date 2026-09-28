@@ -1,7 +1,8 @@
 """
 练习集路由 - 管理练习集的创建、打印、复习等功能
 """
-from fastapi import APIRouter, Depends, HTTPException, Form, Body, Query
+import json
+from fastapi import APIRouter, Depends, HTTPException, Form, Body, Query, File, UploadFile
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional, Union
@@ -9,11 +10,22 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.database import get_db
-from app.models import PracticeSet, PracticeSetQuestion, Question, SimilarQuestion, Subject, WordReviewSession
+from app.models import (
+    PracticeSet, PracticeSetQuestion, Question, SimilarQuestion, Subject,
+    WordReviewSession, PracticeQuestion, PracticeAttempt, ErrorQuestion,
+)
 from app.models.word import WordReview, WordReviewLog, Word
 from app.models.reading import ReadingPassage, ReadingQuestion
+from app.models.user import User
 from app.services.pdf import generate_practice_set_pdf
+from app.services.scoring import (
+    compute_question_scores, normalize_score_mode, DEFAULT_SCORE_MODE,
+)
 from app.services.logger import logger_service
+from app.services import practice_flow
+from app.services import paper_ocr
+from app.utils.auth import require_admin
+from app.utils.kid_context import get_current_kid_id, get_required_kid_id, filter_by_kid
 
 router = APIRouter(prefix="/api/practice-sets", tags=["练习集"])
 
@@ -25,6 +37,8 @@ class PracticeSetCreate(BaseModel):
     question_ids: List[int]
     source_type: str = "question"  # question=来自错题, word=来自单词复习
     question_type: str = "original"  # original=原题, similar=相似题
+    show_score: bool = True  # 卷面是否显示分值
+    score_mode: str = "hundred"  # hundred=百分制100分 / default=题型默认分值
 
 
 class GenerateFromQuestionsRequest(BaseModel):
@@ -32,9 +46,11 @@ class GenerateFromQuestionsRequest(BaseModel):
     subject_id: int
     grade: Optional[int] = None
     count: int = 5
+    show_score: bool = True  # 卷面是否显示分值
+    score_mode: str = "hundred"  # hundred=百分制100分 / default=题型默认分值
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "subject_id": 1,
                 "grade": 1,
@@ -77,6 +93,8 @@ class PracticeSetQuestionResponse(BaseModel):
     option_d: Optional[str] = None
     explanation: Optional[str] = None
     is_reading_question: Optional[bool] = None
+    scene: Optional[dict] = None  # 图文场景（数学题自动配图，与评测端一致）
+    score: Optional[int] = None  # 本题分值（按练习集计分方式算出）
 
     class Config:
         from_attributes = True
@@ -102,6 +120,13 @@ class PracticeSetResponse(BaseModel):
     word_review_stats: Optional[dict] = None  # 单词复习统计
     pdf_url: Optional[str] = None  # PDF下载URL
     student_answered_count: Optional[int] = 0  # 学生已作答题数
+    show_score: Optional[bool] = True  # 卷面是否显示分值
+    score_mode: Optional[str] = "hundred"  # hundred=百分制100分 / default=题型默认分值
+    total_score: Optional[int] = None  # 卷面总分（按计分方式算出）
+    show_ai_author: Optional[bool] = False  # 卷面「出题人」是否署名「AI 出题助手」
+    grammar_lesson_id: Optional[int] = None  # 语法专项练习集关联的语法点ID
+    passage_id: Optional[int] = None  # 阅读理解练习集关联的短文ID
+    grade: Optional[int] = None  # 练习集题目年级（取第一道题快照，做题端低年级数学判定用）
 
     class Config:
         from_attributes = True
@@ -124,63 +149,140 @@ class BatchSimilarResponse(BaseModel):
 
 # ============ 辅助函数 ============
 
-def get_consecutive_correct(db: Session, question_id: int) -> int:
-    """获取某道题最近的连续正确次数"""
-    records = db.query(PracticeSetQuestion).join(PracticeSet).filter(
-        PracticeSetQuestion.question_id == question_id,
-        PracticeSetQuestion.is_correct.isnot(None),
-        PracticeSet.deleted == False
-    ).order_by(PracticeSet.created_at.desc()).all()
+def load_practice_questions(db: Session, practice_set_id: int):
+    """练习集内的题目快照（按显示顺序），返回 [(PracticeSetQuestion, PracticeQuestion)]"""
+    psqs = db.query(PracticeSetQuestion).filter(
+        PracticeSetQuestion.practice_set_id == practice_set_id
+    ).order_by(PracticeSetQuestion.display_order).all()
+    ids = [psq.practice_question_id for psq in psqs if psq.practice_question_id]
+    qmap = {}
+    if ids:
+        qmap = {q.id: q for q in db.query(PracticeQuestion).filter(PracticeQuestion.id.in_(ids)).all()}
+    return [(psq, qmap[psq.practice_question_id]) for psq in psqs if psq.practice_question_id in qmap]
 
-    count = 0
-    for r in records:
-        if r.is_correct:
-            count += 1
+
+def save_student_answers(db: Session, practice_set_id: int, user_id: int, pairs, answer_map: dict) -> int:
+    """写作答记录（已提交未批改的作答复用同一条：一次作答 = 一条 practice_attempt）"""
+    pending = {
+        a.practice_question_id: a for a in db.query(PracticeAttempt).filter(
+            PracticeAttempt.practice_set_id == practice_set_id,
+            PracticeAttempt.is_correct.is_(None),
+        ).order_by(PracticeAttempt.id.asc()).all()
+    }
+    saved = 0
+    for psq, pq in pairs:
+        if pq.id in answer_map:
+            text = (answer_map[pq.id] or "").strip() or None
+            att = pending.get(pq.id)
+            if att:
+                att.student_answer = text
+            else:
+                db.add(PracticeAttempt(
+                    user_id=user_id,
+                    practice_set_id=practice_set_id,
+                    practice_question_id=pq.id,
+                    error_question_id=pq.error_question_id,
+                    student_answer=text,
+                    is_correct=None,
+                ))
+            saved += 1
+    db.flush()  # autoflush=False：提交前要让后续查询能看到刚写入的作答
+    return saved
+
+
+def apply_question_results(db: Session, ps: PracticeSet, pairs, results_list,
+                           graded_by: str = "manual", is_all_correct: bool = None):
+    """逐题批改落库：写作答记录 → 判错派生错题 → 同步错题缓存列。
+
+    Returns: (correct_count, graded_count)
+    """
+    pending = {
+        a.practice_question_id: a for a in db.query(PracticeAttempt).filter(
+            PracticeAttempt.practice_set_id == ps.id,
+            PracticeAttempt.is_correct.is_(None),
+        ).order_by(PracticeAttempt.id.asc()).all()
+    }
+
+    correct_count = 0
+    graded = 0
+    for psq, question in pairs:
+        if is_all_correct is True:
+            mark = True
         else:
-            break
-    return count
+            result = next((r for r in results_list if r.get('question_id') == question.id), None)
+            if result is None:
+                continue  # 该题本次未批改
+            mark = result.get('is_correct')
+
+        attempt = pending.get(question.id)
+        if attempt is not None:
+            attempt.is_correct = mark if mark is None else bool(mark)
+            attempt.graded_by = graded_by
+            eq = db.get(ErrorQuestion, attempt.error_question_id) if attempt.error_question_id else None
+            if eq is None and attempt.is_correct is False:
+                eq = practice_flow.upsert_error_question_from_practice_question(db, question, ps.user_id)
+                attempt.error_question_id = eq.id
+                question.error_question_id = eq.id  # 回填：该练习题已对应错题
+            if eq is not None and attempt.is_correct is not None:
+                practice_flow.apply_review_result(eq, bool(attempt.is_correct))
+        else:
+            attempt = practice_flow.record_attempt(
+                db,
+                practice_set_id=ps.id,
+                practice_question=question,
+                is_correct=(mark if mark is None else bool(mark)),
+                user_id=ps.user_id,
+                graded_by=graded_by,
+            )
+        graded += 1
+        if attempt.is_correct:
+            correct_count += 1
+
+    return correct_count, graded
 
 
 # ============ 路由实现 ============
 
 @router.post("/generate-from-questions", response_model=PracticeSetResponse, status_code=201)
-def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Session = Depends(get_db)):
+def generate_practice_from_questions(
+    data: GenerateFromQuestionsRequest,
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_required_kid_id),
+):
     """
-    根据条件生成练习集
+    从错题库组卷（错题复习）
 
     选择逻辑（优先级）：
     1. 未复习（review_count = 0）
-    2. 需巩固（最近有错误 或 正确率 < 60%）
-    3. 其他（正确率 >= 60% 且最近连续正确 < 3）
-    4. 已掌握（最近连续正确 >= 3 次）
+    2. 需巩固（最近答错且未连续答对 / 正确率 < 60%）
+    3. 其他（正确率 >= 60%）
+    已掌握（连续答对 MASTERED_STREAK 次）的错题不再被抽到。
     """
     import random
 
-    # 构建基础查询（错题组卷：只从错题池抽题，不含 AI 出题生成的练习题）
-    query = db.query(Question).filter(
-        Question.subject_id == data.subject_id,
-        Question.deleted == False,
-        Question.exclude_ai_filter(),
+    # 错题组卷：只从该孩子的错题池抽题（已掌握/已删除的不抽）
+    query = db.query(ErrorQuestion).filter(
+        ErrorQuestion.subject_id == data.subject_id,
+        ErrorQuestion.user_id == kid_id,
+        ErrorQuestion.deleted == False,  # noqa: E712
+        ErrorQuestion.status == "active",
     )
     if data.grade:
-        query = query.filter(Question.grade == data.grade)
+        query = query.filter(ErrorQuestion.grade == data.grade)
 
     all_questions = query.all()
 
-    # 分类到4个优先级池
-    pool_unvisited = []   # 优先级1：未复习
-    pool_need_review = [] # 优先级2：需巩固
-    pool_other = []       # 优先级3：其他
-    pool_mastered = []    # 优先级4：已掌握
+    # 分类到3个优先级池
+    pool_unvisited = []    # 优先级1：未复习
+    pool_need_review = []  # 优先级2：需巩固
+    pool_other = []        # 优先级3：其他
 
     for q in all_questions:
-        consecutive = get_consecutive_correct(db, q.id)
-
-        if q.review_count == 0:
+        if (q.review_count or 0) == 0:
             pool_unvisited.append(q)
-        elif consecutive >= 3:
-            pool_mastered.append(q)
-        elif q.error_count > 0 or (q.correct_count / q.review_count < 0.6):
+        elif (q.wrong_count or 0) > 0 and (q.correct_streak or 0) == 0:
+            pool_need_review.append(q)
+        elif (q.accuracy or 0) < 60:
             pool_need_review.append(q)
         else:
             pool_other.append(q)
@@ -189,7 +291,7 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     selected_ids = []
     remaining = data.count
 
-    for pool in [pool_unvisited, pool_need_review, pool_other, pool_mastered]:
+    for pool in [pool_unvisited, pool_need_review, pool_other]:
         if remaining <= 0:
             break
         if pool:
@@ -203,38 +305,46 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     if actual_count == 0:
         raise HTTPException(status_code=400, detail="没有符合条件的题目")
 
-    # 获取题目详情
-    selected_questions = db.query(Question).filter(Question.id.in_(selected_ids)).all()
-    # 保持优先级顺序
-    question_map = {q.id: q for q in selected_questions}
-    ordered_questions = [question_map[qid] for qid in selected_ids if qid in question_map]
+    # 取出错题对象（保持优先级顺序）
+    eq_map = {q.id: q for q in all_questions}
+    ordered_errors = [eq_map[qid] for qid in selected_ids if qid in eq_map]
 
-    # 创建练习集
+    # 学科名称 + 知识点（用于卷名：数学三年级·错题重练卷·两位数乘一位数·5题）
+    subject_obj = db.query(Subject).filter(Subject.id == data.subject_id).first() if data.subject_id else None
+    subject_name = subject_obj.name if subject_obj else ""
+    kps = []
+    for eq in ordered_errors:
+        kp = (eq.knowledge_point or "").strip()
+        if kp and kp not in kps:
+            kps.append(kp)
+
+    # 创建练习集（归属该孩子）
     practice_set = PracticeSet(
-        name=f"练习集_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        name=build_pool_practice_name(subject_name, data.grade, actual_count, kps),
         subject_id=data.subject_id,
+        user_id=kid_id,
         source_type="question",
         question_type="original",
         total_questions=actual_count,
+        show_score=data.show_score,
+        score_mode=data.score_mode,
     )
     db.add(practice_set)
-    db.commit()
-    db.refresh(practice_set)
+    db.flush()
 
-    # 创建关联记录
-    for idx, question in enumerate(ordered_questions):
-        psq = PracticeSetQuestion(
+    # 错题 → 练习题目快照 + 关联（内容各自独立，之后改错题不影响历史卷）
+    ordered_questions = []
+    for idx, eq in enumerate(ordered_errors):
+        pq = practice_flow.snapshot_from_error_question(db, eq, user_id=kid_id)
+        ordered_questions.append(pq)
+        db.add(PracticeSetQuestion(
             practice_set_id=practice_set.id,
-            question_id=question.id,
+            practice_question_id=pq.id,
             display_order=idx,
-        )
-        db.add(psq)
+        ))
 
     db.commit()
     db.refresh(practice_set)
-
-    # 获取学科名称
-    subject_name = db.query(Subject).filter(Subject.id == data.subject_id).first().name if data.subject_id else ""
 
     # 构建题目数据用于生成PDF
     questions_data = []
@@ -256,7 +366,15 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
     pdf_url = None
     if questions_data:
         try:
-            pdf_path = generate_practice_set_pdf(practice_set.name, questions_data)
+            pdf_path = generate_practice_set_pdf(
+                practice_set.name, questions_data,
+                show_score=practice_set.show_score,
+                score_mode=practice_set.score_mode,
+                created_at=practice_set.created_at,
+                subject_name=subject_name,
+                grade_label=AI_GRADE_LABELS.get(data.grade) if data.grade else None,
+                show_ai_author=bool(practice_set.show_ai_author),
+            )
             practice_set.pdf_path = pdf_path
             db.commit()
             pdf_url = f"/uploads/{pdf_path}"
@@ -277,7 +395,95 @@ def generate_practice_from_questions(data: GenerateFromQuestionsRequest, db: Ses
         "created_at": practice_set.created_at,
         "questions": [],
         "pdf_url": pdf_url,
+        "show_score": bool(practice_set.show_score),
+        "score_mode": practice_set.score_mode or "hundred",
+        "total_score": sum(compute_question_scores(
+            [{"question_type": q.get("question_type") or ""} for q in questions_data],
+            practice_set.score_mode or "hundred")),
+        "show_ai_author": bool(practice_set.show_ai_author),
+        "grammar_lesson_id": practice_set.grammar_lesson_id,
     }
+
+
+AI_GRADE_LABELS = {
+    1: "一年级", 2: "二年级", 3: "三年级", 4: "四年级", 5: "五年级", 6: "六年级",
+    7: "七年级", 8: "八年级", 9: "九年级", 10: "高一", 11: "高二", 12: "高三",
+}
+AI_TYPE_LABELS = {
+    "choice": "选择题", "fill": "填空题", "judge": "判断题", "calc": "计算题",
+    "application": "应用题", "operation": "操作题", "reading": "阅读理解",
+    "writing": "写作", "sentence": "连词成句",
+}
+# 难度标签（与前端出题表单一致：1 简单 ~ 5 困难）
+AI_DIFFICULTY_LABELS = {1: "简单", 2: "基础", 3: "中等", 4: "偏难", 5: "困难"}
+
+
+def difficulty_label_text(difficulty) -> str:
+    """卷名里的难度写法：简单难度 / 基础难度 / 中等难度 / 偏难 / 困难"""
+    label = AI_DIFFICULTY_LABELS.get(difficulty) if difficulty else ""
+    if not label:
+        return ""
+    return f"{label}难度" if label in ("简单", "基础", "中等") else label
+
+
+def build_ai_practice_name(subject_name, grade, knowledge_points, count,
+                           question_types=None, preset_name=None, difficulty=None):
+    """AI 练习集名称：年级学科 · 知识点 · 卷型/题型（难度） · 题数
+
+    例如：三年级数学·两位数乘一位数·基础卷（中等难度）·4题
+    没选卷型时按题型命名（计算题专项）；都没选则「综合练习」。
+    （原来的 AI练习_20260917231714 对家长没有意义）
+    """
+    question_types = question_types or []
+    parts = []
+    grade_label = AI_GRADE_LABELS.get(grade) if grade else ""
+    head = f"{grade_label}{subject_name or ''}"
+    if head:
+        parts.append(head)
+    if knowledge_points:
+        if len(knowledge_points) == 1:
+            parts.append(knowledge_points[0])
+        else:
+            parts.append(f"{knowledge_points[0]}等{len(knowledge_points)}个知识点")
+    # 卷型/题型：卷型优先，其次单题型专项，最后「综合练习」
+    if preset_name:
+        paper_part = preset_name
+    elif len(question_types) == 1:
+        paper_part = f"{AI_TYPE_LABELS.get(question_types[0], question_types[0])}专项"
+    elif not knowledge_points:
+        paper_part = "综合练习"
+    else:
+        paper_part = ""
+    difficulty_label = difficulty_label_text(difficulty)
+    if paper_part and difficulty_label:
+        paper_part = f"{paper_part}（{difficulty_label}）"
+    if paper_part:
+        parts.append(paper_part)
+    if count:
+        parts.append(f"{count}题")
+    name = "·".join(parts)[:120]
+    return name or f"AI练习_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+
+def build_pool_practice_name(subject_name, grade, count, knowledge_points=None):
+    """错题重练卷名称：年级学科 · 错题重练卷 · 知识点 · 题数
+
+    例如：三年级数学·错题重练卷·两位数乘一位数·5题
+    """
+    parts = []
+    grade_label = AI_GRADE_LABELS.get(grade) if grade else ""
+    head = f"{grade_label}{subject_name or ''}"
+    if head:
+        parts.append(head)
+    parts.append("错题重练卷")
+    if knowledge_points:
+        if len(knowledge_points) == 1:
+            parts.append(knowledge_points[0])
+        else:
+            parts.append(f"{knowledge_points[0]}等{len(knowledge_points)}个知识点")
+    if count:
+        parts.append(f"{count}题")
+    return "·".join(parts)[:120] or f"错题重练卷_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
 class GenerateAIRequest(BaseModel):
@@ -289,10 +495,18 @@ class GenerateAIRequest(BaseModel):
     difficulty: Optional[int] = None  # 难度 1-5
     question_types: List[str] = []  # 题型：choice/fill/judge/calc/application/operation/reading/writing/sentence；空=混合
     question_categories: List[str] = []  # 类型：basic/scene/comprehensive/thinking；空=混合
+    preset_name: Optional[str] = None  # 试卷结构名（基础卷/标准卷/拓展卷），只用于命名
+    show_score: bool = True  # 卷面是否显示分值
+    score_mode: str = "hundred"  # hundred=百分制100分 / default=题型默认分值
+    show_ai_author: bool = False  # 卷头「出题人」是否署名「AI 出题助手」（默认留空白）
 
 
 @router.post("/generate-ai", response_model=PracticeSetResponse, status_code=201)
-def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get_db)):
+def generate_practice_from_ai(
+    data: GenerateAIRequest,
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_required_kid_id),
+):
     """AI结合知识点出题：自动统计薄弱知识点（或手动指定）→ LLM 生成 → 入库 → 组卷 → PDF"""
     import random
 
@@ -311,19 +525,21 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
     question_types = [t for t in data.question_types if t in VALID_TYPES]
     question_categories = [c for c in data.question_categories if c in VALID_CATEGORIES]
 
-    # 1. 确定知识点：手动指定 > 自动统计薄弱知识点
+    # 1. 确定知识点：手动指定 > 自动统计该孩子的薄弱知识点（取错题答错次数最多的）
     knowledge_points = [kp.strip() for kp in data.knowledge_points if kp and kp.strip()]
     if not knowledge_points:
         rows = db.query(
-            Question.knowledge_point,
-            func.sum(Question.error_count).label("total_error"),
+            ErrorQuestion.knowledge_point,
+            func.sum(ErrorQuestion.wrong_count).label("total_error"),
         ).filter(
-            Question.subject_id == data.subject_id,
-            Question.deleted == False,
-            Question.exclude_ai_filter(),  # 只统计错题，AI 生成的练习题不算薄弱知识点来源
-            Question.knowledge_point.isnot(None),
-            Question.knowledge_point != "",
-        ).group_by(Question.knowledge_point).order_by(func.sum(Question.error_count).desc()).limit(3).all()
+            ErrorQuestion.subject_id == data.subject_id,
+            ErrorQuestion.user_id == kid_id,
+            ErrorQuestion.deleted == False,  # noqa: E712
+            ErrorQuestion.knowledge_point.isnot(None),
+            ErrorQuestion.knowledge_point != "",
+        ).group_by(ErrorQuestion.knowledge_point).order_by(
+            func.sum(ErrorQuestion.wrong_count).desc()
+        ).limit(3).all()
         knowledge_points = [r[0] for r in rows]
 
     if not knowledge_points:
@@ -387,6 +603,8 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
                         continue  # 补出来的"选择题"没有选项，不收
                     ai_questions.append(q)
                     seen_q.add(q["question"])
+                # 严格截断到请求题数（主流程已截断；补题型后不得超量）
+                ai_questions = ai_questions[: data.count]
             except Exception as e:
                 print(f"AI出题 缺失题型补生成失败: {e}")
 
@@ -395,39 +613,35 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
                   "operation": 6, "reading": 7, "writing": 8, "sentence": 9}
     ai_questions.sort(key=lambda q: TYPE_ORDER.get(q.get("question_type") or "", 99))
 
-    # 3. 题目入库（Question 表，后续抽题/复习可复用）
+    # 3. 题目入库（练习题目快照表；AI 练习题不属于错题，只有做错时才派生错题）
     new_questions = []
     for item in ai_questions:
-        opts = list(item.get("options") or [])[:4]
-        q = Question(
+        pq = practice_flow.snapshot_from_ai_item(
+            db, item,
+            user_id=kid_id,
             subject_id=data.subject_id,
             grade=data.grade,
-            original_text=item["question"],
-            parsed_question=item["question"],
-            answer=item["answer"],
-            analysis=item.get("explanation", ""),
-            knowledge_point=item.get("knowledge_point") or knowledge_points[0],
-            difficulty=data.difficulty or 3,
-            error_type="",
-            question_type=item.get("question_type") or (question_types[0] if len(question_types) == 1 else None),
-            question_category=item.get("question_category") or (question_categories[0] if len(question_categories) == 1 else None),
-            source="ai",  # AI 出题生成：属于练习题，不计入错题列表
-            option_a=opts[0] if len(opts) > 0 else None,
-            option_b=opts[1] if len(opts) > 1 else None,
-            option_c=opts[2] if len(opts) > 2 else None,
-            option_d=opts[3] if len(opts) > 3 else None,
+            question_types=question_types,
+            question_categories=question_categories,
+            default_knowledge_point=knowledge_points[0] if knowledge_points else None,
         )
-        db.add(q)
-        new_questions.append(q)
-    db.flush()
+        if pq is not None:  # 自检拒绝的不合格题不入库
+            new_questions.append(pq)
 
     # 4. 创建练习集
     practice_set = PracticeSet(
-        name=f"AI练习_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        name=build_ai_practice_name(
+            subject.name, data.grade, knowledge_points, len(new_questions),
+            question_types, data.preset_name, data.difficulty,
+        ),
         subject_id=data.subject_id,
+        user_id=kid_id,
         source_type="ai",
         question_type="original",
         total_questions=len(new_questions),
+        show_score=data.show_score,
+        score_mode=data.score_mode,
+        show_ai_author=data.show_ai_author,
     )
     db.add(practice_set)
     db.flush()
@@ -435,7 +649,7 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
     for idx, question in enumerate(new_questions):
         db.add(PracticeSetQuestion(
             practice_set_id=practice_set.id,
-            question_id=question.id,
+            practice_question_id=question.id,
             display_order=idx,
         ))
 
@@ -450,7 +664,15 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
             "error_type": q.error_type or "",
             "question_type": q.question_type or "",
         } for q in new_questions]
-        pdf_path = generate_practice_set_pdf(practice_set.name, questions_data)
+        pdf_path = generate_practice_set_pdf(
+            practice_set.name, questions_data,
+            show_score=practice_set.show_score,
+            score_mode=practice_set.score_mode,
+            created_at=practice_set.created_at,
+            subject_name=subject.name,
+            grade_label=AI_GRADE_LABELS.get(data.grade) if data.grade else None,
+            show_ai_author=bool(practice_set.show_ai_author),
+        )
         practice_set.pdf_path = pdf_path
         pdf_url = f"/uploads/{pdf_path}"
     except Exception as e:
@@ -473,11 +695,22 @@ def generate_practice_from_ai(data: GenerateAIRequest, db: Session = Depends(get
         "created_at": practice_set.created_at,
         "questions": [],
         "pdf_url": pdf_url,
+        "show_score": bool(practice_set.show_score),
+        "score_mode": practice_set.score_mode or "hundred",
+        "total_score": sum(compute_question_scores(
+            [{"question_type": q.get("question_type") or ""} for q in questions_data],
+            practice_set.score_mode or "hundred")),
+        "show_ai_author": bool(practice_set.show_ai_author),
+        "grammar_lesson_id": practice_set.grammar_lesson_id,
     }
 
 
 @router.post("/generate-from-reading", response_model=PracticeSetResponse, status_code=201)
-def generate_practice_from_reading(data: GenerateFromReadingRequest, db: Session = Depends(get_db)):
+def generate_practice_from_reading(
+    data: GenerateFromReadingRequest,
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_required_kid_id),
+):
     """
     从短文生成阅读理解练习集
 
@@ -504,6 +737,7 @@ def generate_practice_from_reading(data: GenerateFromReadingRequest, db: Session
     practice_set = PracticeSet(
         name=data.name or f"阅读理解-{passage.title}"[:200],
         subject_id=_get_english_subject_id(db),
+        user_id=kid_id,  # 归属当前孩子（practice_set.user_id NOT NULL）
         source_type="reading",
         question_type="original",
         total_questions=len(passage.questions),
@@ -554,52 +788,58 @@ def create_practice_set(data: PracticeSetCreate, db: Session = Depends(get_db)):
     2. 如果是similar类型，自动为每道题生成相似题
     3. 创建练习集和关联记录
     """
-    # 验证题目
-    questions = db.query(Question).filter(
-        Question.id.in_(data.question_ids),
-        Question.deleted == False
+    # 验证题目（手动组卷的题目来自错题库）
+    error_questions = db.query(ErrorQuestion).filter(
+        ErrorQuestion.id.in_(data.question_ids),
+        ErrorQuestion.deleted == False  # noqa: E712
     ).all()
 
-    if len(questions) != len(data.question_ids):
-        raise HTTPException(status_code=400, detail="部分题目不存在或已删除")
+    if len(error_questions) != len(data.question_ids):
+        raise HTTPException(status_code=400, detail="部分错题不存在或已删除")
 
-    if not questions:
+    if not error_questions:
         raise HTTPException(status_code=400, detail="题目列表为空")
 
-    # 获取学科ID（使用第一个题目的学科）
-    subject_id = questions[0].subject_id
+    eq_by_id = {q.id: q for q in error_questions}
+    ordered_errors = [eq_by_id[qid] for qid in data.question_ids if qid in eq_by_id]
 
-    # 如果是相似题类型，先行为每道题生成相似题
+    # 获取学科ID、归属孩子（使用第一道题的）
+    subject_id = ordered_errors[0].subject_id
+    kid_id = ordered_errors[0].user_id
+
+    subject_obj = db.query(Subject).filter(Subject.id == subject_id).first()
+    subject_name = subject_obj.name if subject_obj else ""
+
+    # 如果是相似题类型，先行为每道错题生成相似题
     similar_question_ids = []
     if data.question_type == "similar":
         from app.services.llm import llm_service
 
-        for q in questions:
+        for eq in ordered_errors:
             # 检查是否已有相似题
             existing = db.query(SimilarQuestion).filter(
-                SimilarQuestion.source_question_id == q.id,
+                SimilarQuestion.source_question_id == eq.id,
                 SimilarQuestion.deleted == False
             ).first()
 
             if existing:
-                similar_question_ids.append((q.id, existing.id))
+                similar_question_ids.append((eq.id, existing.id))
             else:
                 # 调用LLM生成相似题
-                subject_name = q.subject.name if q.subject else ""
                 try:
                     result = llm_service.generate_similar_question(
-                        question=q.parsed_question or q.original_text,
-                        answer=q.answer or "",
+                        question=eq.parsed_question or eq.original_text,
+                        answer=eq.answer or "",
                         subject=subject_name,
-                        knowledge_point=q.knowledge_point or "",
+                        knowledge_point=eq.knowledge_point or "",
                     )
 
                     if result.get("error"):
                         continue
 
-                    # 保存相似题
+                    # 保存相似题（source_question_id 关联错题 id）
                     similar = SimilarQuestion(
-                        source_question_id=q.id,
+                        source_question_id=eq.id,
                         similar_text=result.get("similar_question", ""),
                         similar_answer=result.get("similar_answer", ""),
                         similarity_score=0.85,
@@ -607,34 +847,37 @@ def create_practice_set(data: PracticeSetCreate, db: Session = Depends(get_db)):
                     db.add(similar)
                     db.commit()
                     db.refresh(similar)
-                    similar_question_ids.append((q.id, similar.id))
+                    similar_question_ids.append((eq.id, similar.id))
                 except Exception:
                     continue
 
-    # 创建练习集
+    # 创建练习集（归属该孩子）
     practice_set = PracticeSet(
         name=data.name,
         subject_id=subject_id,
+        user_id=kid_id,
         source_type=data.source_type,
         question_type=data.question_type,
         total_questions=len(data.question_ids),
+        show_score=data.show_score,
+        score_mode=data.score_mode,
     )
     db.add(practice_set)
-    db.commit()
-    db.refresh(practice_set)
+    db.flush()
 
-    # 创建关联记录
-    for idx, question_id in enumerate(data.question_ids):
+    # 错题 → 练习题目快照 + 关联记录
+    for idx, eq in enumerate(ordered_errors):
         similar_q_id = None
         if data.question_type == "similar" and similar_question_ids:
             for q_id, sq_id in similar_question_ids:
-                if q_id == question_id:
+                if q_id == eq.id:
                     similar_q_id = sq_id
                     break
 
+        pq = practice_flow.snapshot_from_error_question(db, eq, user_id=kid_id)
         psq = PracticeSetQuestion(
             practice_set_id=practice_set.id,
-            question_id=question_id,
+            practice_question_id=pq.id,
             similar_question_id=similar_q_id,
             display_order=idx,
         )
@@ -643,8 +886,15 @@ def create_practice_set(data: PracticeSetCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(practice_set)
 
+    # 触发积分行为（创建练习集）
+    from app.services.motivation import MotivationService
+    try:
+        service = MotivationService(db)
+        service.trigger_action("create_practice_set", user_id=kid_id, reason=f"创建练习集：{practice_set.name}")
+    except Exception:
+        pass  # 激励系统不影响主流程
+
     # 返回结果
-    subject_name = db.query(Subject).filter(Subject.id == subject_id).first().name if subject_id else ""
 
     return {
         "id": practice_set.id,
@@ -673,21 +923,24 @@ def list_practice_sets(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取练习集列表"""
-    query = db.query(PracticeSet).filter(PracticeSet.deleted == False)
+    """获取练习集列表（按孩子隔离；家长未选孩子时返回全部）"""
+    query = db.query(PracticeSet).filter(PracticeSet.deleted == False)  # noqa: E712
 
+    if kid_id is not None:
+        query = query.filter(PracticeSet.user_id == kid_id)
     if subject_id:
         query = query.filter(PracticeSet.subject_id == subject_id)
     if grade is not None:
-        # 练习集无年级字段：按练习集内题目年级过滤
+        # 练习集无年级字段：按练习集内题目年级过滤（题目快照表）
         query = query.filter(
             db.query(PracticeSetQuestion.id)
-            .join(Question, Question.id == PracticeSetQuestion.question_id)
+            .join(PracticeQuestion, PracticeQuestion.id == PracticeSetQuestion.practice_question_id)
             .filter(
                 PracticeSetQuestion.practice_set_id == PracticeSet.id,
-                Question.deleted == False,
-                Question.grade == grade,
+                PracticeQuestion.deleted == False,
+                PracticeQuestion.grade == grade,
             )
             .exists()
         )
@@ -707,11 +960,13 @@ def list_practice_sets(
     for ps in items:
         subject_name = db.query(Subject).filter(Subject.id == ps.subject_id).first().name if ps.subject_id else ""
 
-        # 学生已作答题数（做题环节提交了作答的题）
-        student_answered_count = db.query(func.count(PracticeSetQuestion.id)).filter(
-            PracticeSetQuestion.practice_set_id == ps.id,
-            PracticeSetQuestion.student_answer.isnot(None),
-            PracticeSetQuestion.student_answer != "",
+        # 学生已作答题数（作答记录里提交过答案的题）
+        student_answered_count = db.query(
+            func.count(func.distinct(PracticeAttempt.practice_question_id))
+        ).filter(
+            PracticeAttempt.practice_set_id == ps.id,
+            PracticeAttempt.student_answer.isnot(None),
+            PracticeAttempt.student_answer != "",
         ).scalar() or 0
 
         # 获取单词复习统计
@@ -768,6 +1023,7 @@ def list_practice_sets(
             "created_at": ps.created_at,
             "questions": [],
             "word_review_stats": word_review_stats,
+            "grammar_lesson_id": ps.grammar_lesson_id,
         })
 
     return {"total": total, "items": result}
@@ -798,6 +1054,7 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
     # 获取关联的题目
     questions = []
     word_review_stats = None
+    pairs = []  # 错题/AI 练习集题目快照（grade 推导用；word/reading 分支不涉及）
 
     if ps.source_type == "word":
         # 单词练习集：获取复习统计和单词题目
@@ -890,23 +1147,15 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                     "is_reading_question": True,
                 })
     else:
-        # 错题练习集：获取题目列表
-        ps_questions = db.query(PracticeSetQuestion).filter(
-            PracticeSetQuestion.practice_set_id == practice_set_id
-        ).order_by(PracticeSetQuestion.display_order).all()
+        # 错题/AI 练习集：从练习题目快照读取，作答结果取最新一次 practice_attempt
+        latest = practice_flow.latest_attempt_map(db, practice_set_id)
+        pairs = load_practice_questions(db, practice_set_id)
+        eq_ids = [q.error_question_id for _, q in pairs if q.error_question_id]
+        eq_map = {e.id: e for e in db.query(ErrorQuestion).filter(ErrorQuestion.id.in_(eq_ids)).all()} if eq_ids else {}
 
-        for psq in ps_questions:
-            question = db.query(Question).filter(Question.id == psq.question_id).first()
-            if not question:
-                continue
-
-            if ps.question_type == "similar" and psq.similar_question_id:
-                similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
-                question_text = similar.similar_text if similar else ""
-                answer = similar.similar_answer if similar else ""
-            else:
-                question_text = question.parsed_question or question.original_text or ""
-                answer = question.answer or ""
+        for psq, question in pairs:
+            question_text = question.parsed_question or question.original_text or ""
+            answer = question.answer or ""
 
             # 旧数据兜底：早期 AI 题把选项塞在题干里、或把填空题错标成 choice
             q_type = question.question_type or ""
@@ -924,9 +1173,19 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                     # 根本没有选项 → 不是选择题，按内容纠正（仅影响展示）
                     q_type = infer_question_type(question_text, answer, subject_name, allow_choice=False)
 
+            attempt = latest.get(question.id)
+            eq = eq_map.get(question.error_question_id) if question.error_question_id else None
+            # 图文场景（数学题自动配图，与评测端一致：孩子看 emoji 图更好理解）
+            scene = None
+            if ps.subject_id == 1:
+                try:
+                    from app.routers.assessment import _resolve_scene
+                    scene = _resolve_scene(question)
+                except Exception:
+                    scene = None
             questions.append({
                 "id": psq.id,
-                "question_id": psq.question_id,
+                "question_id": question.id,
                 "similar_question_id": psq.similar_question_id,
                 "display_order": psq.display_order,
                 "question_text": question_text,
@@ -934,12 +1193,12 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "difficulty": question.difficulty,
                 "knowledge_point": question.knowledge_point or "",
                 "error_type": question.error_type or "",
-                "review_count": question.review_count or 0,
-                "is_correct": psq.is_correct,
+                "review_count": (eq.review_count or 0) if eq else 0,
+                "is_correct": attempt.is_correct if attempt else None,
                 "original_question_text": question_text,
                 "original_answer": question.answer or "",
-                "original_image": question.original_image or None,
-                "student_answer": psq.student_answer or "",
+                "original_image": question.original_images or None,
+                "student_answer": (attempt.student_answer if attempt else "") or "",
                 "question_type": q_type,
                 # 选择题选项（AI 出题时独立存储；旧数据在读取时从题干切分）
                 "option_a": opt_a or None,
@@ -948,7 +1207,23 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
                 "option_d": opt_d or None,
                 "explanation": question.analysis or None,
                 "is_reading_question": False,
+                "scene": scene,
+                "error_question_id": question.error_question_id,
+                "source": question.source,
             })
+
+    # 每题分值：与 PDF 用同一套算法，保证屏幕上的卷子和打印出来的一致
+    score_mode = normalize_score_mode(getattr(ps, "score_mode", None) or DEFAULT_SCORE_MODE)
+    question_scores = compute_question_scores(
+        [{"question_type": (q.get("question_type") or ("reading" if q.get("is_reading_question") else ""))}
+         for q in questions],
+        score_mode,
+    )
+    for q, qs_score in zip(questions, question_scores):
+        q["score"] = qs_score
+
+    # 练习集题目年级：取第一道题快照的非空年级（做题端低年级数学判定用）
+    ps_grade = next((q.grade for _, q in pairs if q.grade), None)
 
     return {
         "id": ps.id,
@@ -968,6 +1243,14 @@ def get_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
         "created_at": ps.created_at,
         "questions": questions,
         "word_review_stats": word_review_stats,
+        "grammar_lesson_id": ps.grammar_lesson_id,
+        # 阅读理解练习集：ReadingTest 页面据此拉短文与题目（曾漏返回 → 测试页只显示标题）
+        "passage_id": ps.passage_id,
+        "show_score": True if ps.show_score is None else bool(ps.show_score),
+        "score_mode": score_mode,
+        "total_score": sum(question_scores),
+        "show_ai_author": bool(ps.show_ai_author),
+        "grade": ps_grade,
     }
 
 
@@ -1067,20 +1350,13 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
                 questions_data[0]["_passage_title"] = passage.title
                 questions_data[0]["_passage_content"] = passage.content
     else:
-        # 普通练习集：从PracticeSetQuestion获取题目
-        ps_questions = db.query(PracticeSetQuestion).filter(
-            PracticeSetQuestion.practice_set_id == practice_set_id
-        ).order_by(PracticeSetQuestion.display_order).all()
-
-        for psq in ps_questions:
-            question = db.query(Question).filter(Question.id == psq.question_id).first()
-            if not question:
-                continue
-
+        # 普通练习集：从练习题目快照获取题目
+        for psq, question in load_practice_questions(db, practice_set_id):
+            question_text = None
             if ps.question_type == "similar" and psq.similar_question_id:
                 similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
-                question_text = similar.similar_text if similar else ""
-            else:
+                question_text = similar.similar_text if similar else None
+            if not question_text:
                 question_text = question.parsed_question or question.original_text or ""
 
             questions_data.append({
@@ -1089,7 +1365,7 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
                 "id": question.id,
                 "knowledge_point": question.knowledge_point or "",
                 "error_type": question.error_type or "",
-                "review_count": question.review_count or 0,
+                "review_count": 0,
                 "question_type": question.question_type or "",
                 "option_a": question.option_a,
                 "option_b": question.option_b,
@@ -1104,7 +1380,15 @@ def generate_pdf(practice_set_id: int, db: Session = Depends(get_db)):
     try:
         # 确保name是Unicode字符串
         ps_name = str(ps.name) if ps.name else "练习集"
-        pdf_path = generate_practice_set_pdf(ps_name, questions_data)
+        pdf_subject = db.query(Subject).filter(Subject.id == ps.subject_id).first() if ps.subject_id else None
+        pdf_path = generate_practice_set_pdf(
+            ps_name, questions_data,
+            show_score=True if ps.show_score is None else bool(ps.show_score),
+            score_mode=ps.score_mode or "default",
+            created_at=ps.created_at,
+            subject_name=pdf_subject.name if pdf_subject else None,
+            show_ai_author=bool(ps.show_ai_author),
+        )
         ps.pdf_path = pdf_path
         db.commit()
 
@@ -1159,21 +1443,15 @@ def submit_practice_answers(
     if not answer_map:
         raise HTTPException(status_code=400, detail="作答内容为空")
 
-    ps_questions = db.query(PracticeSetQuestion).filter(
-        PracticeSetQuestion.practice_set_id == practice_set_id
-    ).all()
-
-    if not ps_questions:
+    pairs = load_practice_questions(db, practice_set_id)
+    if not pairs:
         raise HTTPException(status_code=400, detail="练习集没有题目")
 
-    saved = 0
-    for psq in ps_questions:
-        if psq.question_id in answer_map:
-            psq.student_answer = answer_map[psq.question_id].strip() or None
-            saved += 1
+    # 已提交未批改的作答复用同一条记录（一次作答 = 一条 practice_attempt）
+    saved = save_student_answers(db, practice_set_id, ps.user_id, pairs, answer_map)
 
     db.commit()
-    return {"message": "作答已保存", "saved": saved, "total": len(ps_questions)}
+    return {"message": "作答已保存", "saved": saved, "total": len(pairs)}
 
 
 @router.post("/{practice_set_id}/ai-grade")
@@ -1190,33 +1468,20 @@ def ai_grade_practice_set(
     if not ps:
         raise HTTPException(status_code=404, detail="练习集不存在")
 
-    ps_questions = db.query(PracticeSetQuestion).filter(
-        PracticeSetQuestion.practice_set_id == practice_set_id
-    ).order_by(PracticeSetQuestion.display_order).all()
-
-    if not ps_questions:
+    pairs = load_practice_questions(db, practice_set_id)
+    if not pairs:
         raise HTTPException(status_code=400, detail="练习集没有题目")
 
+    latest = practice_flow.latest_attempt_map(db, practice_set_id)
     items = []
     unsupported = []
-    for psq in ps_questions:
-        qid = psq.question_id
-        question_text = ""
-        answer = ""
-        is_image_only = False
-
-        if ps.question_type == "similar" and psq.similar_question_id:
-            similar = db.query(SimilarQuestion).filter(SimilarQuestion.id == psq.similar_question_id).first()
-            if similar:
-                question_text = similar.similar_text or ""
-                answer = similar.similar_answer or ""
-        else:
-            question = db.query(Question).filter(Question.id == qid).first()
-            if question:
-                question_text = question.parsed_question or question.original_text or ""
-                answer = question.answer or ""
-                if not question_text and question.original_image:
-                    is_image_only = True
+    for psq, question in pairs:
+        qid = question.id
+        question_text = question.parsed_question or question.original_text or ""
+        answer = question.answer or ""
+        is_image_only = (not question_text) and bool(question.original_images)
+        attempt = latest.get(qid)
+        student_answer = (attempt.student_answer if attempt else "") or ""
 
         if not question_text or is_image_only:
             unsupported.append({"question_id": qid, "reason": "图片题暂不支持AI批改，请人工批改"})
@@ -1226,7 +1491,7 @@ def ai_grade_practice_set(
             "question_id": qid,
             "question": question_text,
             "answer": answer,
-            "student_answer": (psq.student_answer or "").strip() or "（未作答）",
+            "student_answer": student_answer.strip() or "（未作答）",
         })
 
     if not items:
@@ -1240,6 +1505,212 @@ def ai_grade_practice_set(
         raise HTTPException(status_code=502, detail=result["error"])
 
     return {"results": result.get("results", []), "unsupported": unsupported}
+
+
+class PhotoSubmitAnswer(BaseModel):
+    question_id: int
+    answer: str = ""
+
+
+class PhotoSubmitRequest(BaseModel):
+    """线下做题拍照交卷"""
+    answers: List[PhotoSubmitAnswer] = []
+    images: List[str] = []              # 卷子照片相对路径（/recognize-paper 返回，存为复习图片）
+    auto_grade: bool = True             # True=紧接着调 LLM 批改；False=只存作答等人工批改
+    question_results: Optional[List[dict]] = None  # 人工核对后的对错（给了就不再调 AI）
+
+
+def _question_dicts(pairs) -> List[dict]:
+    """转成 paper_ocr 需要的题目结构（题号顺序由 paper_ocr 复现 PDF 分组）"""
+    out = []
+    for _psq, q in pairs:
+        out.append({
+            "id": q.id,
+            "parsed_question": q.parsed_question,
+            "original_text": q.original_text,
+            "question_type": q.question_type,
+            "option_a": q.option_a,
+            "option_b": q.option_b,
+            "option_c": q.option_c,
+            "option_d": q.option_d,
+        })
+    return out
+
+
+@router.post("/{practice_set_id}/recognize-paper")
+async def recognize_paper(
+    practice_set_id: int,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+):
+    """线下做题：上传卷子照片，自动识别学生手写作答（只识别不落库，供核对后交卷）"""
+    ps = db.query(PracticeSet).filter(
+        PracticeSet.id == practice_set_id,
+        PracticeSet.deleted == False,
+    ).first()
+    if not ps:
+        raise HTTPException(status_code=404, detail="练习集不存在")
+
+    pairs = load_practice_questions(db, practice_set_id)
+    if not pairs:
+        raise HTTPException(status_code=400, detail="练习集没有题目")
+    if not files:
+        raise HTTPException(status_code=400, detail="请先拍照或选择照片")
+
+    from app.routers.upload import _save_image
+    saved_paths = []
+    abs_paths = []
+    for f in files:
+        info = await _save_image(f)
+        if info.get("error"):
+            raise HTTPException(status_code=400, detail=info["error"])
+        saved_paths.append(info["image_path"])
+        abs_paths.append(info["absolute_path"])
+
+    subject = db.query(Subject).filter(Subject.id == ps.subject_id).first()
+    try:
+        result = paper_ocr.recognize_answers(
+            abs_paths, _question_dicts(pairs), subject=subject.name if subject else ""
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"识别失败：{e}")
+
+    if result.get("error"):
+        raise HTTPException(status_code=502, detail=result["error"])
+
+    ordered = paper_ocr.printed_order(_question_dicts(pairs))
+    latest = practice_flow.latest_attempt_map(db, practice_set_id)
+    by_qid = {item["question_id"]: item for item in result.get("answers", [])}
+
+    questions_out = []
+    for idx, q in enumerate(ordered, 1):
+        hit = by_qid.get(q["id"])
+        attempt = latest.get(q["id"])
+        questions_out.append({
+            "no": idx,
+            "question_id": q["id"],
+            "question_type": q["question_type"],
+            "question_text": (q["parsed_question"] or q["original_text"] or "").strip(),
+            "recognized_answer": hit["answer"] if hit else "",
+            "confidence": hit["confidence"] if hit else "",
+            "page": hit["page"] if hit else None,
+            "existing_answer": (attempt.student_answer if attempt else "") or "",
+        })
+
+    recognized = len([q for q in questions_out if q["recognized_answer"]])
+    return {
+        "images": saved_paths,
+        "questions": questions_out,
+        "total": len(questions_out),
+        "recognized_count": recognized,
+        "missing_count": len(questions_out) - recognized,
+        "empty_nos": [q["no"] for q in questions_out if not q["recognized_answer"]],
+        "pages": result.get("pages", []),
+        "notes": result.get("notes", []),
+        "provider": result.get("provider", ""),
+        "model": result.get("model", ""),
+        "message": f"共 {len(questions_out)} 题，识别到手写作答 {recognized} 题"
+                   + (f"，{len(questions_out) - recognized} 题未识别到（可手动补充）" if recognized < len(questions_out) else ""),
+    }
+
+
+@router.post("/{practice_set_id}/photo-submit")
+def photo_submit(
+    practice_set_id: int,
+    data: PhotoSubmitRequest,
+    db: Session = Depends(get_db),
+):
+    """线下做题拍照交卷：保存手写作答 → （默认）AI 自动批改 → 判错派生错题、更新正确率"""
+    ps = db.query(PracticeSet).filter(
+        PracticeSet.id == practice_set_id,
+        PracticeSet.deleted == False,
+    ).first()
+    if not ps:
+        raise HTTPException(status_code=404, detail="练习集不存在")
+
+    pairs = load_practice_questions(db, practice_set_id)
+    if not pairs:
+        raise HTTPException(status_code=400, detail="练习集没有题目")
+
+    answer_map = {a.question_id: a.answer for a in data.answers if (a.answer or "").strip()}
+    saved = save_student_answers(db, practice_set_id, ps.user_id, pairs, answer_map) if answer_map else 0
+
+    ps.reviewed = True
+    ps.review_count += 1
+    ps.last_reviewed_at = datetime.now()
+    if data.images:
+        ps.review_images = json.dumps(data.images, ensure_ascii=False)
+
+    subject = db.query(Subject).filter(Subject.id == ps.subject_id).first()
+
+    graded_by = "manual"
+    results_list: List[dict] = []
+    unsupported: List[dict] = []
+
+    if data.question_results:
+        results_list = data.question_results
+    elif data.auto_grade:
+        latest = practice_flow.latest_attempt_map(db, practice_set_id)
+        items = []
+        for _psq, question in pairs:
+            qid = question.id
+            question_text = question.parsed_question or question.original_text or ""
+            is_image_only = (not question_text) and bool(question.original_images)
+            if not question_text or is_image_only:
+                unsupported.append({"question_id": qid, "reason": "图片题暂不支持AI批改，请人工批改"})
+                continue
+            attempt = latest.get(qid)
+            student_answer = (attempt.student_answer if attempt else "") or answer_map.get(qid, "")
+            items.append({
+                "question_id": qid,
+                "question": question_text,
+                "answer": question.answer or "",
+                "student_answer": (student_answer or "").strip() or "（未作答）",
+            })
+        if items:
+            from app.services.llm import llm_service
+            graded = llm_service.grade_answers(items, subject=subject.name if subject else "")
+            if graded.get("error"):
+                db.rollback()
+                raise HTTPException(status_code=502, detail=graded["error"])
+            results_list = graded.get("results", [])
+            # 兜底：模型若返回的是位置序号导致一个都对不上，按提交顺序映射回真实题号
+            valid_ids = {q.id for _psq, q in pairs}
+            if results_list and not any(r.get("question_id") in valid_ids for r in results_list):
+                results_list = [
+                    dict(r, question_id=items[pos]["question_id"] if pos < len(items) else None)
+                    for pos, r in enumerate(results_list)
+                ]
+            graded_by = "ai"
+
+    correct_count, graded_count = apply_question_results(
+        db, ps, pairs, results_list, graded_by=graded_by
+    )
+    ps.accuracy = round(correct_count / graded_count * 100, 1) if graded_count else None
+
+    db.commit()
+
+    from app.services.motivation import MotivationService
+    try:
+        service = MotivationService(db)
+        service.trigger_action("review_practice_set", user_id=ps.user_id, reason="线下做题拍照交卷")
+    except Exception:
+        pass  # 激励系统不影响主流程
+
+    wrong_ids = [r.get("question_id") for r in results_list if r.get("is_correct") is False]
+    return {
+        "message": "交卷完成",
+        "saved_answers": saved,
+        "graded": graded_count,
+        "total": len(pairs),
+        "correct": correct_count,
+        "wrong": len(wrong_ids),
+        "accuracy": ps.accuracy,
+        "results": results_list,
+        "unsupported": unsupported,
+        "wrong_question_ids": wrong_ids,
+        "graded_by": graded_by,
+    }
 
 
 @router.post("/{practice_set_id}/mark-reviewed")
@@ -1283,46 +1754,14 @@ def mark_reviewed(
         else:
             ps.accuracy = None
     else:
-        # 获取所有关联题目
-        ps_questions = db.query(PracticeSetQuestion).filter(
-            PracticeSetQuestion.practice_set_id == practice_set_id
-        ).all()
+        # 逐题批改：写作答记录 → 判错派生错题 → 同步错题缓存列
+        pairs = load_practice_questions(db, practice_set_id)
+        correct_count, graded = apply_question_results(
+            db, ps, pairs, results_list, graded_by="manual", is_all_correct=is_all_correct
+        )
 
-        correct_count = 0
-        total_count = len(ps_questions)
-
-        for psq in ps_questions:
-            question = db.query(Question).filter(Question.id == psq.question_id).first()
-            if not question:
-                continue
-
-            # 更新复习次数
-            question.review_count = (question.review_count or 0) + 1
-
-            # 根据整体批改或逐题批改更新
-            if is_all_correct == True:
-                # 整体全对
-                psq.is_correct = True
-                question.correct_count = (question.correct_count or 0) + 1
-                correct_count += 1
-            elif results_list:
-                # 逐题批改
-                result = next((r for r in results_list if r.get('question_id') == psq.question_id), None)
-                if result is not None:
-                    psq.is_correct = result.get('is_correct')
-                    if result.get('is_correct'):
-                        question.correct_count = (question.correct_count or 0) + 1
-                        correct_count += 1
-                    else:
-                        question.error_count = (question.error_count or 0) + 1
-
-            question.last_reviewed_at = now
-
-        # 计算并保存整体正确率
-        if total_count > 0:
-            ps.accuracy = round(correct_count / total_count * 100, 1)
-        else:
-            ps.accuracy = None
+        # 计算并保存整体正确率（分母为本次实际批改的题数）
+        ps.accuracy = round(correct_count / graded * 100, 1) if graded else None
 
     db.commit()
 
@@ -1330,7 +1769,7 @@ def mark_reviewed(
     from app.services.motivation import MotivationService
     try:
         service = MotivationService(db)
-        service.trigger_action("review_practice_set", reason="复习练习集")
+        service.trigger_action("review_practice_set", user_id=ps.user_id, reason="复习练习集")
     except Exception:
         pass  # 激励系统不影响主流程
 
@@ -1343,8 +1782,14 @@ class BatchDeleteRequest(BaseModel):
 
 
 @router.post("/batch-delete")
-def batch_delete_practice_sets(data: BatchDeleteRequest, db: Session = Depends(get_db)):
-    """批量删除练习集"""
+def batch_delete_practice_sets(
+    data: BatchDeleteRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """批量删除练习集
+    家长认证：学生（child）不能删除练习，必须家长（admin）操作
+    """
     if not data.ids:
         raise HTTPException(status_code=400, detail="ID列表为空")
 
@@ -1399,8 +1844,14 @@ def batch_download_pdf(data: BatchDeleteRequest, db: Session = Depends(get_db)):
 
 
 @router.delete("/{practice_set_id}", status_code=204)
-def delete_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
-    """删除练习集（软删除）；单词练习会回滚对应单词的复习计数"""
+def delete_practice_set(
+    practice_set_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """删除练习集（软删除）；单词练习会回滚对应单词的复习计数
+    家长认证：学生（child）不能删除练习，必须家长（admin）操作
+    """
     ps = db.query(PracticeSet).filter(
         PracticeSet.id == practice_set_id,
         PracticeSet.deleted == False
@@ -1413,19 +1864,18 @@ def delete_practice_set(practice_set_id: int, db: Session = Depends(get_db)):
     if ps.source_type == "word":
         _revert_word_review_for_practice(ps, db)
 
-    # AI 出题的题目只属于该卷（不出现在错题列表）：删卷时一并软删除，避免残留看不见的练习题
-    if ps.source_type == "ai":
-        qids = [
-            row.question_id
-            for row in db.query(PracticeSetQuestion.question_id)
-            .filter(PracticeSetQuestion.practice_set_id == ps.id)
-            .all()
-        ]
-        if qids:
-            db.query(Question).filter(
-                Question.id.in_(qids),
-                Question.source == "ai",
-            ).update({"deleted": True}, synchronize_session=False)
+    # 练习题目快照随卷软删除；作答记录（practice_attempt）**保留**，统计不因删卷丢失
+    pq_ids = [
+        row.practice_question_id
+        for row in db.query(PracticeSetQuestion.practice_question_id)
+        .filter(PracticeSetQuestion.practice_set_id == ps.id)
+        .all()
+        if row.practice_question_id
+    ]
+    if pq_ids:
+        db.query(PracticeQuestion).filter(
+            PracticeQuestion.id.in_(pq_ids),
+        ).update({"deleted": True}, synchronize_session=False)
 
     ps.deleted = True
     db.commit()
@@ -1481,3 +1931,144 @@ def _revert_word_review_for_practice(ps, db):
             if log:
                 log.deleted = True
 
+
+
+
+# ============================================================ 语法专项练习卷
+# 教程页「语法专项练习」：按语法点出题 → source_type='grammar' + grammar_lesson_id
+class GrammarPracticeRequest(BaseModel):
+    lesson_id: int
+    count: int = 6
+    difficulty: Optional[int] = None
+    question_types: List[str] = []  # 语法题适用：choice/fill/judge/sentence；空=混合
+    show_score: bool = True
+    score_mode: str = "hundred"
+    show_ai_author: bool = False
+
+
+@router.post("/generate-grammar", response_model=PracticeSetResponse, status_code=201)
+def generate_practice_from_grammar(
+    data: GrammarPracticeRequest,
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_required_kid_id),
+):
+    """语法专项练习：按语法点标题出题组卷，卷名突出「语法·XX·专项练习」"""
+    from app.models.grammar import GrammarLesson
+
+    lesson = db.query(GrammarLesson).filter(
+        GrammarLesson.id == data.lesson_id,
+        GrammarLesson.deleted == False,  # noqa: E712
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="语法点不存在")
+
+    VALID_GRAMMAR_TYPES = {"choice", "fill", "judge", "sentence"}
+    question_types = [t for t in data.question_types if t in VALID_GRAMMAR_TYPES]
+    if data.count < 1 or data.count > 20:
+        raise HTTPException(status_code=400, detail="题数需在 1-20 之间")
+    if data.difficulty is not None and (data.difficulty < 1 or data.difficulty > 5):
+        raise HTTPException(status_code=400, detail="难度需在 1-5 之间")
+
+    from app.services.llm import llm_service
+    result = llm_service.generate_questions_by_knowledge(
+        knowledge_points=[lesson.title],
+        subject="英语",
+        grade=lesson.grade,
+        count=data.count,
+        difficulty=data.difficulty,
+        question_types=question_types,
+        question_categories=["basic", "scene"],
+    )
+    if result.get("error"):
+        raise HTTPException(status_code=502, detail=result["error"])
+    ai_questions = result.get("questions", [])
+    if not ai_questions:
+        raise HTTPException(status_code=502, detail="AI 没有生成可用题目")
+
+    TYPE_ORDER = {"choice": 1, "fill": 2, "judge": 3, "sentence": 4}
+    ai_questions.sort(key=lambda q: TYPE_ORDER.get(q.get("question_type") or "", 99))
+
+    new_questions = []
+    for item in ai_questions:
+        pq = practice_flow.snapshot_from_ai_item(
+            db, item,
+            user_id=kid_id,
+            subject_id=lesson.subject_id,
+            grade=lesson.grade,
+            question_types=question_types,
+            question_categories=["basic", "scene"],
+            default_knowledge_point=lesson.title,
+        )
+        if pq is not None:  # 自检拒绝的不合格题不入库
+            new_questions.append(pq)
+
+    practice_set = PracticeSet(
+        name=f"语法·{lesson.title}·专项练习·{len(new_questions)}题"[:200],
+        subject_id=lesson.subject_id,
+        user_id=kid_id,
+        source_type="grammar",
+        question_type="original",
+        total_questions=len(new_questions),
+        show_score=data.show_score,
+        score_mode=data.score_mode,
+        show_ai_author=data.show_ai_author,
+        grammar_lesson_id=lesson.id,
+    )
+    db.add(practice_set)
+    db.flush()
+    for idx, question in enumerate(new_questions):
+        db.add(PracticeSetQuestion(
+            practice_set_id=practice_set.id,
+            practice_question_id=question.id,
+            display_order=idx,
+        ))
+
+    pdf_url = None
+    try:
+        questions_data = [{
+            "question_text": q.parsed_question or q.original_text or "",
+            "difficulty": q.difficulty or 3,
+            "id": q.id,
+            "knowledge_point": q.knowledge_point or "",
+            "error_type": q.error_type or "",
+            "question_type": q.question_type or "",
+        } for q in new_questions]
+        pdf_path = generate_practice_set_pdf(
+            practice_set.name, questions_data,
+            show_score=practice_set.show_score,
+            score_mode=practice_set.score_mode,
+            created_at=practice_set.created_at,
+            subject_name="英语",
+            grade_label=AI_GRADE_LABELS.get(lesson.grade) if lesson.grade else None,
+            show_ai_author=bool(practice_set.show_ai_author),
+        )
+        practice_set.pdf_path = pdf_path
+        pdf_url = f"/uploads/{pdf_path}"
+    except Exception as e:
+        print(f"语法专项 PDF生成失败: {e}")
+
+    db.commit()
+    db.refresh(practice_set)
+
+    return {
+        "id": practice_set.id,
+        "name": practice_set.name,
+        "subject_id": practice_set.subject_id,
+        "subject_name": "英语",
+        "source_type": "grammar",
+        "question_type": "original",
+        "total_questions": len(new_questions),
+        "reviewed": False,
+        "review_count": 0,
+        "pdf_path": practice_set.pdf_path,
+        "created_at": practice_set.created_at,
+        "questions": [],
+        "pdf_url": pdf_url,
+        "show_score": bool(practice_set.show_score),
+        "score_mode": practice_set.score_mode or "hundred",
+        "total_score": sum(compute_question_scores(
+            [{"question_type": q.get("question_type") or ""} for q in questions_data],
+            practice_set.score_mode or "hundred")),
+        "show_ai_author": bool(practice_set.show_ai_author),
+        "grammar_lesson_id": practice_set.grammar_lesson_id,
+    }

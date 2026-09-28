@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, func
 from app.database import Base
 import enum
+from app.utils.timeutil import now_local
 
 
 class OperationType(str, enum.Enum):
@@ -36,7 +37,7 @@ class OperationLog(Base):
     error_message = Column(Text, nullable=True)  # 错误信息
     ip_address = Column(String(50), nullable=True)  # IP地址
     user_agent = Column(Text, nullable=True)  # User-Agent
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
     @property
     def operation_display(self):

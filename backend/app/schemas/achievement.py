@@ -32,6 +32,7 @@ class AchievementUpdate(BaseModel):
 class AchievementResponse(AchievementBase):
     id: int
     is_preset: bool
+    ops_override: bool  # 家长（空间）自定义标记
     created_at: datetime
 
     class Config:

@@ -32,6 +32,7 @@ class WordStats(BaseModel):
     accuracy: float = 0.0
     to_review_count: int = 0
     grade_distribution: dict = {}  # 按年级聚合，不区分学期 {grade: count}
+    dim_stats: list = []  # 单词学习过程五维量化：[{key,label,done,total}] 跟读/认读/读词/说词/听写
 
 
 class AccuracyCurvePoint(BaseModel):

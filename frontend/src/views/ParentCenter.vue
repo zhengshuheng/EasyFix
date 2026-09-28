@@ -143,77 +143,10 @@ function backToKid() {
   background: #f5f7fa;
 }
 
-/* 移动端适配：竖屏窄屏下左侧导航改为顶部横排菜单，内容区占满宽度 */
-@media (max-width: 768px) {
-  .parent-center {
-    flex-direction: column;
-    min-height: auto;
-  }
-
-  .pc-aside {
-    width: 100% !important;
-    border-right: none;
-    border-bottom: 1px solid #eef0f4;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .pc-title {
-    padding: 8px 12px;
-    font-size: 14px;
-  }
-
-  .pc-menu {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: row;
-  }
-
-  .pc-menu :deep(.el-menu-item) {
-    flex: 1 1 0;
-    justify-content: center;
-    padding: 0 4px !important;
-    height: 42px;
-    line-height: 42px;
-  }
-
-  .pc-menu :deep(.el-menu-item.is-active) {
-    border-right: none;
-    border-bottom: 3px solid #409eff;
-    background: transparent;
-  }
-
-  .pc-menu :deep(.el-menu-item .el-icon) {
-    margin-right: 4px;
-  }
-
-  .pc-footer {
-    display: none;
-  }
-
-  .pc-content {
-    padding: 10px;
-  }
-
-  .pc-topbar {
-    padding: 8px 10px;
-    margin-bottom: 10px;
-  }
-
-  .pc-topbar-title {
-    font-size: 14px;
-  }
-
-  .pc-topbar .el-button {
-    padding: 6px 12px;
-  }
-}
-
-/* ==================== 移动端（≤768px）：左侧导航转顶部横条 ====================
- * 桌面 190px 固定侧栏在竖屏占半屏；移动端改为：顶部一行（标题 + 横向可滑菜单），
- * 内容区占满剩余高度。菜单项用 CSS 把 el-menu 的 vertical（column）改成 row 横排，
+/* ==================== 移动端（≤768px）：左侧导航转顶部菜单 ====================
+ * 桌面 190px 固定侧栏在竖屏占半屏；移动端改为：标题独占一行，菜单在其下方横排；
+ * 菜单项 flex-wrap 自动换行 + 等宽拉伸（窄屏排成 2 行），无需左右滚动。
+ * 菜单项用 CSS 把 el-menu 的 vertical（column）改成 row 横排，
  * 不依赖 el-menu 的 horizontal 渲染模式，避免动模板结构。 */
 @media screen and (max-width: 768px) {
   .parent-center {
@@ -223,8 +156,8 @@ function backToKid() {
 
   .pc-aside {
     width: 100% !important; /* 覆盖 el-aside 内联 width="190px" */
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     border-right: none;
     border-bottom: 1px solid #eef0f4;
     padding: 0;
@@ -232,25 +165,32 @@ function backToKid() {
   }
 
   .pc-title {
-    padding: 10px 10px;
+    padding: 10px 12px 4px;
     font-size: 14px;
     white-space: nowrap;
   }
 
-  /* el-menu 默认 vertical 是 flex column → 改为 row 横排 + 横向可滑 */
+  /* el-menu 默认 vertical 是 block（li 纵向）；移动端改为 row 横排 + 自动换行 */
   .pc-menu {
+    display: flex;
     flex-direction: row;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    overflow-x: auto; /* 兜底：极端情况下也不溢出 */
     -webkit-overflow-scrolling: touch;
     flex: 1;
     border-bottom: none;
   }
 
   .pc-menu .el-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     height: 42px;
     line-height: 42px;
-    flex: 0 0 auto;
-    padding: 0 12px;
+    flex: 1 1 auto;
+    min-width: max-content; /* 文字不被压缩；一行放不下才换行（兜底） */
+    padding: 0 8px;
+    font-size: 13px;
     white-space: nowrap;
     width: auto !important; /* 覆盖 el-menu--vertical 对 item 的 width:100% */
   }
@@ -258,6 +198,14 @@ function backToKid() {
   .pc-menu .el-menu-item.is-active {
     border-right: none;
     border-bottom: 3px solid #409eff;
+  }
+
+  /* 图标收紧（覆盖 EP 默认 width:24px / font-size:18px / margin-right:5px），
+   * 保证 4 个菜单项在 375/360px 屏上单行放下（≈88px × 4 = 352px） */
+  .pc-menu .el-menu-item .el-icon {
+    width: 18px;
+    font-size: 15px;
+    margin-right: 2px;
   }
 
   /* 桌面版底部「返回小孩端」由顶栏「返回学习空间」按钮承担，移动端隐藏避免重复 */
@@ -278,6 +226,12 @@ function backToKid() {
 
   .pc-topbar-title {
     font-size: 14px;
+  }
+
+  .pc-topbar .el-button {
+    padding: 6px 12px;
+    height: 34px;
+    font-size: 13px;
   }
 }
 </style>

@@ -123,11 +123,16 @@ class ReviewLogResponse(BaseModel):
 
 
 class WordReviewSubmit(BaseModel):
-    """提交复习结果"""
+    """提交复习结果
+
+    注意：is_correct 曾有必填校验——前端未作答题目的 q.correct 为 undefined，
+    JSON.stringify 会把该字段整条丢弃，导致 422 且整批学习记录丢失。
+    这里给默认值兜底（缺省按错误计），从上游杜绝整批失败。
+    """
     word_id: int
-    is_correct: bool
+    is_correct: bool = False
     user_answer: Optional[str] = None
-    review_type: int = Field(..., description="复习题型 1=默写, 2=选择")
+    review_type: int = Field(1, description="复习题型 1=默写, 2=选择")
 
 
 class ReviewSessionSubmit(BaseModel):

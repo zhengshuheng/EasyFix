@@ -29,7 +29,7 @@ npm run build     # 生产构建
 
 ### 数据库
 
-- 默认使用 SQLite (`backend/easyfix.db`)
+- 默认使用 SQLite (`backend/easyfix_main.db` 主库；各空间库在 `backend/trial_data/tenants/`)
 - 可通过 `backend/.env` 配置切换到 MySQL (设置 `DB_TYPE=mysql`)
 - 表结构通过 `Base.metadata.create_all()` 在 `main.py` 中自动创建
 

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class ErrorBook(Base):
@@ -14,8 +15,8 @@ class ErrorBook(Base):
     cover_image = Column(String(500), nullable=True)  # 封面图片路径（用于对比）
     original_images = Column(Text, nullable=True)   # JSON数组，存储多张原图路径
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local, nullable=True)
 
     # Relationships
     subject = relationship("Subject", back_populates="error_books")

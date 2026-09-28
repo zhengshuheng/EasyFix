@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "set \"VITE_APP_BASE=/app/\" && vite build",
+    "build:trial": "vite build --config vite.trial.config.js",
+    "build:ops": "vite build --config vite.ops.config.js",
     "preview": "vite preview"
   },
   "dependencies": {

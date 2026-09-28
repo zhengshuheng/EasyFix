@@ -7,6 +7,7 @@ from typing import Optional
 
 from app.database import get_db
 from app.models import ReadingPassage, ReadingQuestion
+from app.models.user import User
 from app.schemas.reading import (
     ReadingPassageCreate,
     ReadingPassageUpdate,
@@ -15,6 +16,7 @@ from app.schemas.reading import (
     ReadingQuestionCreate,
     GenerateReadingRequest,
 )
+from app.utils.auth import require_admin
 
 router = APIRouter(prefix="/api/readings", tags=["阅读理解"])
 
@@ -198,8 +200,14 @@ def update_reading(reading_id: int, data: ReadingPassageUpdate, db: Session = De
 
 
 @router.delete("/{reading_id}", status_code=204)
-def delete_reading(reading_id: int, db: Session = Depends(get_db)):
-    """软删除短文"""
+def delete_reading(
+    reading_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """删除短文（软删除）
+    家长认证：学生（child）不能删除短文，必须家长（admin）操作
+    """
     passage = db.query(ReadingPassage).filter(
         ReadingPassage.id == reading_id,
         ReadingPassage.deleted == False

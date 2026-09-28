@@ -1,0 +1,7 @@
+# EasyFix HTTPS 参考模板
+# deploy.bat 填写 DOMAIN 时会自动生成等价内容，本文件仅供手动维护 Caddy 时参考。
+# 使用前：将 easyfix.example.com 替换为真实域名，并确保 A 记录已解析到服务器公网 IP。
+# Caddy 会自动申请并续期 Let's Encrypt 证书（需 80/443 端口可达）。
+easyfix.example.com {
+    reverse_proxy easyfix:8012
+}

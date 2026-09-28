@@ -1,10 +1,14 @@
 import os
-import base64
 import json
+import base64
 from typing import Optional
-from app.config import get_settings
 
-settings = get_settings()
+# 默认 OCR 提示词：整页文字识别（保持排版）
+DEFAULT_OCR_PROMPT = (
+    "请识别图片中的所有文字，保持原有格式和排版。"
+    "如果图片中有数学公式、符号等，请准确识别并用标准格式表示。"
+    "直接输出识别结果，不需要其他说明。"
+)
 
 
 def load_config() -> dict:
@@ -17,40 +21,43 @@ def load_config() -> dict:
 
 
 class MultimodalOCRService:
-    """多模态模型OCR服务 - 支持GPT-4V、Claude Vision、Qwen-VL等"""
+    """多模态模型OCR服务（订阅制改造）
+
+    凭据统一走平台 AI 网关（运营后台配置 Key/BaseURL），用户侧只保存模型名
+    （config/ocr.json 的 multimodal_model）。网关 provider 决定协议：
+      - openai    → OpenAI 兼容协议（chat.completions + image_url data URL），
+                    适用于 OpenAI / Qwen-VL（DashScope 兼容模式）等
+      - anthropic → Anthropic Messages API（image block）
+    """
 
     def __init__(self):
         self._config = load_config()
-        # 优先使用config文件中的配置，否则用环境变量
-        self.provider = self._config.get("multimodal_provider", "none")
         self._available = self._check_available()
 
-    def _get_config(self, key: str, default: str = "") -> str:
-        """获取配置，优先从config文件，否则从环境变量"""
-        return self._config.get(key, getattr(settings, key, default))
+    def _gateway(self) -> dict:
+        """读取 AI 网关配置（实时生效）：按用户选择的视觉厂商（ocr.json vendor）解析，
+        未选厂商时走默认厂商/旧单配置"""
+        from app.services.ai_gateway import resolve_gateway_config
+        vendor = (self._config.get("vendor") or "").strip()
+        return resolve_gateway_config(vendor or None)
 
     def _check_available(self) -> bool:
-        if self.provider == "openai":
-            api_key = self._get_config("openai_api_key", settings.OPENAI_API_KEY)
-            return bool(api_key)
-        if self.provider == "claude":
-            api_key = self._get_config("anthropic_api_key", settings.ANTHROPIC_API_KEY)
-            return bool(api_key)
-        if self.provider == "qwen":
-            api_key = self._get_config("qwen_api_key", settings.QWEN_API_KEY)
-            return bool(api_key)
-        return False
+        # 网关已配置 Key 即可用（用户不再自行配置 Key）
+        return bool(self._gateway().get("api_key"))
 
     @property
     def is_available(self) -> bool:
         # 每次检查时重新加载配置
         self._config = load_config()
-        self.provider = self._config.get("multimodal_provider", "none")
         return self._check_available()
 
-    def recognize(self, image_path: str) -> dict:
+    def recognize(self, image_path: str, prompt: Optional[str] = None) -> dict:
         """
         使用多模态模型识别图片文字
+
+        Args:
+            image_path: 本地图片路径
+            prompt: 自定义提示词（用于结构化抽取等场景），默认整页文字识别
 
         Returns:
             dict: {
@@ -62,44 +69,59 @@ class MultimodalOCRService:
         """
         # 重新加载配置
         self._config = load_config()
-        self.provider = self._config.get("multimodal_provider", "none")
-        self._check_available()
+        gateway = self._gateway()
 
-        if not self._available:
+        if not gateway.get("api_key"):
             return {
                 "full_text": "",
                 "blocks": [],
-                "warning": f"Multimodal OCR provider '{self.provider}' not configured. Please set API key in settings.",
-                "provider": self.provider,
+                "warning": "Multimodal OCR unavailable: AI 网关未配置 Key，请联系运营在后台配置 AI 网关。",
+                "provider": "multimodal",
+                "model": "",
             }
 
+        # 模型：必须来自该厂商「视觉模型」列表；vision_models 留空 = 厂商不支持 OCR（纯文本厂商如 DeepSeek）
+        vision = gateway.get("vision_models") or []
+        model = (self._config.get("multimodal_model") or "").strip()
+        if not vision:
+            return {
+                "full_text": "",
+                "blocks": [],
+                "warning": "当前厂商未配置视觉模型，不支持多模态 OCR。请联系运营在「AI 模型市场」为该厂商填写视觉模型，或改选其他视觉厂商。",
+                "provider": "multimodal",
+                "model": model,
+            }
+        if not model:
+            model = vision[0]
+        elif model not in vision:
+            return {
+                "full_text": "",
+                "blocks": [],
+                "warning": f"所选模型「{model}」不在该厂商视觉模型列表（{'、'.join(vision)}），请在家长中心重新选择。",
+                "provider": "multimodal",
+                "model": model,
+            }
+        provider = gateway.get("provider", "openai")
+
         try:
-            if self.provider == "openai":
-                return self._recognize_openai(image_path)
-            elif self.provider == "claude":
-                return self._recognize_claude(image_path)
-            elif self.provider == "qwen":
-                return self._recognize_qwen(image_path)
-            else:
-                return {"full_text": "", "blocks": [], "error": "Unknown provider"}
+            if provider == "anthropic":
+                return self._recognize_anthropic(image_path, prompt, gateway, model)
+            return self._recognize_openai_compat(image_path, prompt, gateway, model)
         except Exception as e:
-            return {"full_text": "", "blocks": [], "error": str(e), "provider": self.provider}
+            return {"full_text": "", "blocks": [], "error": str(e), "provider": "multimodal", "model": model}
 
     def _read_image_base64(self, image_path: str) -> str:
         with open(image_path, 'rb') as f:
             return base64.b64encode(f.read()).decode()
 
-    def _recognize_openai(self, image_path: str) -> dict:
-        """使用OpenAI GPT-4V/4o进行OCR"""
+    def _recognize_openai_compat(self, image_path: str, prompt: Optional[str], gateway: dict, model: str) -> dict:
+        """OpenAI 兼容协议（OpenAI / Qwen-VL 等）"""
+        prompt = prompt or DEFAULT_OCR_PROMPT
         from openai import OpenAI
 
-        api_key = self._get_config("openai_api_key", settings.OPENAI_API_KEY)
-        base_url = self._get_config("base_url", settings.OPENAI_BASE_URL)
-        model = self._get_config("openai_vision_model", settings.OPENAI_VISION_MODEL)
-
         client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
+            api_key=gateway["api_key"],
+            base_url=gateway.get("base_url") or None,
         )
 
         base64_image = self._read_image_base64(image_path)
@@ -112,7 +134,7 @@ class MultimodalOCRService:
                     "content": [
                         {
                             "type": "text",
-                            "text": "请识别图片中的所有文字，保持原有格式和排版。如果图片中有数学公式、符号等，请准确识别并用标准格式表示。直接输出识别结果，不需要其他说明。"
+                            "text": prompt
                         },
                         {
                             "type": "image_url",
@@ -130,20 +152,19 @@ class MultimodalOCRService:
         return {
             "full_text": full_text,
             "blocks": [{"text": line.strip()} for line in full_text.split('\n') if line.strip()],
-            "provider": "openai",
+            "provider": "multimodal",
             "model": model,
         }
 
-    def _recognize_claude(self, image_path: str) -> dict:
-        """使用Anthropic Claude Vision进行OCR"""
+    def _recognize_anthropic(self, image_path: str, prompt: Optional[str], gateway: dict, model: str) -> dict:
+        """Anthropic Messages API（Claude Vision）"""
+        prompt = prompt or DEFAULT_OCR_PROMPT
         import anthropic
 
-        api_key = self._get_config("anthropic_api_key", settings.ANTHROPIC_API_KEY)
-        model = self._get_config("claude_vision_model", settings.CLAUDE_VISION_MODEL)
-
-        client = anthropic.Anthropic(
-            api_key=api_key,
-        )
+        client_kwargs = {"api_key": gateway["api_key"]}
+        if gateway.get("base_url"):
+            client_kwargs["base_url"] = gateway["base_url"]
+        client = anthropic.Anthropic(**client_kwargs)
 
         with open(image_path, 'rb') as f:
             image_data = base64.b64encode(f.read()).decode()
@@ -165,7 +186,7 @@ class MultimodalOCRService:
                         },
                         {
                             "type": "text",
-                            "text": "请识别图片中的所有文字，保持原有格式和排版。如果图片中有数学公式、符号等，请准确识别并用标准格式表示。直接输出识别结果，不需要其他说明。"
+                            "text": prompt
                         }
                     ]
                 }
@@ -176,51 +197,7 @@ class MultimodalOCRService:
         return {
             "full_text": full_text,
             "blocks": [{"text": line.strip()} for line in full_text.split('\n') if line.strip()],
-            "provider": "claude",
-            "model": model,
-        }
-
-    def _recognize_qwen(self, image_path: str) -> dict:
-        """使用阿里Qwen-VL进行OCR"""
-        from openai import OpenAI
-
-        api_key = self._get_config("qwen_api_key", settings.QWEN_API_KEY)
-        model = self._get_config("qwen_vision_model", settings.QWEN_VISION_MODEL)
-
-        client = OpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-
-        base64_image = self._read_image_base64(image_path)
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": "请识别图片中的所有文字，保持原有格式和排版。如果图片中有数学公式、符号等，请准确识别并用标准格式表示。直接输出识别结果，不需要其他说明。"
-                        }
-                    ]
-                }
-            ],
-            max_tokens=4096,
-        )
-
-        full_text = response.choices[0].message.content
-        return {
-            "full_text": full_text,
-            "blocks": [{"text": line.strip()} for line in full_text.split('\n') if line.strip()],
-            "provider": "qwen",
+            "provider": "multimodal",
             "model": model,
         }
 

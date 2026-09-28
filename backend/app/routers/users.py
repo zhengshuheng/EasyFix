@@ -352,7 +352,10 @@ def delete_user(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """删除用户；保护：不能删自己、不能删最后一个家长、不能删主账号（官网注册家长）"""
+    """删除用户；仅主账号可执行。保护：不能删自己、不能删最后一个家长、不能删主账号（官网注册家长）"""
+    # 仅主账号（is_owner）允许删除小孩/账号；辅助家长无删除权限
+    if not admin.is_owner:
+        raise HTTPException(status_code=403, detail="仅主账号可删除账号/小孩，辅助家长无删除权限")
     if user_id == admin.id:
         raise HTTPException(status_code=400, detail="不能删除当前登录账号")
     user = db.get(User, user_id)

@@ -21,4 +21,10 @@ export const usersApi = {
   remove(id) {
     return api.delete(`/users/${id}`)
   },
+  getTextbooks(id) {
+    return api.get(`/users/${id}/textbooks`)
+  },
+  putTextbooks(id, textbooks) {
+    return api.put(`/users/${id}/textbooks`, { textbooks })
+  },
 }

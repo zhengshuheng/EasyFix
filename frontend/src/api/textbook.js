@@ -18,13 +18,17 @@ export const textbookApi = {
   tasks() {
     return api.get('/textbook/tasks')
   },
-  // 扫描本地教材文件夹（手动放置兜底）
-  scanLocal() {
-    return api.get('/textbook/scan')
+  // 扫描本地教材文件夹（手动放置兜底；params 传 version/subject 时只扫该教材目录）
+  scanLocal(params) {
+    return api.get('/textbook/scan', { params })
   },
   // 打开本地教材文件夹
   openFolder() {
     return api.get('/textbook/open-folder')
+  },
+  // 按当前选择返回/创建手动放置文件夹（params: version/subject/grade/semester；open=true 顺带打开资源管理器）
+  manualDir(params) {
+    return api.get('/textbook/manual-dir', { params })
   },
   // 在线知识大纲目录（ChinaStudyFree，44 本）
   ctsfCatalog() {
@@ -33,6 +37,18 @@ export const textbookApi = {
   // 从在线大纲导入（免下载/免OCR）
   ctsfImport(data) {
     return api.post('/textbook/ctsf/import', data)
+  },
+  // 导入入口配置（backend/textbook_import_config.json）：在线大纲/PDF下载/拍照 三个开关
+  importConfig() {
+    return api.get('/textbook/import-config')
+  },
+  // 拍照教材同步：上传纸质教材照片（FormData: subject/grade/semester + files[]）→ OCR → AI 提取知识点
+  photoImport(data) {
+    return api.post('/textbook/photo-import', data)
+  },
+  // 自备教材 PDF 同步：上传用户自己持有的教材 PDF（FormData: subject/grade/semester/version + file）
+  userPdfImport(data) {
+    return api.post('/textbook/user-pdf-import', data)
   },
   // ---- 教材知识库（本地 PDF 在线预览） ----
   // 本地已下载教材书目

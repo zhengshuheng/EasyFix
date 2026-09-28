@@ -4,24 +4,14 @@
       <div class="hello-badge">✨ 开始今天的学习之旅</div>
       <h1><span class="wave">👋</span> 今天谁学习？</h1>
       <p>选择一个名字，进入 ta 的学习空间</p>
-    </div>
+      <p v-if="ownerName" class="owner-name">🏠 欢迎来到 {{ ownerName }} 的家庭空间</p>
 
-    <!-- 空间预选：进入前选定学科/年级，点击小孩即直达指定学科空间 -->
-    <div class="space-pick">
-      <div class="pick-title">🎯 快速进入指定空间</div>
-      <div class="pick-row">
-        <span class="pick-label"><el-icon class="pick-icon"><Collection /></el-icon>学科</span>
-        <el-select v-model="pickSubjectId" placeholder="全部学科" clearable style="width: 170px">
-          <el-option label="全部学科" value="" />
-          <el-option v-for="s in subjectStore.subjects" :key="s.id" :label="s.name" :value="String(s.id)" />
-        </el-select>
-        <span class="pick-label"><el-icon class="pick-icon"><Histogram /></el-icon>年级</span>
-        <el-select v-model="pickGrade" placeholder="全部年级" clearable style="width: 150px">
-          <el-option label="全部年级" value="" />
-          <el-option v-for="g in gradeOptions" :key="g.value" :label="g.label" :value="String(g.value)" />
-        </el-select>
+      <!-- 空间订阅状态条：正式版（含调试空间 easyfix_demo）不显示剩余天数 -->
+      <div v-if="trialStore.is_pro" class="trial-status pro">✅ 正式版，不受体验期限制</div>
+      <div v-else-if="trialStore.days_left !== null && !trialStore.expired" class="trial-status">
+        ⏳ 免费体验剩余 {{ trialStore.days_left }} 天
       </div>
-      <div class="pick-tip">选择后点小孩直接进入对应空间（默认全部学科 / 全部年级）</div>
+      <div v-else-if="trialStore.expired" class="trial-status expired">⚠️ 体验期已结束，请前往官网续费</div>
     </div>
 
     <div v-loading="loading" class="kid-grid">
@@ -36,6 +26,7 @@
           {{ k.display_name?.slice(0, 1) || '?' }}
         </div>
         <div class="name">{{ k.display_name }}</div>
+        <div v-if="k.current_grade" class="grade-badge">{{ gradeName(k.current_grade) }}</div>
       </div>
 
       <!-- 首次进入：还没有任何小孩时提供创建入口（宽松模式可直接创建） -->
@@ -45,13 +36,21 @@
       </div>
     </div>
 
-    <p v-if="kids.length > 0" class="add-hint">
-      ✏️ 需要添加更多小孩？请在「🔒 家长中心」中管理
-    </p>
-
+    <!-- 家长入口：卡片区下方居中的低调设置按钮（家长可见、小孩不抢眼） -->
     <div class="parent-entry">
-      <el-button link type="primary" class="parent-btn" @click="parentLockVisible = true">
-        🔒 家长中心
+      <el-tooltip content="管理小孩、题库、学习报告等" placement="top">
+        <el-button class="parent-gear-btn" plain @click="parentLockVisible = true">
+          <el-icon :size="15" style="margin-right: 4px; vertical-align: -2px;"><Setting /></el-icon>
+          家长设置
+        </el-button>
+      </el-tooltip>
+      <el-button class="guide-btn" text @click="guideVisible = true">
+        <el-icon :size="14" style="margin-right: 4px; vertical-align: -2px;"><Reading /></el-icon>
+        使用指南
+      </el-button>
+      <el-button class="logout-btn" text @click="logout">
+        <el-icon :size="14" style="margin-right: 4px; vertical-align: -2px;"><SwitchButton /></el-icon>
+        退出
       </el-button>
     </div>
 
@@ -70,6 +69,8 @@
 
     <!-- 家长中心（密码验证后进入管理） -->
     <ParentLockDialog v-model="parentLockVisible" @success="goParentCenter" />
+    <!-- 使用指南 -->
+    <UsageGuide v-model="guideVisible" />
   </div>
 </template>
 
@@ -80,11 +81,37 @@ import { ElMessage } from 'element-plus'
 import { usersApi } from '@/api/users'
 import { useKidStore } from '@/stores/kid'
 import { useSubjectStore } from '@/stores/subject'
+import { useAuthStore } from '@/stores/auth'
+import { useTrialStore } from '@/stores/trial'
 import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import UsageGuide from '@/components/UsageGuide.vue'
 
 const router = useRouter()
 const kidStore = useKidStore()
 const subjectStore = useSubjectStore()
+const guideVisible = ref(false)
+const authStore = useAuthStore()
+const trialStore = useTrialStore()
+
+// 家庭空间归属：官网账号用户名（优先实时查询 /api/trial/status；localStorage 兜底）
+// 注意：dist-trial 空间内 401 处理会清除官网 easyfix_user，不能依赖它
+const ownerName = ref('')
+try {
+  const saved = JSON.parse(localStorage.getItem('easyfix_user') || 'null')
+  if (saved && saved.username) ownerName.value = saved.username
+} catch { /* 忽略解析错误 */ }
+
+async function loadOwnerName() {
+  try {
+    const key = localStorage.getItem('easyfix_trial_key')
+    if (!key) return
+    const res = await fetch('/api/trial/status', { headers: { 'X-Trial-Key': key } })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.space && data.space.username) ownerName.value = data.space.username
+    }
+  } catch { /* 查询失败保持 localStorage 兜底值 */ }
+}
 
 const kids = ref([])
 const loading = ref(false)
@@ -93,31 +120,15 @@ const createVisible = ref(false)
 const creating = ref(false)
 const createForm = reactive({ display_name: '' })
 
-const parentLockVisible = ref(false)
-
-// 空间预选（'' = 全部学科 / 全部年级）
-const pickSubjectId = ref('')
-const pickGrade = ref('')
-
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 },
-]
-
-function applySpace() {
-  subjectStore.select(pickSubjectId.value === '' ? null : Number(pickSubjectId.value))
-  subjectStore.setGrade(pickGrade.value === '' ? null : Number(pickGrade.value))
+// 年级文案：1~6 年级 / 初一~初三 / 高一~高三
+function gradeName(g) {
+  const n = Number(g) || 1
+  if (n <= 6) return ['一', '二', '三', '四', '五', '六'][n - 1] + '年级'
+  if (n <= 9) return '初一'.slice(0, 0) + '初' + ['一', '二', '三'][n - 7]
+  return '高' + ['一', '二', '三'][n - 10]
 }
+
+const parentLockVisible = ref(false)
 
 // 头像渐变配色（比纯色更活泼）
 const AVATAR_GRADIENTS = [
@@ -141,6 +152,15 @@ async function load() {
   try {
     const { data } = await usersApi.listKids()
     kids.value = (data.kids || []).filter((k) => k.enabled)
+    // 首次使用引导：新注册空间（sessionStorage 标记）或空间还没有小孩且未完成/跳过引导 → 进入初始化引导
+    // 完成标记按空间隔离（easyfix_onboarded_{key}），避免同浏览器多空间串扰
+    const trialKey = localStorage.getItem('easyfix_trial_key') || ''
+    const onboarded = localStorage.getItem('easyfix_onboarded_' + trialKey) === '1'
+    const newSpace = sessionStorage.getItem('easyfix_new_space')
+    if ((newSpace && !onboarded) || (kids.value.length === 0 && !onboarded)) {
+      router.push('/onboarding')
+      return
+    }
   } catch (e) {
     ElMessage.error('加载失败，请确认服务已启动')
   } finally {
@@ -150,13 +170,10 @@ async function load() {
 
 function enter(kid) {
   kidStore.select(kid)
-  applySpace()
-  // 选了具体学科 → 直达该学科默认功能页（错题）；全部学科 → 首页概览
-  if (subjectStore.activeSubjectId !== null) {
-    router.push('/questions')
-  } else {
-    router.push('/home')
-  }
+  // 点姓名自动进入当前阶段所属年级（由入学日期推断；未设置则默认一年级）
+  subjectStore.select(null)
+  subjectStore.applyKidDefaultGrade(kid)
+  router.push('/home')
 }
 
 function openCreate() {
@@ -181,14 +198,12 @@ async function handleCreate() {
     const { data } = await usersApi.create(payload)
     const newKid = data.user
     kidStore.select(newKid)
-    applySpace()
+    // 新建小孩无入学日期 → 默认一年级
+    subjectStore.select(null)
+    subjectStore.applyKidDefaultGrade(newKid)
     ElMessage.success('创建成功，开始学习吧！')
     createVisible.value = false
-    if (subjectStore.activeSubjectId !== null) {
-      router.push('/questions')
-    } else {
-      router.push('/home')
-    }
+    router.push('/home')
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '创建失败')
   } finally {
@@ -197,15 +212,25 @@ async function handleCreate() {
 }
 
 function goParentCenter() {
+  // 从选人页进入：记录返回选人页
+  sessionStorage.setItem('easyfix_return_path', '/')
   router.push('/parent-center')
+}
+
+function logout() {
+  authStore.logout()
+  localStorage.removeItem('easyfix_trial_key')
+  localStorage.removeItem('easyfix_kid')
+  localStorage.removeItem('easyfix_account_token') // 官网账号 token 一并删除，否则官网面板残留"已登录"
+  localStorage.removeItem('easyfix_user')
+  // 退出登录 → 官网登录表单（浏览官网内容用顶部「官网」按钮）
+  window.location.href = '/site/#trial?tab=login'
 }
 
 onMounted(() => {
   load()
+  loadOwnerName()
   subjectStore.loadSubjects()
-  // 预选值默认 = 当前空间（保留上次选择）
-  pickSubjectId.value = subjectStore.activeSubjectId !== null ? String(subjectStore.activeSubjectId) : ''
-  pickGrade.value = subjectStore.activeGrade !== null ? String(subjectStore.activeGrade) : ''
 })
 </script>
 
@@ -252,49 +277,40 @@ onMounted(() => {
   font-size: 15px;
 }
 
-.space-pick {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 30px;
-  padding: 16px 26px 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 8px 28px rgba(64, 111, 222, 0.12);
-  backdrop-filter: blur(6px);
-}
-
-.pick-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #4a5c8a;
-}
-
-.pick-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.pick-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  color: #606266;
-  font-weight: 500;
-}
-
-.pick-icon {
+.owner-name {
+  display: inline-block;
+  margin: -18px 0 26px;
   color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.22);
+  border-radius: 999px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.pick-tip {
-  font-size: 12px;
-  color: #a0a8bf;
+.trial-status {
+  display: inline-block;
+  margin: 0 0 26px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b8821c;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 999px;
+  padding: 5px 16px;
+}
+
+.trial-status.pro {
+  color: #27a05c;
+  background: rgba(39, 160, 92, 0.08);
+  border-color: rgba(39, 160, 92, 0.3);
+}
+
+.trial-status.expired {
+  color: #e8566d;
+  background: rgba(232, 86, 109, 0.08);
+  border-color: rgba(232, 86, 109, 0.3);
 }
 
 .kid-grid {
@@ -350,6 +366,16 @@ onMounted(() => {
   color: #303133;
 }
 
+.kid-card .grade-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #409eff;
+  background: #ecf5ff;
+  padding: 2px 12px;
+  border-radius: 12px;
+}
+
 .add-card {
   border: 2px dashed #c6cbe0;
   background: rgba(255, 255, 255, 0.6);
@@ -369,21 +395,54 @@ onMounted(() => {
 }
 
 .parent-entry {
-  margin-top: 40px;
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
-.parent-btn {
-  font-size: 14px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 2px 10px rgba(36, 60, 120, 0.08);
-}
-
-.add-hint {
-  margin-top: 26px;
-  color: #909399;
+/* 退出登录：低调灰字，位于家长设置旁 */
+.logout-btn {
+  color: #a0a8ba;
   font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+.logout-btn:hover {
+  color: #e11d48;
+  background: rgba(225, 29, 72, 0.06);
+}
+
+/* 使用指南：与退出登录同色系低调按钮 */
+.guide-btn {
+  color: #8a94b5;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+.guide-btn:hover {
+  color: #4f7df3;
+  background: rgba(79, 125, 243, 0.08);
+}
+
+/* 家长设置按钮：低调灰色系（不抢小孩卡片风头），但位置明确家长一眼可见 */
+.parent-gear-btn {
+  color: #7a86a8;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed #c6cbe0;
+  border-radius: 999px;
+  padding: 9px 22px;
+  font-size: 14px;
+  transition: all 0.25s ease;
+}
+
+.parent-gear-btn:hover {
+  color: #409eff;
+  background: #fff;
+  border-color: #409eff;
+  border-style: solid;
+  box-shadow: 0 4px 14px rgba(64, 158, 255, 0.2);
 }
 
 .lock-tip {

@@ -1,5 +1,47 @@
 <template>
   <div class="stats-page">
+    <!-- 年级快速切换（与顶栏联动，指定年级后隐藏；合并自原首页） -->
+    <section v-if="subjectStore.isAllGrade" class="grade-switch-bar">
+      <div class="grade-switch-label">年级</div>
+      <div class="grade-switch-chips">
+        <button
+          class="grade-switch-chip"
+          :class="{ active: selectedGrade === null }"
+          @click="onGradeChange(null)"
+        >
+          全部
+        </button>
+        <button
+          v-for="g in gradeOptions"
+          :key="g.value"
+          class="grade-switch-chip"
+          :class="{ active: selectedGrade === g.value }"
+          @click="onGradeChange(g.value)"
+        >
+          {{ g.label }}
+          <span v-if="kidGrade && g.value <= kidGrade" class="chip-badge" :class="{ 'is-current': g.value === kidGrade }">
+            {{ g.value === kidGrade ? '当前' : '已学' }}
+          </span>
+        </button>
+      </div>
+      <div class="grade-switch-note">不区分上下学期 · 切换后整页数据联动（与顶部空间选择一致）</div>
+    </section>
+
+    <!-- 学习概览（昨日 vs 今日，合并自原首页） -->
+    <el-row :gutter="16" class="overview-cards">
+      <el-col :xs="24" :sm="12" v-for="col in overviewCols" :key="col.title">
+        <div class="overview-panel">
+          <div class="overview-panel-title">{{ col.title }}</div>
+          <div class="overview-panel-list">
+            <div v-for="item in col.items" :key="item.label" class="overview-panel-item">
+              <span class="op-dot" :style="{ background: item.color }"></span>
+              <span>{{ item.text }}</span>
+            </div>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
     <!-- 顶部总览卡片 -->
     <el-row :gutter="16" class="overview-cards">
       <el-col :xs="12" :sm="8" :md="4" v-for="card in overviewCards" :key="card.label">
@@ -38,6 +80,16 @@
         <el-card class="chart-card">
           <template #header><span class="card-title">单词记忆阶段</span></template>
           <v-chart :option="wordPhaseOption" autoresize style="height: 280px" />
+          <!-- 单词学习过程五维进度（合并自原首页） -->
+          <div v-if="showWordStats && wordDimStats.length" class="word-dim-list">
+            <div v-for="d in wordDimStats" :key="d.key" class="word-dim-item">
+              <div class="wd-top">
+                <span class="wd-label">{{ d.label }}</span>
+                <span class="wd-num">{{ d.done }} / {{ d.total }}</span>
+              </div>
+              <el-progress :percentage="pct(d)" :stroke-width="8" :color="dimColor(d.key)" />
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -52,8 +104,8 @@
       </el-col>
       <el-col :xs="24" :md="14">
         <el-card class="chart-card">
-          <template #header><span class="card-title">复习正确率趋势</span></template>
-          <v-chart :option="trendOption" autoresize style="height: 280px" />
+          <template #header><span class="card-title">正确率趋势（单词 + 错题）</span></template>
+          <v-chart :option="dualAccuracyCurveOption" autoresize style="height: 280px" />
         </el-card>
       </el-col>
     </el-row>
@@ -101,9 +153,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { statsApi } from '@/api/question'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { statsApi, statsOverviewApi } from '@/api/question'
 import { wordApi } from '@/api/word'
+import { motivationApi } from '@/api/motivation'
 import { useSubjectStore } from '@/stores/subject'
+import { useKidStore } from '@/stores/kid'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -119,10 +175,81 @@ use([
   GridComponent, RadarComponent, MarkLineComponent
 ])
 
+const router = useRouter()
+const subjectStore = useSubjectStore()
+const kidStore = useKidStore()
+
 const stats = ref({})
 const kpStats = ref([])
 const wordMastery = ref({ new_words: 0, learning_words: 0, mastered_words: 0 })
-const questionTrend = ref([])
+
+// ========== 合并自原首页：单词指标只在「全部」或「英语」空间展示 ==========
+const showWordStats = computed(() => subjectStore.isAll || subjectStore.isEnglish)
+const wordDimStats = computed(() => stats.value.word_stats?.dim_stats || [])
+const pct = (d) => (d.total ? Math.round((d.done / d.total) * 100) : 0)
+const dimColor = (key) => {
+  const map = { listen: '#409eff', recognize: '#67c23a', read: '#e6a23c', speak: '#9b59b6', write: '#f56c6c' }
+  return map[key] || '#409eff'
+}
+
+// ========== 合并自原首页：学习概览（昨日 vs 今日） ==========
+const learningOverview = ref({
+  yesterday_word_review_count: 0,
+  yesterday_question_review_count: 0,
+  yesterday_word_accuracy: 0,
+  yesterday_question_accuracy: 0,
+  today_word_review_count: 0,
+  today_question_review_count: 0,
+  today_word_accuracy: 0,
+  today_question_accuracy: 0,
+})
+const overviewCols = computed(() => {
+  const ov = learningOverview.value
+  const cols = [
+    { title: '昨日', items: [
+      { label: 'qw', color: '#10b981', text: `${ov.yesterday_word_review_count} 复习单词` },
+      { label: 'qq', color: '#3b82f6', text: `${ov.yesterday_question_review_count} 复习错题` },
+      { label: 'wac', color: '#a7f3d0', text: `${ov.yesterday_word_accuracy}% 单词正确率` },
+      { label: 'qac', color: '#bfdbfe', text: `${ov.yesterday_question_accuracy}% 错题正确率` },
+    ]},
+    { title: '今日', items: [
+      { label: 'tw', color: '#10b981', text: `${ov.today_word_review_count} 复习单词` },
+      { label: 'tq', color: '#3b82f6', text: `${ov.today_question_review_count} 复习错题` },
+      { label: 'twac', color: '#a7f3d0', text: `${ov.today_word_accuracy}% 单词正确率` },
+      { label: 'tqac', color: '#bfdbfe', text: `${ov.today_question_accuracy}% 错题正确率` },
+    ]},
+  ]
+  if (!showWordStats.value) {
+    cols.forEach(c => { c.items = c.items.filter(i => !i.label.includes('w')) })
+  }
+  return cols
+})
+
+// ========== 合并自原首页：年级切换条 ==========
+const gradeLabelMap = {
+  1: '一年级', 2: '二年级', 3: '三年级', 4: '四年级', 5: '五年级', 6: '六年级',
+  7: '初一', 8: '初二', 9: '初三', 10: '高一', 11: '高二', 12: '高三',
+}
+const gradeOptions = [
+  { label: '一年级', value: 1 }, { label: '二年级', value: 2 }, { label: '三年级', value: 3 },
+  { label: '四年级', value: 4 }, { label: '五年级', value: 5 }, { label: '六年级', value: 6 },
+  { label: '初一', value: 7 }, { label: '初二', value: 8 }, { label: '初三', value: 9 },
+  { label: '高一', value: 10 }, { label: '高二', value: 11 }, { label: '高三', value: 12 },
+]
+const kidGrade = computed(() => {
+  const g = kidStore.activeKid?.current_grade
+  const n = Number(g)
+  return n >= 1 && n <= 12 ? n : null
+})
+const selectedGrade = computed({
+  get: () => subjectStore.activeGrade,
+  set: (v) => subjectStore.setGrade(v),
+})
+const onGradeChange = (g) => {
+  if (subjectStore.activeGrade === g) return
+  subjectStore.setGrade(g)
+  loadAll()
+}
 
 const overviewCards = computed(() => {
   const s = stats.value
@@ -294,35 +421,116 @@ const difficultyOption = computed(() => {
   }
 })
 
-// ========== 复习正确率趋势 ==========
-const trendOption = computed(() => {
-  const trend = questionTrend.value
-  if (!trend.length) return {}
+// ========== 正确率趋势（单词+错题双线，合并自原首页） ==========
+const curveRange = ref('month')
+const filteredCurveData = computed(() => {
+  const curve = stats.value.word_accuracy_curve || []
+  if (!curve.length) return []
+
+  const now = new Date()
+  const range = curveRange.value
+  let startDate = null
+  if (range === 'week') {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  } else if (range === 'month') {
+    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  } else if (range === '3months') {
+    startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+  } else if (range === 'halfyear') {
+    startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000)
+  } else {
+    return curve
+  }
+  return curve.filter(p => new Date(p.date) >= startDate)
+})
+
+const dualAccuracyCurveOption = computed(() => {
+  const wordCurve = filteredCurveData.value
+  const questionCurve = stats.value.question_accuracy_curve || []
+  const allDates = [...new Set([...wordCurve.map(p => p.date), ...questionCurve.map(p => p.date)])].sort()
+  if (!allDates.length) return {}
+  const wordMap = new Map(wordCurve.map(p => [p.date, p.accuracy]))
+  const questionMap = new Map(questionCurve.map(p => [p.date, p.accuracy]))
   return {
     tooltip: {
       trigger: 'axis',
-      formatter: params => {
-        let s = params[0].axisValue
-        params.forEach(p => { s += `<br/>${p.marker} 正确率: ${p.value}%` })
-        return s
+      backgroundColor: '#ffffff',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      textStyle: { color: '#334155' },
+      formatter: function(params) {
+        let result = params[0].name + '<br/>'
+        params.forEach(p => {
+          if (p.value !== null) {
+            result += '<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' + p.color + '"></span>'
+            result += p.seriesName + ': ' + p.value + '%<br/>'
+          }
+        })
+        return result
       }
     },
-    grid: { left: 50, right: 20, top: 20, bottom: 40 },
+    legend: {
+      data: showWordStats.value ? ['单词正确率', '错题正确率'] : ['错题正确率'],
+      bottom: 0,
+      textStyle: { color: '#64748b' }
+    },
+    grid: { left: '3%', right: '4%', bottom: '15%', top: '10px', containLabel: true },
     xAxis: {
       type: 'category',
-      data: trend.map(d => d.date),
-      axisLabel: { fontSize: 11, rotate: 30 },
+      data: allDates,
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLabel: { color: '#64748b' }
     },
-    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
-    series: [{
-      name: '错题正确率',
-      type: 'line', smooth: true,
-      data: trend.map(d => d.accuracy),
-      lineStyle: { color: '#409eff', width: 2.5 },
-      itemStyle: { color: '#409eff' },
-      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(64,158,255,0.25)' }, { offset: 1, color: 'rgba(64,158,255,0.02)' }] } },
-      symbol: 'circle', symbolSize: 5,
-    }]
+    yAxis: {
+      type: 'value',
+      name: '正确率%',
+      min: 0,
+      max: 100,
+      axisLabel: { formatter: '{value}%', color: '#64748b' },
+      splitLine: { lineStyle: { color: '#eef2f7' } }
+    },
+    series: [
+      ...(showWordStats.value ? [{
+        name: '单词正确率',
+        type: 'line',
+        smooth: true,
+        connectNulls: true,
+        symbol: 'circle',
+        symbolSize: 7,
+        lineStyle: { color: '#22c55e', width: 3 },
+        itemStyle: { color: '#22c55e' },
+        areaStyle: {
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(34, 197, 94, 0.22)' },
+              { offset: 1, color: 'rgba(34, 197, 94, 0.03)' }
+            ]
+          }
+        },
+        data: allDates.map(date => wordMap.get(date) ?? null)
+      }] : []),
+      {
+        name: '错题正确率',
+        type: 'line',
+        smooth: true,
+        connectNulls: true,
+        symbol: 'circle',
+        symbolSize: 7,
+        lineStyle: { color: '#4f46e5', width: 3 },
+        itemStyle: { color: '#4f46e5' },
+        areaStyle: {
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(79, 70, 229, 0.2)' },
+              { offset: 1, color: 'rgba(79, 70, 229, 0.03)' }
+            ]
+          }
+        },
+        data: allDates.map(date => questionMap.get(date) ?? null)
+      }
+    ]
   }
 })
 
@@ -344,17 +552,19 @@ const accColor = (acc) => {
 const loadAll = async () => {
   // 学习空间指定学科/年级时，只加载当前空间分析
   const subjectParams = {}
-  const activeSubjectId = useSubjectStore().activeSubjectId
+  const activeSubjectId = subjectStore.activeSubjectId
   if (activeSubjectId !== null) subjectParams.subject_id = activeSubjectId
-  if (useSubjectStore().activeGrade !== null) subjectParams.grade = useSubjectStore().activeGrade
+  if (subjectStore.activeGrade !== null) subjectParams.grade = subjectStore.activeGrade
   try {
-    const [summaryRes, kpRes, wordRes] = await Promise.all([
+    const [summaryRes, kpRes, wordRes, overviewRes] = await Promise.all([
       statsApi.getSummary(subjectParams),
       statsApi.getKnowledgePoints(subjectParams),
       wordApi.getStats(subjectParams),
+      statsOverviewApi.getOverview(subjectParams),
     ])
     stats.value = summaryRes.data
     kpStats.value = kpRes.data
+    learningOverview.value = overviewRes.data
 
     // Word mastery from word stats API
     const ws = wordRes.data || {}
@@ -367,13 +577,14 @@ const loadAll = async () => {
     console.error('加载统计数据失败:', e)
   }
 
-  // Load question trend from analysis API
+  // 每日签到（激励中心）：当天首次进入自动 +积分，静默失败不影响分析
   try {
-    const { default: analysisApi } = await import('@/api/learning_analysis')
-    const { data } = await analysisApi.getFullStats(subjectParams)
-    questionTrend.value = data?.question_stats?.accuracy_trend || []
+    const { data } = await motivationApi.checkin()
+    if (data && data.checked && !data.already) {
+      ElMessage.success(`每日签到成功，积分 +${data.star_delta}`)
+    }
   } catch (e) {
-    console.error('加载分析数据失败:', e)
+    // 忽略：激励系统不可用不影响分析
   }
 }
 
@@ -451,9 +662,161 @@ onMounted(loadAll)
   transition: width 0.6s ease;
 }
 
+/* ===== 合并自原首页：年级切换条 ===== */
+.grade-switch-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 20px 0;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 3px solid #c7d2fe;
+  border-radius: 18px;
+  box-shadow: 5px 5px 0 rgba(99, 102, 241, 0.18);
+}
+
+.grade-switch-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #4338ca;
+  letter-spacing: 0.04em;
+}
+
+.grade-switch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.grade-switch-chip {
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grade-switch-chip:hover {
+  border-color: #a5b4fc;
+  color: #3730a3;
+}
+
+.grade-switch-chip.active {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.28);
+}
+
+.chip-badge {
+  font-size: 10px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: #64748b;
+  background: #e2e8f0;
+}
+
+.chip-badge.is-current {
+  color: #fff;
+  background: #4f46e5;
+}
+
+.grade-switch-chip.active .chip-badge {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.grade-switch-note {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* ===== 合并自原首页：学习概览面板 ===== */
+.overview-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  height: 100%;
+}
+
+.overview-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.overview-panel-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.overview-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.op-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ===== 合并自原首页：单词五维进度 ===== */
+.word-dim-list {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed #ebeef5;
+}
+
+.word-dim-item {
+  margin-bottom: 10px;
+}
+
+.word-dim-item:last-child {
+  margin-bottom: 0;
+}
+
+.wd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.wd-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+}
+
+.wd-num {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .overview-card { padding: 14px 10px; }
   .card-value { font-size: 24px; }
   .card-label { font-size: 12px; }
+  .grade-switch-note { white-space: normal; }
 }
 </style>

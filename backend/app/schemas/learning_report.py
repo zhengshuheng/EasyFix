@@ -42,9 +42,10 @@ class ReportDetail(BaseModel):
 
 class ReportGenerateResponse(BaseModel):
     """报告生成响应"""
-    id: int  # 报告ID
-    title: str
+    id: Optional[int] = None  # 报告ID；数据不足未生成时为 None
+    title: str = ""
     message: str = "报告生成成功"
+    generated: bool = True  # False = 数据不足未生成（业务状态，非请求错误）
 
 
 class ReportListResponse(BaseModel):

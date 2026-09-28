@@ -7,10 +7,15 @@
 
 _（当前为空。进行中的任务文档在 `active/` 下，不入库。）_
 
-## ✅ 已完成（done/，76 项）
+## ✅ 已完成（done/，77 项）
 
 | 任务 | 文档 |
 |---|---|
+| 语法学习自动带读+手动语音：教程页导航条自动带读开关(localStorage easyfix_grammar_auto_read 默认开)、骨架导读(标题→总结→节标题→口诀)、标题/总结/每节/易错点/口诀 🔊 手动朗读(例句原有)、切课/卸载 token 中断停音频 | `done/2026-09-28-GRAMMAR_AUTOREAD.md` |
+| 新词学习复习三处修复：做题带读不再读中文/例句中文/选项（noZh:true，原 9/28 误改 false 泄题）、移动端终止/提交按钮单行并排、结果报告窄屏纵向堆叠+错词条整行化 | `done/2026-09-28-REVIEW_FEEDBACK_UI.md` |
+| 移动端筛选单行+练习窄屏+报告沉淀：单词/语法 filters 单行横滑、日期弹层 94vw 收窄、PracticeSets 操作列移动端收敛为下拉(400px fixed 挤没数据列)、报告列表按 kid 隔离+grade 过滤+生成后 unshift 沉淀兜底 | `done/2026-09-28-MOBILE_UI_5FIX.md` |
+| 移动端 6 处 UI 优化：错题筛选单行横滑(不再半屏)/练习页去标题+藏图标按钮单行/单词页去标题+「打印默写」简化「打印」+藏图标单行/头部 chips 逐字换行根因(header-user min-width:0 改 max-content+nowrap)/「退出登录」→「退出」/logo 移动端隐藏 | `done/2026-09-28-MOBILE_UI_6FIX.md` |
+| 家长中心账号管理：仅主账号可删除账号/小孩（辅助家长 403 + 前端删除按钮禁用，is_owner 收口） | `done/2026-09-28-PARENT_OWNER_DELETE.md` |
 | 辅助账号进家长中心密码锁卡死修复：ParentLockDialog 原生 fetch `/api/auth/me` 缺 X-Trial-Key → 落主库 id 错位（child 顶替 admin 候选）→ 辅助密码全败；补租户头后端到端验证通过（部署 f9dafad） | `done/2026-09-28-HELPER_PARENT_LOCK.md` |
 | 远端移动端两个问题修复：①单词卡片换行——Words.vue 补全站唯一缺失的移动端适配（@media 768：review-dialog 96vw/字号缩放/单词 flex-wrap+word-break）；②自动带读例句中文翻译无声——autoTeach 例句循环补 `speakZh(s.zh,{force:true})`（noZh 复习题/隐藏翻译时不读） | `done/2026-09-28-WORD_CARD_TTS_FIX.md` |
 | 一键部署增加 ops 权威数据同步：tools/deploy_export_ops.py 导出主库配置表(语法教程/激励/成就) → deploy/ops_data.sql，remote_deploy.sh 容器内幂等 upsert 云端主库（不覆盖空间/用户数据），deploy.ps1 加 [1.5/5] 导出步骤（保持 BOM） | `done/2026-09-27-deploy-ops-sync.md` |

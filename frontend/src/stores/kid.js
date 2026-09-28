@@ -29,6 +29,9 @@ export const useKidStore = defineStore('kid', {
         username: kid.username,
         display_name: kid.display_name || kid.username,
         avatar: kid.avatar || null,
+        current_grade: kid.current_grade || null,
+        enrollment_date: kid.enrollment_date || null,
+        textbooks: kid.textbooks || [],
       }
       localStorage.setItem(KID_KEY, JSON.stringify(this.kid))
     },

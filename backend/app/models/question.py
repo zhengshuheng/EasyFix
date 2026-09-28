@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, CheckConstraint, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class Question(Base):
@@ -34,8 +35,8 @@ class Question(Base):
     error_count = Column(Integer, default=0, nullable=False)  # 错误次数
     last_reviewed_at = Column(DateTime, nullable=True)  # 最后复习时间
     deleted = Column(Boolean, default=False, nullable=False)  # 软删除标记
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=now_local, nullable=True)
 
     __table_args__ = (
         CheckConstraint("difficulty >= 1 AND difficulty <= 5", name="check_difficulty"),

@@ -1,41 +1,40 @@
 import api from './question.js'
 
+/** 显式指定小孩 id（家长中心选小孩操作时用，覆盖默认 localStorage 孩子） */
+function kidHeader(kidId) {
+  const headers = {}
+  if (kidId) headers['X-Kid-Id'] = String(kidId)
+  return { headers }
+}
+
 export const motivationApi = {
   // 积分
-  getBalance() {
-    return api.get('/stars/balance')
+  getBalance(options = {}) {
+    const { kid_id } = options
+    return api.get('/stars/balance', kidHeader(kid_id))
   },
-  getRecords(params) {
-    return api.get('/stars/records', { params })
+  getRecords(params = {}) {
+    const { kid_id, ...rest } = params
+    // 显式传 kid_id：积分明细跟随「当前选择的小孩」，不依赖 localStorage 隐式头
+    // （否则缺头时后端 _kid_or_first 兜底返回空间第一个小孩的记录，切小孩后明细错位）
+    return api.get('/stars/records', { params: rest, ...kidHeader(kid_id) })
   },
   getActions() {
     return api.get('/stars/actions')
   },
-  createAction(data) {
-    return api.post('/stars/actions', data)
-  },
-  updateAction(id, data) {
-    return api.put(`/stars/actions/${id}`, data)
-  },
-  deleteAction(id) {
-    return api.delete(`/stars/actions/${id}`)
+
+  // 家长（空间）保存激励自定义：行为积分值 / 成就触发次数 / 成就奖励积分
+  saveIncentiveSettings(data) {
+    return api.put('/incentive-settings', data)
   },
 
   // 成就
   getAchievements() {
     return api.get('/achievements')
   },
-  getAchievementProgress() {
-    return api.get('/achievements/progress')
-  },
-  createAchievement(data) {
-    return api.post('/achievements', data)
-  },
-  updateAchievement(id, data) {
-    return api.put(`/achievements/${id}`, data)
-  },
-  deleteAchievement(id) {
-    return api.delete(`/achievements/${id}`)
+  getAchievementProgress(options = {}) {
+    const { kid_id } = options
+    return api.get('/achievements/progress', kidHeader(kid_id))
   },
 
   // 奖励
@@ -54,18 +53,26 @@ export const motivationApi = {
   redeemReward(id) {
     return api.post(`/rewards/${id}/redeem`)
   },
-  getRedemptions() {
-    return api.get('/rewards/redemptions')
+  getRedemptions(options = {}) {
+    const { kid_id } = options
+    return api.get('/rewards/redemptions', kidHeader(kid_id))
   },
 
-  // 概览
-  getOverview() {
-    return api.get('/motivation/overview')
+  // 概览（积分余额/今日获取：显式跟随当前小孩，避免缺头兜底第一个小孩）
+  getOverview(options = {}) {
+    const { kid_id } = options
+    return api.get('/motivation/overview', kidHeader(kid_id))
   },
 
-  // 积分调整
+  // 积分调整（家长中心：需显式指定小孩）
   adjustStars(data) {
-    return api.post('/stars/adjust', data)
+    const { kid_id, ...body } = data
+    return api.post('/stars/adjust', body, kidHeader(kid_id))
+  },
+
+  // 每日签到
+  checkin() {
+    return api.post('/motivation/checkin')
   },
 
   // 单词复习正确率触发

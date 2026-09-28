@@ -1,111 +1,63 @@
 <template>
   <div class="login-page">
-    <el-card class="login-card">
-      <template #header>
-        <div class="login-header">
-          <h1>EasyFix</h1>
-          <p>错题整理与学习系统</p>
-        </div>
-      </template>
+    <div class="login-card">
+      <div class="logo-badge">🏠</div>
+      <h1>家长登录</h1>
+      <p class="sub">登录后可进入学习空间管理</p>
 
-      <el-tabs v-model="activeRole" class="role-tabs">
-        <el-tab-pane label="家长" name="admin" />
-        <el-tab-pane label="小孩" name="child" />
-      </el-tabs>
-
-      <el-form @submit.prevent="handleLogin" label-position="top">
+      <el-form label-position="top" @submit.prevent>
         <el-form-item label="用户名">
-          <el-input
-            v-model="form.username"
-            placeholder="请输入用户名"
-            size="large"
-            autocomplete="username"
-          />
+          <el-input v-model="form.username" placeholder="请输入家长用户名" size="large" autofocus @keyup.enter="submit" />
         </el-form-item>
-
-        <el-form-item v-if="activeRole === 'admin'" label="密码">
+        <el-form-item label="密码">
           <el-input
             v-model="form.password"
             type="password"
             placeholder="请输入密码"
             size="large"
             show-password
-            autocomplete="current-password"
-            @keyup.enter="handleLogin"
+            @keyup.enter="submit"
           />
         </el-form-item>
-
-        <el-form-item v-else label="PIN 码（4 位数字）">
-          <el-input
-            v-model="form.pin"
-            placeholder="请输入 4 位 PIN 码"
-            size="large"
-            maxlength="4"
-            inputmode="numeric"
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
-
-        <el-button
-          type="primary"
-          size="large"
-          class="login-btn"
-          :loading="loading"
-          native-type="submit"
-        >
-          登 录
-        </el-button>
       </el-form>
 
-      <div v-if="activeRole === 'admin'" class="login-tip">
-        首次使用默认账号：admin / 32167
-      </div>
-    </el-card>
+      <el-button class="login-btn" type="primary" size="large" :loading="loading" @click="submit">
+        登 录
+      </el-button>
+
+      <p class="hint">主账号（官网注册）或辅账号（家长添加）均可登录；忘记密码请联系管理员重置</p>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const activeRole = ref('admin')
+const form = reactive({ username: '', password: '' })
 const loading = ref(false)
-const form = reactive({
-  username: '',
-  password: '',
-  pin: '',
-})
 
-async function handleLogin() {
-  if (!form.username.trim()) {
-    ElMessage.warning('请输入用户名')
+async function submit() {
+  const username = form.username.trim()
+  const password = form.password
+  if (!username || !password) {
+    ElMessage.warning('请输入用户名和密码')
     return
   }
-  if (activeRole.value === 'admin' && !form.password) {
-    ElMessage.warning('请输入密码')
-    return
-  }
-  if (activeRole.value === 'child' && !/^\d{4}$/.test(form.pin || '')) {
-    ElMessage.warning('PIN 码必须是 4 位数字')
-    return
-  }
-
   loading.value = true
   try {
-    const payload =
-      activeRole.value === 'admin'
-        ? { username: form.username.trim(), password: form.password }
-        : { username: form.username.trim(), pin: form.pin }
-    const data = await authStore.login(payload)
-    ElMessage.success(data.role === 'admin' ? '家长登录成功' : '登录成功，欢迎回来')
-    router.push('/')
+    await authStore.login({ username, password })
+    // 登录成功：回跳原目标页（守卫带 redirect），默认选人页
+    const redirect = Array.isArray(route.query.redirect) ? route.query.redirect[0] : route.query.redirect
+    router.replace(redirect || '/')
   } catch (e) {
-    ElMessage.error(e.response?.data?.detail || '登录失败，请检查账号信息')
+    ElMessage.error(e.response?.data?.detail || '登录失败，请重试')
   } finally {
     loading.value = false
   }
@@ -118,46 +70,57 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #409eff 0%, #6f8bff 100%);
-  padding: 20px;
+  padding: 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(1200px 500px at 15% -10%, rgba(102, 126, 234, 0.18), transparent 60%),
+    radial-gradient(1000px 460px at 90% 0%, rgba(79, 172, 254, 0.16), transparent 55%),
+    linear-gradient(180deg, #f6f9ff 0%, #eef4ff 100%);
 }
 
 .login-card {
   width: 380px;
   max-width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.login-header {
+  background: #fff;
+  border-radius: 20px;
+  padding: 36px 32px 30px;
+  box-shadow: 0 12px 40px rgba(36, 60, 120, 0.14);
   text-align: center;
 }
 
-.login-header h1 {
-  margin: 0;
-  font-size: 26px;
-  color: #409eff;
+.logo-badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 56px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
 }
 
-.login-header p {
-  margin: 6px 0 0;
+.login-card h1 {
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: #303133;
+}
+
+.login-card .sub {
   color: #909399;
   font-size: 13px;
-}
-
-.role-tabs {
-  margin-bottom: 8px;
+  margin: 0 0 24px;
 }
 
 .login-btn {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 4px;
+  border-radius: 12px;
+  font-weight: 600;
 }
 
-.login-tip {
-  margin-top: 14px;
+.hint {
+  margin-top: 18px;
   font-size: 12px;
-  color: #909399;
-  text-align: center;
+  color: #b0b6c4;
 }
 </style>

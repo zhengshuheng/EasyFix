@@ -1,6 +1,13 @@
 <template>
   <div class="management">
     <el-card shadow="never">
+      <div class="mgmt-topbar">
+        <span class="mgmt-title">家长中心</span>
+        <el-button class="mgmt-guide-btn" text @click="guideVisible = true">
+          <el-icon><Reading /></el-icon>
+          使用指南
+        </el-button>
+      </div>
       <el-tabs v-model="activeTab" class="mgmt-tabs">
         <!-- 学科管理 -->
         <el-tab-pane label="学科管理" name="subjects">
@@ -90,80 +97,57 @@
         <!-- 知识点管理 -->
         <el-tab-pane label="知识点管理" name="knowledgePoints">
           <div class="tab-content">
-            <!-- 筛选：标签组平铺点选，组间组合过滤 -->
+            <!-- 筛选：与运营平台对齐 = 学科/版本/年级/册次/搜索（标签/要求/类型不再作为过滤维度） -->
             <div class="kp-filter-bar">
               <div class="kp-filter-group">
                 <span class="kp-filter-label">学科</span>
                 <div class="kp-filter-chips">
-                  <el-check-tag
-                    v-for="s in subjects"
-                    :key="s.id"
-                    :checked="kpFilterSubject.includes(s.id)"
-                    @change="toggleKpFilter(kpFilterSubject, s.id)"
-                  >{{ s.name }}</el-check-tag>
+                  <el-radio-group v-model="kpFilterSubject" size="small" @change="applyKpFilter">
+                    <el-radio-button :value="null">全部学科</el-radio-button>
+                    <el-radio-button v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</el-radio-button>
+                  </el-radio-group>
+                </div>
+              </div>
+              <div class="kp-filter-group">
+                <span class="kp-filter-label">版本</span>
+                <div class="kp-filter-chips">
+                  <el-radio-group v-model="kpFilterEdition" size="small" @change="applyKpFilter">
+                    <el-radio-button v-for="v in kpEditionOptions" :key="v.key" :value="v.key">{{ v.label }}</el-radio-button>
+                  </el-radio-group>
+                  <span v-if="!kpEditionOptions.length" class="kp-filter-empty">（暂无，可在 同步最新知识点 导入教材版本）</span>
                 </div>
               </div>
               <div class="kp-filter-group">
                 <span class="kp-filter-label">年级</span>
                 <div class="kp-filter-chips">
-                  <el-check-tag
-                    v-for="g in gradeOptions"
-                    :key="g.value"
-                    :checked="kpFilterGrade.includes(g.value)"
-                    @change="toggleKpFilter(kpFilterGrade, g.value)"
-                  >{{ g.label }}</el-check-tag>
+                  <el-radio-group v-model="kpFilterGrade" size="small" @change="applyKpFilter">
+                    <el-radio-button :value="null">全部年级</el-radio-button>
+                    <el-radio-button v-for="g in gradeOptions" :key="g.value" :value="g.value">{{ g.label }}</el-radio-button>
+                  </el-radio-group>
                 </div>
               </div>
               <div class="kp-filter-group">
-                <span class="kp-filter-label">学期</span>
+                <span class="kp-filter-label">册次</span>
                 <div class="kp-filter-chips">
-                  <el-check-tag :checked="kpFilterSemester.includes(1)" @change="toggleKpFilter(kpFilterSemester, 1)">上学期</el-check-tag>
-                  <el-check-tag :checked="kpFilterSemester.includes(2)" @change="toggleKpFilter(kpFilterSemester, 2)">下学期</el-check-tag>
+                  <el-radio-group v-model="kpFilterSemester" size="small" @change="applyKpFilter">
+                    <el-radio-button :value="null">全部册次</el-radio-button>
+                    <el-radio-button :value="1">上册</el-radio-button>
+                    <el-radio-button :value="2">下册</el-radio-button>
+                  </el-radio-group>
                 </div>
               </div>
               <div class="kp-filter-group">
-                <span class="kp-filter-label">标签</span>
+                <span class="kp-filter-label">搜索</span>
                 <div class="kp-filter-chips">
-                  <el-check-tag
-                    v-for="t in kpOptionTags"
-                    :key="t"
-                    :checked="kpFilterTag.includes(t)"
-                    @change="toggleKpFilter(kpFilterTag, t)"
-                  >{{ t }}</el-check-tag>
-                </div>
-              </div>
-              <div class="kp-filter-group">
-                <span class="kp-filter-label">要求</span>
-                <div class="kp-filter-chips">
-                  <el-check-tag
-                    v-for="r in kpOptionRequirements"
-                    :key="r"
-                    :checked="kpFilterRequirement.includes(r)"
-                    @change="toggleKpFilter(kpFilterRequirement, r)"
-                  >{{ r }}</el-check-tag>
-                </div>
-              </div>
-              <div class="kp-filter-group">
-                <span class="kp-filter-label">类型</span>
-                <div class="kp-filter-chips">
-                  <el-check-tag
-                    v-for="t in kpOptionTypes"
-                    :key="t"
-                    :checked="kpFilterType.includes(t)"
-                    @change="toggleKpFilter(kpFilterType, t)"
-                  >{{ t }}</el-check-tag>
-                  <span v-if="!kpOptionTypes.length" class="kp-filter-empty">（暂无类型，新增知识点时可输入）</span>
+                  <el-input v-model="kpFilterQ" placeholder="搜索名称/章节" clearable size="small" style="width: 200px" @keyup.enter="applyKpFilter" @clear="applyKpFilter" />
+                  <el-button size="small" type="primary" @click="applyKpFilter">查询</el-button>
                 </div>
               </div>
             </div>
             <div class="action-bar" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px">
-              <el-button type="primary" @click="openKnowledgeDialog">
-                <el-icon><Plus /></el-icon>
-                新增知识点
-              </el-button>
-              <el-button type="warning" plain @click="showTextbookImport = true">
-                <el-icon><Reading /></el-icon>
-                按教材同步导入
+              <el-button type="primary" @click="openKpSyncDialog">
+                <el-icon><Refresh /></el-icon>
+                同步最新知识点
               </el-button>
               <el-button :type="kpGrouped ? 'primary' : 'default'" plain size="small" style="margin-left: auto" @click="toggleKpGrouped">
                 {{ kpGrouped ? '平铺视图' : '按单元分组' }}
@@ -193,13 +177,6 @@
                   </el-table-column>
                   <el-table-column label="类型" width="100">
                     <template #default="{ row }">{{ row.kp_type || '—' }}</template>
-                  </el-table-column>
-                  <el-table-column label="操作" width="200" fixed="right">
-                    <template #default="{ row }">
-                      <el-button link type="primary" size="small" @click="editKnowledgePoint(row)">编辑</el-button>
-                      <el-button link type="warning" size="small" @click="viewInTextbook(row)">看教材</el-button>
-                      <el-button link type="danger" size="small" @click="deleteKnowledgePoint(row)">删除</el-button>
-                    </template>
                   </el-table-column>
                 </el-table>
               </el-collapse-item>
@@ -234,46 +211,6 @@
               <el-table-column label="类型" width="90">
                 <template #default="{ row }">{{ row.kp_type || '—' }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="200" fixed="right">
-                <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="editKnowledgePoint(row)">编辑</el-button>
-                  <el-button link type="warning" size="small" @click="viewInTextbook(row)">看教材</el-button>
-                  <el-button link type="danger" size="small" @click="deleteKnowledgePoint(row)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-tab-pane>
-
-        <!-- 错题本管理 -->
-        <el-tab-pane label="错题本管理" name="errorBooks">
-          <div class="tab-content">
-            <el-alert type="info" :closable="false" style="margin-bottom: 10px" title="添加小孩账号时，系统会自动为该小孩创建各学科错题本；错题本按小孩隔离，每个小孩只能看到/使用自己的错题本。" />
-            <div class="action-bar" style="display: flex; gap: 10px; align-items: center">
-              <el-button type="primary" @click="openCreateErrorBook">
-                <el-icon><Plus /></el-icon>
-                新增错题本
-              </el-button>
-              <el-select v-model="errorBookFilterKid" placeholder="全部小孩" clearable style="width: 160px" @change="fetchErrorBooks">
-                <el-option v-for="k in kids" :key="k.id" :label="k.display_name || k.username" :value="k.id" />
-              </el-select>
-            </div>
-            <el-table :data="errorBooks" stripe style="width: 100%; margin-top: 15px">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="错题本名称" />
-              <el-table-column prop="subject_name" label="学科" width="100" />
-              <el-table-column label="所属小孩" width="120">
-                <template #default="{ row }">
-                  {{ row.user_name || (row.user_id ? '小孩#' + row.user_id : '未分配') }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="description" label="描述" />
-              <el-table-column label="操作" width="180">
-                <template #default="{ row }">
-                  <el-button link type="primary" size="small" @click="editErrorBook(row)">编辑</el-button>
-                  <el-button link type="danger" size="small" @click="deleteErrorBook(row)">删除</el-button>
-                </template>
-              </el-table-column>
             </el-table>
           </div>
         </el-tab-pane>
@@ -282,6 +219,13 @@
         <el-tab-pane label="英语单词库" name="wordLibrary">
           <div class="tab-content">
             <WordLibrary />
+          </div>
+        </el-tab-pane>
+
+        <!-- 英语语法专项管理 -->
+        <el-tab-pane label="语法专项管理" name="grammarManager">
+          <div class="tab-content">
+            <GrammarManager />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -381,34 +325,35 @@
       </template>
     </el-dialog>
 
-    <!-- 新增/编辑错题本弹窗 -->
-    <el-dialog v-model="showErrorBookDialog" :title="editErrorBookData ? '编辑错题本' : '新增错题本'" width="500px">
-      <el-form :model="errorBookForm" label-width="100px">
-        <el-form-item label="错题本名称" required>
-          <el-input v-model="errorBookForm.name" placeholder="请输入错题本名称" />
-        </el-form-item>
-        <el-form-item label="学科" required>
-          <el-select v-model="errorBookForm.subject_id" placeholder="选择学科" style="width: 100%">
-            <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
+    <!-- 教材同步导入弹窗 -->
+    <TextbookImport v-model="showTextbookImport" @imported="onTextbookImported" />
+    <!-- AI 生成知识点弹窗 -->
+    <AiKpImport v-model="showAiKpImport" :subjects="subjects" @imported="onTextbookImported" />
+
+    <!-- 同步最新知识点弹窗（Ops 一键同步） -->    <el-dialog v-model="showKpSyncDialog" title="同步最新知识点" width="420px">
+      <p style="color: #909399; font-size: 13px; margin: 0 0 14px">从内置知识库一键同步所选科目的全部年级知识点（教材数据由运营统一维护，同步为全量覆盖）。</p>
+      <el-form label-width="80px" @submit.prevent>
+        <el-form-item label="科目" required>
+          <el-select v-model="kpSyncForm.subject" placeholder="选择科目" style="width: 100%" @change="onKpSyncSubject">
+            <el-option v-for="s in kpSyncSubjects" :key="s" :label="s" :value="s" />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="!editErrorBookData" label="所属小孩" required>
-          <el-select v-model="errorBookForm.user_id" placeholder="选择小孩" style="width: 100%">
-            <el-option v-for="k in kids" :key="k.id" :label="k.display_name || k.username" :value="k.id" />
+        <el-form-item label="版本" required>
+          <el-select v-model="kpSyncForm.version" placeholder="选择版本" style="width: 100%">
+            <el-option v-for="v in kpSyncVersions" :key="v" :label="v" :value="v" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="errorBookForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showErrorBookDialog = false">取消</el-button>
-        <el-button type="primary" @click="createOrUpdateErrorBook">保存</el-button>
+        <el-button @click="showKpSyncDialog = false">取消</el-button>
+        <el-button type="primary" :loading="kpSyncing" :disabled="!kpSyncForm.subject || !kpSyncForm.version" @click="doKpSync">
+          一键同步
+        </el-button>
       </template>
     </el-dialog>
 
-    <!-- 教材同步导入弹窗 -->
-    <TextbookImport v-model="showTextbookImport" @imported="onTextbookImported" />
+    <!-- 使用指南 -->
+    <UsageGuide v-model="guideVisible" />
   </div>
 </template>
 
@@ -417,17 +362,67 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi } from '@/api/question'
-import { usersApi } from '@/api/users'
+import { syncApi } from '@/api/sync'
 import WordLibrary from './WordLibrary.vue'
+import GrammarManager from '@/components/GrammarManager.vue'
 import TextbookImport from './TextbookImport.vue'
+import AiKpImport from '@/components/AiKpImport.vue'
+import UsageGuide from '@/components/UsageGuide.vue'
 
 const activeTab = ref('subjects')
+const guideVisible = ref(false)
 
 // 教材同步导入弹窗
 const showTextbookImport = ref(false)
+// AI 生成知识点弹窗
+const showAiKpImport = ref(false)
 const onTextbookImported = () => {
   // 刷新知识点列表
   fetchKpAll()
+}
+
+// 同步最新知识点（Ops 内置知识库一键同步）
+const showKpSyncDialog = ref(false)
+const kpSyncing = ref(false)
+const kpSyncForm = reactive({ subject: '', version: '' })
+const kpSyncSubjects = ref([])
+const kpSyncVersions = ref([])
+const kpSyncCatalog = ref(null)
+
+const openKpSyncDialog = async () => {
+  showKpSyncDialog.value = true
+  kpSyncForm.subject = ''
+  kpSyncForm.version = ''
+  try {
+    const { data } = await syncApi.status()
+    kpSyncCatalog.value = data.catalog
+    kpSyncSubjects.value = Object.keys(data.catalog?.subjects || {}).filter(s => s !== '语文')
+    kpSyncVersions.value = []
+  } catch {
+    kpSyncSubjects.value = []
+  }
+}
+
+const onKpSyncSubject = (s) => {
+  kpSyncForm.version = ''
+  const subs = kpSyncCatalog.value?.subjects || {}
+  kpSyncVersions.value = Object.keys(subs[s] || {})
+  if (kpSyncVersions.value.length) kpSyncForm.version = kpSyncVersions.value[0]
+}
+
+const doKpSync = async () => {
+  if (kpSyncing.value || !kpSyncForm.subject || !kpSyncForm.version) return
+  kpSyncing.value = true
+  try {
+    const { data } = await syncApi.syncKp({ subject: kpSyncForm.subject, version: kpSyncForm.version })
+    ElMessage.success(`已同步 ${data.added} 条知识点（${kpSyncForm.subject}《${kpSyncForm.version}》1~6 年级）`)
+    showKpSyncDialog.value = false
+    fetchKpAll()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '同步失败，请稍后重试')
+  } finally {
+    kpSyncing.value = false
+  }
 }
 
 // 在教材库中对照该知识点对应的教材内容
@@ -445,7 +440,7 @@ const viewInTextbook = (row) => {
   })
 }
 
-// 年级选项
+// 年级选项（与运营平台对齐：仅小学 1-6 年级，知识点教材由 Ops 统一维护）
 const gradeOptions = [
   { label: '一年级', value: 1 },
   { label: '二年级', value: 2 },
@@ -453,12 +448,6 @@ const gradeOptions = [
   { label: '四年级', value: 4 },
   { label: '五年级', value: 5 },
   { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 },
 ]
 
 const getGradeLabel = (grade) => {
@@ -488,15 +477,14 @@ const errorTypeForm = reactive({
   subject_id: localStorage.getItem('lastEtSubject') ? parseInt(localStorage.getItem('lastEtSubject')) : null
 })
 
-// 知识点（筛选：标签组平铺点选，组间组合过滤）
+// 知识点（筛选：统一结构 = 每组「全部 + 子项」单选，null=全部）
 const knowledgePoints = ref([])
 const kpAll = ref([])               // 全量知识点（前端过滤）
-const kpFilterSubject = ref([])     // 学科多选
-const kpFilterGrade = ref([])       // 年级多选
-const kpFilterSemester = ref([])    // 学期多选
-const kpFilterTag = ref([])         // 标签：重点/难点/易错点
-const kpFilterRequirement = ref([]) // 要求：识记/理解/背诵/运用/综合
-const kpFilterType = ref([])        // 内容类型（学科 distinct + 可自定义）
+const kpFilterSubject = ref(null)   // 学科单选（null=全部）
+const kpFilterGrade = ref(null)     // 年级单选（null=全部）
+const kpFilterSemester = ref(null)  // 学期单选（null=全部）
+const kpFilterQ = ref('')            // 搜索词（名称/章节/说明关键字）
+const kpFilterEdition = ref(null)   // 教材版本单选（null=全部；custom=自定义）
 const kpOptionTags = ref(['重点', '难点', '易错点'])
 const kpOptionRequirements = ref(['识记', '理解', '背诵', '运用', '综合'])
 const kpOptionTypes = ref([])       // 类型选项（按学科动态）
@@ -515,13 +503,17 @@ const knowledgeForm = reactive({
   kp_type: null
 })
 
-// 标签组点选：点一下选中/取消，组内多选
-const toggleKpFilter = (arr, value) => {
-  const i = arr.indexOf(value)
-  if (i >= 0) arr.splice(i, 1)
-  else arr.push(value)
-  applyKpFilter()
-}
+// 教材版本选项（从全量去重：edition_key；无版本 = 自定义）
+const kpEditionOptions = computed(() => {
+  const m = new Map()
+  for (const k of kpAll.value) {
+    const ek = k.edition_key || 'custom'
+    if (!m.has(ek)) {
+      m.set(ek, { key: ek, label: ek === 'custom' ? '自定义' : (k.version || ek) })
+    }
+  }
+  return [...m.values()]
+})
 
 // 按单元分组（学科×年级×学期×单元）
 const kpGroups = computed(() => {
@@ -558,7 +550,7 @@ const tagType = (t) => {
 // 获取知识点过滤选项（标签/要求/类型）
 const fetchKpOptions = async () => {
   try {
-    const subjectId = kpFilterSubject.value.length === 1 ? kpFilterSubject.value[0] : null
+    const subjectId = kpFilterSubject.value
     const { data } = await questionApi.knowledgePointOptions(subjectId)
     if (data.tags) kpOptionTags.value = data.tags
     if (data.requirements) kpOptionRequirements.value = data.requirements
@@ -567,14 +559,6 @@ const fetchKpOptions = async () => {
     console.error('获取知识点选项失败:', e)
   }
 }
-
-// 错题本
-const errorBooks = ref([])
-const kids = ref([])                    // 小孩列表（错题本归属/筛选）
-const errorBookFilterKid = ref(null)    // 错题本管理按小孩筛选
-const showErrorBookDialog = ref(false)
-const editErrorBookData = ref(null)
-const errorBookForm = reactive({ name: '', subject_id: null, user_id: null, description: '' })
 
 // 获取学科列表
 const fetchSubjects = async () => {
@@ -759,19 +743,39 @@ const fetchKpAll = async () => {
     console.error('获取知识点失败:', e)
     kpAll.value = []
   }
+  await applySyncedEditionDefault()
   applyKpFilter()
   fetchKpOptions()
 }
 
-// 前端按条件过滤（学科/年级/学期/标签/要求/类型，组内多选，组间组合）
+// 版本筛选默认选中「已同步教材版本」（跟随使用界面教材；不再显示全部版本）。
+// 未同步过教材（模板库预置数据）时兜底选中第一个教材版本，与运营平台一致
+const applySyncedEditionDefault = async () => {
+  if (kpFilterEdition.value != null) return // 用户已手动选过则不覆盖
+  try {
+    const { data } = await syncApi.status()
+    const syncedVersions = Object.keys(data.synced?.kp || {})
+    const first =
+      (syncedVersions.length
+        ? kpEditionOptions.value.find(o => syncedVersions.includes(o.label))
+        : null) ||
+      kpEditionOptions.value.find(o => o.key !== 'custom') ||
+      kpEditionOptions.value[0]
+    if (first) kpFilterEdition.value = first.key
+  } catch {
+    // 同步状态拉取失败则保持当前筛选
+  }
+}
+
+// 前端按条件过滤（每组单选，null=全部，组间组合）
 const applyKpFilter = () => {
   knowledgePoints.value = kpAll.value.filter(k => {
-    if (kpFilterSubject.value.length && !kpFilterSubject.value.includes(k.subject_id)) return false
-    if (kpFilterGrade.value.length && !kpFilterGrade.value.includes(k.grade)) return false
-    if (kpFilterSemester.value.length && !kpFilterSemester.value.includes(k.semester)) return false
-    if (kpFilterTag.value.length && !(k.tags || []).some(t => kpFilterTag.value.includes(t))) return false
-    if (kpFilterRequirement.value.length && !kpFilterRequirement.value.includes(k.requirement)) return false
-    if (kpFilterType.value.length && !kpFilterType.value.includes(k.kp_type)) return false
+    if (kpFilterSubject.value != null && kpFilterSubject.value !== k.subject_id) return false
+    if (kpFilterGrade.value != null && kpFilterGrade.value !== k.grade) return false
+    if (kpFilterSemester.value != null && kpFilterSemester.value !== k.semester) return false
+    if (kpFilterEdition.value != null && kpFilterEdition.value !== (k.edition_key || 'custom')) return false
+    const q = kpFilterQ.value.trim().toLowerCase()
+    if (q && !`${k.name || ''} ${k.chapter || ''} ${k.description || ''}`.toLowerCase().includes(q)) return false
     return true
   })
   if (kpGrouped.value) {
@@ -782,23 +786,21 @@ const applyKpFilter = () => {
 // 当前筛选条件文本
 const kpFilterText = computed(() => {
   const parts = []
-  if (kpFilterSubject.value.length) {
-    parts.push(kpFilterSubject.value.map(id => subjects.value.find(x => x.id === id)?.name || `学科${id}`).join('、'))
+  if (kpFilterSubject.value != null) {
+    parts.push(subjects.value.find(x => x.id === kpFilterSubject.value)?.name || `学科${kpFilterSubject.value}`)
   }
-  if (kpFilterGrade.value.length) {
-    parts.push(kpFilterGrade.value.map(g => getGradeLabel(g)).join('、'))
+  if (kpFilterGrade.value != null) {
+    parts.push(getGradeLabel(kpFilterGrade.value))
   }
-  if (kpFilterSemester.value.length) {
-    parts.push(kpFilterSemester.value.map(s => s === 1 ? '上学期' : '下学期').join('、'))
+  if (kpFilterSemester.value != null) {
+    parts.push(kpFilterSemester.value === 1 ? '上学期' : '下学期')
   }
-  if (kpFilterTag.value.length) {
-    parts.push(`标签:${kpFilterTag.value.join('、')}`)
+  if (kpFilterQ.value.trim()) {
+    parts.push(`搜索:${kpFilterQ.value.trim()}`)
   }
-  if (kpFilterRequirement.value.length) {
-    parts.push(`要求:${kpFilterRequirement.value.join('、')}`)
-  }
-  if (kpFilterType.value.length) {
-    parts.push(`类型:${kpFilterType.value.join('、')}`)
+  if (kpFilterEdition.value != null) {
+    const o = kpEditionOptions.value.find(x => x.key === kpFilterEdition.value)
+    parts.push(o ? `版本:${o.label}` : `版本:${kpFilterEdition.value}`)
   }
   return parts.length ? '筛选：' + parts.join(' · ') : '全部知识点'
 })
@@ -842,9 +844,9 @@ const createKnowledgePoint = async () => {
 const openKnowledgeDialog = () => {
   editKnowledgeData.value = null
   knowledgeForm.name = ''
-  knowledgeForm.subject_id = kpFilterSubject.value.length === 1 ? kpFilterSubject.value[0] : null
-  knowledgeForm.grade = kpFilterGrade.value.length === 1 ? kpFilterGrade.value[0] : null
-  knowledgeForm.semester = kpFilterSemester.value.length === 1 ? kpFilterSemester.value[0] : null
+  knowledgeForm.subject_id = kpFilterSubject.value
+  knowledgeForm.grade = kpFilterGrade.value
+  knowledgeForm.semester = kpFilterSemester.value
   knowledgeForm.chapter = ''
   knowledgeForm.tags = []
   knowledgeForm.requirement = null
@@ -894,110 +896,11 @@ const deleteKnowledgePoint = async (row) => {
   }
 }
 
-// 获取错题本列表（按小孩隔离）
-const fetchErrorBooks = async () => {
-  try {
-    const params = {}
-    if (errorBookFilterKid.value) params.user_id = errorBookFilterKid.value
-    const { data } = await questionApi.listErrorBooks(params)
-    errorBooks.value = data.items || []
-    // 如果有subject_id，获取学科名称
-    if (errorBooks.value.length > 0) {
-      await fetchSubjects()
-      errorBooks.value = errorBooks.value.map(eb => ({
-        ...eb,
-        subject_name: subjects.value.find(s => s.id === eb.subject_id)?.name || ''
-      }))
-    }
-  } catch (e) {
-    console.error('获取错题本失败:', e)
-  }
-}
-
-// 获取小孩列表（错题本归属/筛选）
-const fetchKids = async () => {
-  try {
-    const { data } = await usersApi.listKids()
-    kids.value = (data && data.kids) || []
-  } catch (e) {
-    console.error('获取小孩列表失败:', e)
-  }
-}
-
-// 打开新增错题本弹窗
-const openCreateErrorBook = () => {
-  editErrorBookData.value = null
-  errorBookForm.name = ''
-  errorBookForm.subject_id = null
-  errorBookForm.user_id = errorBookFilterKid.value || null
-  errorBookForm.description = ''
-  showErrorBookDialog.value = true
-}
-
-// 创建或更新错题本
-const createOrUpdateErrorBook = async () => {
-  if (!errorBookForm.name.trim()) {
-    ElMessage.warning('请输入错题本名称')
-    return
-  }
-  if (!errorBookForm.subject_id) {
-    ElMessage.warning('请选择学科')
-    return
-  }
-  if (!editErrorBookData.value && !errorBookForm.user_id) {
-    ElMessage.warning('请选择所属小孩')
-    return
-  }
-  try {
-    if (editErrorBookData.value) {
-      const payload = { name: errorBookForm.name, subject_id: errorBookForm.subject_id, description: errorBookForm.description }
-      await questionApi.updateErrorBook(editErrorBookData.value.id, payload)
-      ElMessage.success('更新成功')
-    } else {
-      await questionApi.createErrorBook({ ...errorBookForm })
-      ElMessage.success('创建成功')
-    }
-    showErrorBookDialog.value = false
-    editErrorBookData.value = null
-    errorBookForm.name = ''
-    errorBookForm.subject_id = null
-    errorBookForm.user_id = null
-    errorBookForm.description = ''
-    fetchErrorBooks()
-  } catch (e) {
-    ElMessage.error('保存失败')
-  }
-}
-
-// 编辑错题本
-const editErrorBook = (row) => {
-  editErrorBookData.value = row
-  errorBookForm.name = row.name
-  errorBookForm.subject_id = row.subject_id
-  errorBookForm.user_id = row.user_id
-  errorBookForm.description = row.description || ''
-  showErrorBookDialog.value = true
-}
-
-// 删除错题本
-const deleteErrorBook = async (row) => {
-  try {
-    await ElMessageBox.confirm('确定要删除该错题本吗？', '删除确认', { type: 'warning' })
-    await questionApi.deleteErrorBook(row.id)
-    ElMessage.success('删除成功')
-    fetchErrorBooks()
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
 const fetchAll = async () => {
   fetchSubjects()
   fetchTags()
   fetchErrorTypes()
   fetchKpAll()
-  fetchKids()
-  fetchErrorBooks()
 }
 
 onMounted(() => {
@@ -1095,6 +998,26 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
+/* 家长中心顶栏 + 使用指南入口 */
+.mgmt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.mgmt-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.mgmt-guide-btn {
+  color: #8a94b5;
+  font-size: 13px;
+}
+.mgmt-guide-btn:hover {
+  color: #4f7df3;
+}
+
 /* 题库管理子导航：顶部横向 tabs */
 .mgmt-tabs :deep(.el-tabs__item) {
   height: 44px;
@@ -1105,6 +1028,28 @@ onMounted(() => {
 .mgmt-tabs :deep(.el-tabs__content) {
   padding: 12px 2px 0;
   overflow: visible;
+}
+
+/* 移动端适配：tab 多时横向滑动，避免展示不全 */
+@media (max-width: 768px) {
+  .mgmt-tabs :deep(.el-tabs__nav-wrap) {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .mgmt-tabs :deep(.el-tabs__nav) {
+    min-width: max-content;
+  }
+
+  .mgmt-tabs :deep(.el-tabs__item) {
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .mgmt-topbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 }
 
 /* 禁用卡片的hover效果 */

@@ -5,13 +5,9 @@
         <div class="card-header">
           <span>英语单词库（全局共享，家长统一管理）</span>
           <div>
-            <el-button type="primary" @click="showAddDialog">
-              <el-icon><Plus /></el-icon>
-              新增单词
-            </el-button>
-            <el-button type="info" @click="showImportDialog">
-              <el-icon><Upload /></el-icon>
-              导入单词
+            <el-button type="primary" @click="openWordSyncDialog">
+              <el-icon><Refresh /></el-icon>
+              同步最新单词
             </el-button>
           </div>
         </div>
@@ -94,8 +90,6 @@
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button type="info" size="default" @click="viewDetail(row)">详情</el-button>
-            <el-button type="primary" size="default" @click="editWord(row)">编辑</el-button>
-            <el-button type="danger" size="default" @click="deleteWord(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -428,6 +422,23 @@ orange 橙子"
         <el-button type="primary" @click="importWords" :loading="importing">导入</el-button>
       </template>
     </el-dialog>
+    <!-- 同步最新单词弹窗（Ops 一键同步 1-6 年级） -->
+    <el-dialog v-model="wordSyncVisible" title="同步最新单词" width="420px">
+      <p style="color: #909399; font-size: 13px; margin: 0 0 14px">从内置教材词汇库一键同步所选版本的 1~6 年级全部单元单词（全量覆盖，教材数据由运营统一维护）。</p>
+      <el-form label-width="80px" @submit.prevent>
+        <el-form-item label="版本" required>
+          <el-select v-model="wordSyncForm.version" placeholder="选择教材版本" style="width: 100%">
+            <el-option v-for="v in wordSyncVersions" :key="v" :label="v" :value="v" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="wordSyncVisible = false">取消</el-button>
+        <el-button type="primary" :loading="wordSyncing" :disabled="!wordSyncForm.version" @click="doWordSync">
+          一键同步
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -437,10 +448,12 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Printer, Upload } from '@element-plus/icons-vue'
 import { wordApi } from '@/api/word'
+import { syncApi } from '@/api/sync'
 import http from '@/api/http'
 import { questionApi } from '@/api/question'
 import { motivationApi } from '@/api/motivation'
 import { useSubjectStore } from '@/stores/subject'
+import { speakEn as ttsSpeakEn, playServerTts } from '@/utils/speech'
 
 const route = useRoute()
 const subjectStore = useSubjectStore()
@@ -500,6 +513,44 @@ const printForm = reactive({
 // 导入相关
 const importDialogVisible = ref(false)
 const importing = ref(false)
+
+// 同步最新单词（Ops 一键同步）
+const wordSyncVisible = ref(false)
+const wordSyncing = ref(false)
+const wordSyncForm = reactive({ version: '' })
+const wordSyncVersions = ref([])
+
+const openWordSyncDialog = async () => {
+  wordSyncVisible.value = true
+  wordSyncForm.version = ''
+  wordSyncVersions.value = []
+  try {
+    const { data } = await syncApi.status()
+    const subjects = data.catalog?.subjects || {}
+    const englishBooks = subjects['英语'] || {}
+    const versions = Object.keys(englishBooks).filter(v =>
+      Object.values(englishBooks[v] || {}).some(b => (b.words || 0) > 0))
+    wordSyncVersions.value = versions
+    if (versions.length) wordSyncForm.version = versions[0]
+  } catch {
+    wordSyncVersions.value = []
+  }
+}
+
+const doWordSync = async () => {
+  if (wordSyncing.value || !wordSyncForm.version) return
+  wordSyncing.value = true
+  try {
+    const { data } = await syncApi.syncWordsAll({ version: wordSyncForm.version })
+    ElMessage.success(`已同步 ${data.added} 个单词（${wordSyncForm.version} 1~6 年级 ${data.books?.length || 8} 册）`)
+    wordSyncVisible.value = false
+    fetchWords()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '同步失败，请稍后重试')
+  } finally {
+    wordSyncing.value = false
+  }
+}
 const uploadRef = ref()
 const imageUploadRef = ref()
 const importForm = reactive({
@@ -612,12 +663,8 @@ const playWordAudio = async (wordId) => {
   audioLoadingMap[wordId] = true
 
   try {
-    const response = await fetch(`/api/words/${wordId}/audio`)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-
-    const blob = await response.blob()
+    const response = await wordApi.getAudio(wordId)
+    const blob = response.data
     const audioUrl = URL.createObjectURL(blob)
     const audio = new Audio(audioUrl)
 
@@ -710,21 +757,13 @@ const resetFilters = () => {
 // 示例词/相关词按英文直接播放
 const playWordAudioByEnglish = (en) => {
   if (!en) return
-  const audio = new Audio('/api/words/audio?english=' + encodeURIComponent(en))
-  audio.play().catch(() => {})
+  playServerTts(en)
 }
 
-// 例句英文朗读（SpeechSynthesis en-US；句子不走 TTS 文件缓存，避免污染 audio_dir）
+// 例句英文朗读：统一走 utils/speech（浏览器语音 + 服务器 TTS 降级）
 const speakEn = (text) => {
-  if (!text || !('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
-  u.rate = 0.85
-  const voices = window.speechSynthesis.getVoices()
-  const en = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
-  if (en) u.voice = en
-  window.speechSynthesis.speak(u)
+  if (!text) return
+  ttsSpeakEn(text)
 }
 
 // 批量补生成记忆增强（老单词缺拼读/词根/例句时手动触发）

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timeutil import now_local
 
 
 class StarAction(Base):
@@ -13,9 +14,10 @@ class StarAction(Base):
     star_value = Column(Integer, nullable=False, default=0)
     icon = Column(String(500), nullable=True)
     enabled = Column(Boolean, default=True)
+    ops_override = Column(Boolean, default=False)  # 家长（空间）自定义标记：1=家长改过，0=跟随运营默认
     is_custom = Column(Boolean, default=False)
     deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())
 
 
 class StarBalance(Base):
@@ -25,7 +27,7 @@ class StarBalance(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, default=1)
     balance = Column(Integer, default=0)
-    updated_at = Column(DateTime, onupdate=func.now())
+    updated_at = Column(DateTime, onupdate=now_local)
 
 
 class StarRecord(Base):
@@ -39,4 +41,4 @@ class StarRecord(Base):
     balance_after = Column(Integer, nullable=False)
     reason = Column(String(200), nullable=True)
     deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=now_local, server_default=func.now())

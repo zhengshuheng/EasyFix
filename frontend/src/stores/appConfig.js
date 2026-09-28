@@ -35,21 +35,5 @@ export const useAppConfigStore = defineStore('appConfig', {
       this.defaultSemester = payload.default_semester
       this.loaded = true
     },
-
-    /** 若目标年级为空则填入默认年级 */
-    applyDefaultGrade(target) {
-      if (target == null && this.defaultGrade != null) {
-        return this.defaultGrade
-      }
-      return target
-    },
-
-    /** 若目标学期为空则填入默认学期 */
-    applyDefaultSemester(target) {
-      if (target == null && this.defaultSemester != null) {
-        return this.defaultSemester
-      }
-      return target
-    },
   },
 })

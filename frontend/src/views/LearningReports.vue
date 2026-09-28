@@ -22,6 +22,12 @@
 
           <!-- 报告列表 -->
           <el-table :data="reports.items" stripe style="width: 100%; margin-top: 20px">
+            <template #empty>
+              <div class="empty-tip">
+                <p>暂无学习分析报告</p>
+                <p class="empty-sub">点击右上角「生成新报告」即可生成；若提示「没有足够的数据」，请先让孩子完成评测/练习、背单词，或放宽生成时的筛选条件（不限时间范围）。</p>
+              </div>
+            </template>
             <el-table-column prop="title" label="报告标题" min-width="200" />
             <el-table-column prop="subject_name" label="学科" width="100">
               <template #default="{ row }">
@@ -73,9 +79,6 @@
     <!-- 生成报告弹窗 -->
     <el-dialog v-model="generateDialogVisible" title="生成学习分析报告" width="500px">
       <el-form :model="generateForm" label-width="100px">
-        <el-form-item label="报告标题">
-          <el-input v-model="generateForm.title" placeholder="不填则自动生成" clearable />
-        </el-form-item>
         <el-form-item label="学科">
           <el-select v-model="generateForm.subject_id" placeholder="选择学科（可选）" clearable style="width: 100%" :disabled="!subjectStore.isAll">
             <el-option v-for="s in subjects" :key="s.id" :label="s.name" :value="s.id" />
@@ -260,6 +263,16 @@
         <el-button @click="detailDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 家长验证：学生删除报告需家长认证 -->
+    <ParentLockDialog
+      v-model="parentGuardVisible"
+      title="家长验证"
+      tip="删除学习报告需要家长验证"
+      confirm-text="验证并删除"
+      @success="onParentVerified"
+      @update:model-value="!$event && onParentGuardCancel()"
+    />
   </div>
 </template>
 
@@ -271,6 +284,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { learningReportApi } from '@/api/learning_report'
 import { questionApi } from '@/api/question'
+import ParentLockDialog from '@/components/ParentLockDialog.vue'
+import { useParentGuard } from '@/composables/useParentGuard'
 
 const appConfigStore = useAppConfigStore()
 const subjectStore = useSubjectStore()
@@ -286,12 +301,13 @@ const pagination = reactive({
 
 const generateDialogVisible = ref(false)
 const generateForm = reactive({
-  title: '',
   subject_id: null,
   grade: null,
   time_range_days: null,
 })
 const generating = ref(false)
+// 本次会话是否已尝试过「自动出报告」（避免空列表反复触发生成）
+const autoGenerateAttempted = ref(false)
 
 const detailDialogVisible = ref(false)
 const currentReport = ref(null)
@@ -355,8 +371,66 @@ const fetchReports = async () => {
 
     const { data } = await learningReportApi.list(params)
     reports.value = data
+    // 自动出报告：指定了学科（非全科）且该空间还没有任何报告时，自动生成一份
+    maybeAutoGenerate(data)
   } catch (error) {
     ElMessage.error('获取报告列表失败')
+  }
+}
+
+// 自动出报告：学习空间指定学科且该空间无报告 → 自动生成当前空间的报告
+// 只做一次（autoGenerateAttempted），避免空数据/失败时反复触发
+const maybeAutoGenerate = (data) => {
+  if (autoGenerateAttempted.value) return
+  if (subjectStore.activeSubjectId === null) return // 全科空间不自动生成，避免打扰
+  if ((data.total || 0) > 0) return
+  autoGenerateAttempted.value = true
+  generateReport(true)
+}
+
+const generateReport = async (silent = false) => {
+  generating.value = true
+  try {
+    const data = {}
+    if (generateForm.subject_id) data.subject_id = generateForm.subject_id
+    if (generateForm.grade) data.grade = generateForm.grade
+    if (generateForm.time_range_days) data.time_range_days = generateForm.time_range_days
+
+    const { data: result } = await learningReportApi.generate(data)
+    // 数据不足：业务状态（不是 400 错误）——给出友好提示，不弹红错
+    if (result.generated === false) {
+      if (!silent) ElMessage.warning(result.message || '当前条件下没有足够的数据生成报告，请放宽筛选条件')
+      generateDialogVisible.value = false
+      return
+    }
+    if (!silent) ElMessage.success(result.message)
+    generateDialogVisible.value = false
+    await fetchReports()
+
+    // 沉淀兜底：列表受空间学科/年级筛选影响，若新报告筛选条件与列表过滤不匹配
+    //（如全科报告在学科空间生成），强制插入列表顶部，保证"生成的报告一定能沉淀到列表"
+    if (result.id && !reports.value.items.some((r) => r.id === result.id)) {
+      reports.value.items.unshift({
+        id: result.id,
+        title: result.title || '学习状态分析报告',
+        subject_id: data.subject_id ?? null,
+        subject_name: null,
+        grade: data.grade ?? null,
+        time_range_days: data.time_range_days ?? null,
+        total_questions: 0,
+        total_words: 0,
+        overall_accuracy: 0,
+        created_at: new Date().toISOString(),
+      })
+      reports.value.total += 1
+    }
+
+    // 自动打开新生成的报告
+    viewReport({ id: result.id })
+  } catch (error) {
+    if (!silent) ElMessage.error(error.response?.data?.detail || '生成报告失败')
+  } finally {
+    generating.value = false
   }
 }
 
@@ -370,35 +444,11 @@ const fetchSubjects = async () => {
 }
 
 const showGenerateDialog = () => {
-  generateForm.title = ''
   // 学习空间指定学科/年级时：默认当前空间且不可切换
   generateForm.subject_id = subjectStore.activeSubjectId !== null ? subjectStore.activeSubjectId : null
   generateForm.grade = subjectStore.activeGrade !== null ? subjectStore.activeGrade : null
   generateForm.time_range_days = null
   generateDialogVisible.value = true
-}
-
-const generateReport = async () => {
-  generating.value = true
-  try {
-    const data = {}
-    if (generateForm.title) data.title = generateForm.title
-    if (generateForm.subject_id) data.subject_id = generateForm.subject_id
-    if (generateForm.grade) data.grade = generateForm.grade
-    if (generateForm.time_range_days) data.time_range_days = generateForm.time_range_days
-
-    const { data: result } = await learningReportApi.generate(data)
-    ElMessage.success(result.message)
-    generateDialogVisible.value = false
-    fetchReports()
-
-    // 自动打开新生成的报告
-    viewReport({ id: result.id })
-  } catch (error) {
-    ElMessage.error(error.response?.data?.detail || '生成报告失败')
-  } finally {
-    generating.value = false
-  }
 }
 
 const viewReport = async (row) => {
@@ -418,7 +468,8 @@ const deleteReport = async (row) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await learningReportApi.delete(row.id)
+    // 家长认证：学生（child）删除报告需家长验证
+    await guard(() => learningReportApi.delete(row.id))
     ElMessage.success('删除成功')
     fetchReports()
   } catch (error) {
@@ -428,9 +479,18 @@ const deleteReport = async (row) => {
   }
 }
 
+// 家长认证守卫：学生删除报告需家长验证
+const {
+  visible: parentGuardVisible,
+  guard,
+  onVerified: onParentVerified,
+  onCancel: onParentGuardCancel,
+} = useParentGuard()
+
 onMounted(async () => {
   await appConfigStore.load()
-  if (generateForm.grade == null) generateForm.grade = appConfigStore.defaultGrade
+  // 生成表单默认年级只跟随当前学习空间，不再套用系统配置「默认年级」
+  if (generateForm.grade == null) generateForm.grade = subjectStore.activeGrade
   fetchReports()
   fetchSubjects()
 })
@@ -446,6 +506,22 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.empty-tip {
+  padding: 24px 0;
+  text-align: center;
+  color: #909399;
+}
+.empty-tip p {
+  margin: 4px 0;
+}
+.empty-sub {
+  font-size: 12px;
+  color: #b0b3b8;
+  max-width: 560px;
+  margin: 6px auto 0 !important;
+  line-height: 1.6;
 }
 
 .filters {

@@ -22,6 +22,7 @@ def user_dict(user: User) -> dict:
         "username": user.username,
         "display_name": user.display_name or user.username,
         "role": user.role,
+        "is_owner": user.is_owner,
         "avatar": user.avatar,
     }
 
@@ -31,20 +32,22 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     """家长：用户名+密码；小孩：用户名+PIN"""
     user = db.query(User).filter_by(username=data.username.strip()).first()
     if not user:
-        raise HTTPException(status_code=401, detail="用户名或密码错误")
+        raise HTTPException(status_code=400, detail="用户名或密码错误")
     if not user.enabled:
         raise HTTPException(status_code=403, detail="账号已被禁用")
 
     if user.role == "admin":
         if not data.password or not verify_password(data.password, user.password_hash):
-            raise HTTPException(status_code=401, detail="用户名或密码错误")
+            # 用 400 而非 401：401 会被前端 http.js 全局拦截清登录态踢回登录页，
+            # 家长中心验证弹窗等场景应停留在当前页提示"密码错误"
+            raise HTTPException(status_code=400, detail="用户名或密码错误")
     # 小孩无需密码：仅校验账号存在且启用（PIN 字段保留兼容，不再作为登录凭据）
     else:
         if data.pin and data.pin.strip() != (user.pin or ""):
-            raise HTTPException(status_code=401, detail="PIN 码错误")
+            raise HTTPException(status_code=400, detail="PIN 码错误")
 
     return {
-        "token": create_token(user),
+        "token": create_token(user, persistent=True),
         "role": user.role,
         "user": user_dict(user),
     }

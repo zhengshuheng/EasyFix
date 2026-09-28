@@ -9,25 +9,68 @@ from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from app.config import get_settings
 from app.utils.html import decode_html
+from app.services.scoring import (
+    compute_question_scores, normalize_score_mode, SCORE_MODE_DEFAULT,
+)
 
 settings = get_settings()
 
-# 字体路径
-FONT_PATH = 'C:/Windows/Fonts/simhei.ttf'
+
+def _resolve_font_path():
+    """中文字体路径：环境变量 EASYFIX_FONT 优先，其次常见 Linux/Windows 候选。
+
+    - 服务器部署：可在 backend/.env 设 EASYFIX_FONT=... 指向部署目录内的字体
+      （推荐随项目上传 simhei.ttf 到 backend/fonts/simhei.ttf，输出与本地一致）；
+      install.sh 也会安装 fonts-noto-cjk 作为兜底。
+    - 本地开发：保持原 Windows 路径 C:/Windows/Fonts/simhei.ttf。
+    """
+    env = os.environ.get("EASYFIX_FONT")
+    if env and os.path.exists(env):
+        return env
+    candidates = [
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:\\Windows\\Fonts\\simhei.ttf",
+        # Linux 常见中文字体（Noto / 文泉驿 / Droid 回退）
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+        "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    # 全都不存在时回退原默认路径（本地开发必存在；服务器上会由 EASYFIX_FONT 覆盖）
+    return "C:/Windows/Fonts/simhei.ttf"
+
+
+FONT_PATH = _resolve_font_path()
 
 
 def generate_practice_set_pdf(
     practice_set_name: str,
     questions: List[Dict[str, Any]],
-    output_dir: str = None
+    output_dir: str = None,
+    show_score: bool = True,
+    score_mode: str = SCORE_MODE_DEFAULT,
+    created_at=None,
+    subject_name: str = None,
+    grade_label: str = None,
+    show_ai_author: bool = False,
 ) -> str:
     """
     生成练习集PDF
 
     Args:
-        practice_set_name: 练习集名称
+        practice_set_name: 练习集名称（卷面标题）
         questions: 题目列表，每题包含 question_text, answer, difficulty 等
         output_dir: 输出目录，默认为 uploads/practice_sets
+        show_score: 卷面是否显示分值（练习卷可不出分值）
+        score_mode: hundred=百分制（满分100）/ default=按题型默认分值
+        created_at: 出卷时间（datetime），打印在卷头
+        subject_name: 学科名（卷头信息行）
+        grade_label: 年级标签（卷头信息行，如「三年级」）
+        show_ai_author: 卷头「出题人」是否署名「AI 出题助手」（默认留空白手填）
 
     Returns:
         生成的PDF文件相对路径
@@ -49,7 +92,10 @@ def generate_practice_set_pdf(
     print(f"[PDF DEBUG] output_path: {output_path}")
 
     # 创建PDF
-    pdf = PracticeSetPDF(practice_set_name, questions)
+    pdf = PracticeSetPDF(practice_set_name, questions, show_score=show_score,
+                         score_mode=score_mode, created_at=created_at,
+                         subject_name=subject_name, grade_label=grade_label,
+                         show_ai_author=show_ai_author)
     pdf.generate(output_path)
 
     # 验证文件是否生成
@@ -63,7 +109,13 @@ def generate_practice_set_pdf(
 
 
 class PracticeSetPDF(FPDF):
-    """练习集PDF生成器（按题型分组，试卷式排版）"""
+    """练习集 PDF 生成器 —— 学校试卷样式（卷头 + 大题 + 答题留白）
+
+    设计原则：这是一张给孩子做的卷子，不是系统报表——
+    卷头 = 标题 + 满分/题数 + 姓名班级得分栏（双线分隔）；
+    大题用「一、二、三」编号，写法与学校卷一致；
+    每题只有 题号 + 题干 + 选项；主观题（计算/应用/操作/写作）下方留出足够的答题空间。
+    """
 
     # 题型单题分值（内置默认，参考学校试卷：计算/填空占大头，主观题分高）
     TYPE_SCORES = {
@@ -78,302 +130,297 @@ class PracticeSetPDF(FPDF):
     TYPE_ORDER = {"choice": 1, "fill": 2, "judge": 3, "calc": 4, "application": 5,
                   "operation": 6, "reading": 7, "writing": 8, "sentence": 9}
 
-    # 颜色常量
-    EMPTY_STAR_COLOR = (220, 223, 230)
-    THEME_COLOR = (78, 205, 196)  # #4ECDC4
-    SEPARATOR_COLOR = (189, 195, 199)
-    CONTENT_BG_COLOR = (248, 249, 250)  # #F8F9FA
-    METADATA_TEXT_COLOR = (100, 100, 100)
-    TEXT_COLOR = (51, 51, 51)
-    GRAY_TEXT_COLOR = (128, 128, 128)
-    STAR_COLORS = {
-        1: (103, 194, 58),
-        2: (133, 206, 97),
-        3: (230, 162, 60),
-        4: (245, 108, 108),
-        5: (245, 108, 108),
+    # 答题留白高度（mm）：一行算式约 8mm，应用题至少留 5 行书写空间
+    WRITING_SPACE = {
+        "choice": 2, "judge": 2, "fill": 10, "calc": 26,
+        "application": 42, "operation": 34, "reading": 14,
+        "writing": 70, "sentence": 16,
     }
 
-    def __init__(self, title: str, questions: List[Dict[str, Any]]):
+    BLACK = (0, 0, 0)
+    GRAY_TEXT_COLOR = (120, 120, 120)
+
+    def __init__(self, title: str, questions: List[Dict[str, Any]],
+                 show_score: bool = True, score_mode: str = SCORE_MODE_DEFAULT,
+                 created_at=None, subject_name: str = None, grade_label: str = None,
+                 show_ai_author: bool = False):
         super().__init__()
         self.title = title
         self.questions = questions
-        self.set_auto_page_break(auto=True, margin=15)
+        self.show_score = bool(show_score)
+        self.score_mode = normalize_score_mode(score_mode)
+        self.subject_name = subject_name or ''
+        self.grade_label = grade_label or ''
+        self.show_ai_author = bool(show_ai_author)
+        # 每题分值：百分制按题型权重把 100 分分到各题；default 用题型内置分值
+        self.question_scores = compute_question_scores(questions, self.score_mode)
+        if created_at is not None:
+            self.created_at_text = created_at.strftime('%Y年%m月%d日 %H:%M')
+        else:
+            self.created_at_text = datetime.now().strftime('%Y年%m月%d日 %H:%M')
+        self.set_margins(15, 12, 15)
+        self.set_auto_page_break(auto=True, margin=18)
         # 注册中文字体（使用下划线后缀_B表示粗体）
         self.add_font('chinese', '', FONT_PATH)
         self.add_font('chinese_b', '', FONT_PATH)
+        self.alias_nb_pages()
+        self.set_title(title)
+
+    # ==================== 卷头 / 页脚 ====================
+
+    def total_score(self) -> int:
+        """卷面总分（按配置的计分方式）"""
+        return sum(self.question_scores)
 
     def header(self):
-        """页眉"""
-        self.set_font('chinese_b', size=16)
-        self.cell(0, 10, self.title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-        self.set_font('chinese', size=10)
-        date_str = datetime.now().strftime('%Y年%m月%d日')
-        self.cell(0, 8, date_str, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-        self.ln(5)
-        self.set_draw_color(*self.THEME_COLOR)  # #4ECDC4
-        self.set_line_width(0.5)
-        self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(5)
+        """首页画完整卷头，后续页只留标题 + 细线"""
+        if self.page_no() == 1:
+            self.set_font('chinese_b', size=17)
+            self.set_text_color(*self.BLACK)
+            self.multi_cell(0, 10, self.title, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            self.set_font('chinese', size=11)
+            meta = f'共 {len(self.questions)} 题'
+            if self.show_score:
+                meta = f'满分 {self.total_score()} 分　{meta}'
+            self.cell(0, 7, meta, align='C',
+                      new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            # 卷面信息行：学科 / 年级 / 出题人（默认留空白，出题界面可让 AI 署名）
+            info_items = []
+            if self.subject_name:
+                info_items.append(f'学科：{self.subject_name}')
+            if self.grade_label:
+                info_items.append(f'年级：{self.grade_label}')
+            author = 'AI 出题助手' if self.show_ai_author else '__________'
+            info_items.append(f'出题人：{author}')
+            self.cell(0, 7, '　　'.join(info_items), align='C',
+                      new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            self.ln(1)
+            name_line = '姓名：____________　　班级：__________'
+            if self.show_score:
+                name_line += '　　得分：__________'
+            self.cell(0, 8, name_line, align='C',
+                      new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            # 出卷时间（家长备查，小字右对齐）
+            self.set_font('chinese', size=9)
+            self.set_text_color(*self.GRAY_TEXT_COLOR)
+            self.cell(0, 6, f'出卷时间：{self.created_at_text}', align='R',
+                      new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            self.set_text_color(*self.BLACK)
+            self.set_font('chinese', size=11)
+            self.ln(1)
+            y = self.get_y()
+            self.set_draw_color(*self.BLACK)
+            self.set_line_width(0.6)
+            self.line(self.l_margin, y, self.w - self.r_margin, y)
+            self.set_line_width(0.2)
+            self.line(self.l_margin, y + 1.3, self.w - self.r_margin, y + 1.3)
+            self.ln(7)
+        else:
+            self.set_font('chinese', size=9)
+            self.set_text_color(*self.GRAY_TEXT_COLOR)
+            self.cell(0, 6, self.title, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            self.set_text_color(*self.BLACK)
+            y = self.get_y()
+            self.set_draw_color(*self.GRAY_TEXT_COLOR)
+            self.set_line_width(0.2)
+            self.line(self.l_margin, y, self.w - self.r_margin, y)
+            self.ln(5)
 
     def footer(self):
-        """页脚"""
-        self.set_y(-15)
+        """页脚：第 X 页 / 共 Y 页"""
+        self.set_y(-14)
         self.set_font('chinese', size=9)
         self.set_text_color(*self.GRAY_TEXT_COLOR)
-        self.cell(0, 10, f'第 {self.page_no()} 页', align='C')
+        self.cell(0, 8, '第 {p} 页 / 共 {{nb}} 页'.format(p=self.page_no()), align='C')
+        self.set_text_color(*self.BLACK)
 
-    def add_section_header(self, section_index: str, type_key: str, count: int, score_per: int):
-        """添加试卷式大题标题：一、选择题（共2题，每题3分，共6分）"""
+    # ==================== 大题 ====================
+
+    def add_section_header(self, section_index: int, type_key: str, count: int,
+                           score_per: int = None, section_total: int = None):
+        """大题标题：一、填空题（共3题，每题3分，共9分）
+
+        不显示分数时只写「共N题」；同一大题内每题分值不一致（百分制除不尽）时，
+        每题的分值改在题号后单独标注，这里只写大题总分。
+        """
         cn_num = "一二三四五六七八九十"
         prefix = f"{cn_num[section_index - 1]}、" if section_index <= len(cn_num) else f"{section_index}、"
-        total = count * score_per
-        title = f"{prefix}{self.TYPE_NAMES.get(type_key, '题目')}（共{count}题，每题{score_per}分，共{total}分）"
-        self.ln(4)
-        self.set_font('chinese_b', size=12)
-        self.set_text_color(*self.THEME_COLOR)
-        self.cell(0, 8, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
-        self.set_text_color(*self.TEXT_COLOR)
-        self.set_draw_color(*self.THEME_COLOR)
-        self.set_line_width(0.4)
-        self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(5)
-
-    def add_total_score(self, questions: List[Dict[str, Any]]):
-        """卷头显示总分（按题型单题分值折算）"""
-        total = 0
-        for q in questions:
-            t = q.get('question_type')
-            total += self.TYPE_SCORES.get(t, 3)
-        self.set_font('chinese', size=10)
-        self.set_text_color(*self.METADATA_TEXT_COLOR)
-        self.cell(0, 8, f'（满分 {total} 分，共 {len(questions)} 题）', new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-        self.set_text_color(*self.TEXT_COLOR)
-
-    def add_question(self, index: int, question_text: str, difficulty: int, question_id: int = None,
-                  knowledge_point: str = None, error_type: str = None, review_count: int = None,
-                  score: int = None, options: List[str] = None):
-        """添加一道题目（组内编号连续，题头带分值）"""
-        # ===== 第一行：[ID:xxx]  第{index}题  ★★★★★ =====
-
-        # ID标签（如果有）
-        if question_id is not None:
-            self.set_font('chinese_b', size=11)
-            self.set_fill_color(*self.METADATA_TEXT_COLOR)  # 灰色背景
-            self.set_text_color(255, 255, 255)
-            self.cell(28, 8, f'[ID:{question_id}]', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C', fill=True)
-
-        # 题目编号背景
-        self.set_font('chinese_b', size=11)
-        self.set_fill_color(*self.THEME_COLOR)  # #4ECDC4
-        self.set_text_color(255, 255, 255)
-        self.cell(22, 8, f'第{index}题', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C', fill=True)
-
-        # 分值（如有）
-        if score:
-            self.set_font('chinese', size=10)
-            self.set_text_color(*self.METADATA_TEXT_COLOR)
-            self.cell(18, 8, f'({score}分)', new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
-
-        # 难度星级（彩色填充 + 灰色空星）
-        difficulty = max(1, min(5, difficulty))
-        star_color = self.STAR_COLORS.get(difficulty, (255, 204, 102))
-        self.set_font('chinese', size=11)
-        # Filled stars
-        self.set_text_color(*star_color)
-        self.cell(30, 8, '★' * difficulty, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
-        # Empty stars
-        self.set_text_color(*self.EMPTY_STAR_COLOR)
-        self.cell(30, 8, '☆' * (5 - difficulty), new_x=XPos.LMARGIN, new_y=YPos.TOP, align='C')
-        # Reset to default text color
-        self.set_text_color(*self.TEXT_COLOR)
-        self.ln(8)
-
-        # ===== 第二行（如果有知识点、错误类型或复习次数）：知识点: XXX  |  错误类型: XXX  |  复习: X次 =====
-
-        if knowledge_point or error_type or (review_count is not None and review_count > 0):
-            self.set_font('chinese', size=9)
-            self.set_text_color(*self.METADATA_TEXT_COLOR)
-
-            if knowledge_point:
-                self.cell(60, 6, f'知识点: {knowledge_point}', new_x=XPos.RIGHT, new_y=YPos.TOP, align='L')
-
-            if error_type:
-                self.cell(60, 6, f'错误类型: {error_type}', new_x=XPos.RIGHT, new_y=YPos.TOP, align='L')
-
-            if review_count is not None and review_count > 0:
-                self.set_text_color(245, 108, 108)  # 红色
-                self.cell(0, 6, f'复习: {review_count}次', new_x=XPos.LMARGIN, new_y=YPos.TOP, align='L')
-                self.set_text_color(*self.METADATA_TEXT_COLOR)
-
-            self.ln(6)
-
-        # ===== 分隔线 =====
-        self.set_draw_color(*self.THEME_COLOR)
-        self.set_line_width(0.3)
-        self.line(10, self.get_y(), 200, self.get_y())
+        if not self.show_score:
+            tail = f"（共{count}题）"
+        elif score_per:
+            tail = f"（共{count}题，每题{score_per}分，共{count * score_per}分）"
+        else:
+            tail = f"（共{count}题，共{section_total or 0}分）"
+        title = f"{prefix}{self.TYPE_NAMES.get(type_key, '题目')}{tail}"
+        if self.get_y() > self.h - self.b_margin - 40:
+            self.add_page()
         self.ln(3)
+        self.set_font('chinese_b', size=12)
+        self.set_text_color(*self.BLACK)
+        self.cell(0, 8, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
+        self.ln(1)
 
-        # ===== 题目内容 =====
-        self.set_font('chinese', size=11)
-        self.set_text_color(*self.TEXT_COLOR)
-        self.set_fill_color(*self.CONTENT_BG_COLOR)  # #F8F9FA
-        safe_text = decode_html(question_text) if question_text else '暂无题目内容'
-        self.multi_cell(0, 6, safe_text, fill=True)
-        self.ln(8)
+    # ==================== 题目 ====================
 
-        # ===== 选项（选择题）=====
+    @staticmethod
+    def _strip_option_prefix(text: str) -> str:
+        """去掉选项里已有的 A. / (A) / A) 前缀，避免打成「A. A. xxx」"""
+        if not text:
+            return ''
+        text = str(text).strip()
+        import re
+        for pattern in (r'^[A-Da-d]\s*[.、．]\s*', r'^\([A-Da-d]\)\s*', r'^[A-Da-d]\)\s*'):
+            match = re.match(pattern, text)
+            if match:
+                return text[match.end():]
+        return text
+
+    def add_question(self, index: int, question_text: str, question_type: str = '',
+                     score: int = None, options: List[str] = None):
+        """一道题：题号 + 题干 + 选项 + 答题留白
+
+        score 不为空时在题号后标出该题分值（同一大题内分值不一致时才会传）。
+        """
+        write_mm = self.WRITING_SPACE.get(question_type, 4)
+        text = decode_html(question_text) if question_text else '暂无题目内容'
+        # AI 出题常把选项用字面 \n 拼进题干 → 转成真换行，避免打成字面 "\n"
+        text = str(text).replace('\\n', '\n')
+        # 题干内嵌了 A. B. C. D. 选项、且独立 options 已给出 → 剥离题干内嵌段，避免重复打印
+        if options and any(o and str(o).strip() for o in options):
+            from app.services.llm import extract_inline_options
+            cleaned, inline_opts = extract_inline_options(text)
+            if inline_opts:
+                text = cleaned
+        num_w = 8
+        score_str = f'({score}分)' if (score and self.show_score) else ''
+        score_w = 13 if score_str else 0
+        text_w = self.w - self.r_margin - self.l_margin - num_w - score_w
+        # 预判高度：题干行数（中文约 4.2mm/字）+ 选项行 + 留白，放不下就换页
+        chars_per_line = max(10, int(text_w / 4.2))
+        text_lines = 1
+        for seg in str(text).split('\n'):
+            text_lines += max(0, (len(seg) - 1) // chars_per_line)
+        option_rows = 0
+        opts = []
         if options:
-            letters = "ABCD"
-            for i, opt in enumerate(options[:4]):
-                if not opt:
-                    continue
-                self.set_font('chinese_b', size=10)
-                self.cell(12, 6, f'{letters[i]}.', new_x=XPos.RIGHT, new_y=YPos.TOP)
-                self.set_font('chinese', size=10)
-                self.multi_cell(0, 6, str(opt))
-                self.ln(1)
-            self.ln(4)
+            opts = [self._strip_option_prefix(o) for o in options if o and str(o).strip()]
+            if opts:
+                short = max(len(o) for o in opts) <= 12 and len(opts) <= 4
+                option_rows = (len(opts) + 1) // 2 if short else len(opts)
+        need = text_lines * 7.5 + option_rows * 7 + write_mm + 4
+        remaining = self.h - self.b_margin - self.get_y()
+        if need > remaining:
+            text_need = text_lines * 7.5 + option_rows * 7
+            if text_need + 12 <= remaining:
+                # 题干放得下、只是留白不够 → 就地压缩留白，避免整题翻页、上一页留出大片空白
+                write_mm = max(10, remaining - text_need - 2)
+            else:
+                self.add_page()
+
+        # 题号（+分值）+ 题干（题号悬挂缩进，像学校卷）
+        self.set_font('chinese_b', size=12)
+        self.set_text_color(*self.BLACK)
+        self.cell(num_w, 7.5, f'{index}.', new_x=XPos.RIGHT, new_y=YPos.TOP)
+        if score_str:
+            self.set_font('chinese', size=9)
+            self.set_text_color(*self.GRAY_TEXT_COLOR)
+            self.cell(score_w, 7.5, score_str, new_x=XPos.RIGHT, new_y=YPos.TOP)
+            self.set_text_color(*self.BLACK)
+        self.set_font('chinese', size=12)
+        self.multi_cell(text_w, 7.5, str(text), align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+        # 选项：短选项两列排，长选项一行一个
+        if opts:
+            letters = 'ABCD'
+            self.set_font('chinese', size=11)
+            short = max(len(o) for o in opts) <= 12 and len(opts) <= 4
+            if short:
+                col_w = text_w / 2
+                for i in range(0, len(opts), 2):
+                    self.set_x(self.l_margin + num_w)
+                    for j in range(2):
+                        if i + j < len(opts):
+                            self.cell(col_w, 7, f'{letters[i + j]}. {opts[i + j]}',
+                                      new_x=XPos.RIGHT, new_y=YPos.TOP)
+                    self.ln(7)
+            else:
+                for i, opt in enumerate(opts):
+                    self.set_x(self.l_margin + num_w)
+                    self.multi_cell(text_w, 7, f'{letters[i]}. {opt}', align='L',
+                                    new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+        # 答题留白：纯空白，给孩子书写（应用题留足竖式/列式空间）
+        if write_mm > 0:
+            self.ln(write_mm)
+
+    # ==================== 阅读理解 ====================
 
     def add_reading_passage(self, title: str, content: str):
-        """添加阅读短文"""
+        """添加阅读短文（单独一页）"""
         self.add_page()
-        # 标题
         self.set_font('chinese_b', size=14)
-        self.set_text_color(*self.THEME_COLOR)
+        self.set_text_color(*self.BLACK)
         self.cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
-        self.set_text_color(*self.TEXT_COLOR)
-        self.ln(5)
-        # 内容（英文原文）
+        self.ln(3)
         self.set_font('chinese', size=11)
-        paragraphs = content.split('\n')
-        for para in paragraphs:
+        for para in (content or '').split('\n'):
             para = para.strip()
             if para:
-                self.multi_cell(0, 6, para)
-                self.ln(2)
-        self.ln(8)
-
-    def add_reading_question(self, index: int, question_text: str, option_a: str = None,
-                             option_b: str = None, option_c: str = None, option_d: str = None):
-        """添加一道阅读理解选择题"""
-        def strip_option_prefix(text):
-            """去除选项前缀A. B. C. D. 等各种格式"""
-            if not text:
-                return ''
-            text = text.strip()
-            import re
-            match = re.match(r'^[A-Da-d]\s*[.、．]\s*', text)
-            if match:
-                return text[match.end():]
-            match = re.match(r'^\([A-Da-d]\)\s*', text)
-            if match:
-                return text[match.end():]
-            match = re.match(r'^[A-Da-d]\)\s*', text)
-            if match:
-                return text[match.end():]
-            return text
-
-        # 分隔线
-        self.set_draw_color(*self.SEPARATOR_COLOR)
-        self.set_line_width(0.3)
-        self.line(10, self.get_y(), 200, self.get_y())
-        self.ln(5)
-
-        # 题目编号
-        self.set_font('chinese_b', size=11)
-        self.set_fill_color(*self.THEME_COLOR)
-        self.set_text_color(255, 255, 255)
-        self.cell(22, 8, f'第{index}题', new_x=XPos.LMARGIN, new_y=YPos.TOP, align='C', fill=True)
-        self.set_text_color(*self.TEXT_COLOR)
-        self.ln(10)
-
-        # 题目文本
-        self.set_font('chinese', size=11)
-        self.multi_cell(0, 6, question_text)
-        self.ln(3)
-
-        # 选项（已包含字母前缀，直接显示）
-        self.set_font('chinese', size=10)
-        options = [
-            ('A', option_a),
-            ('B', option_b),
-            ('C', option_c),
-            ('D', option_d),
-        ]
-        for letter, option_text in options:
-            if option_text:
-                self.set_font('chinese_b', size=10)
-                self.cell(12, 6, f'{letter}.', new_x=XPos.RIGHT, new_y=YPos.TOP)
-                self.set_font('chinese', size=10)
-                self.multi_cell(0, 6, strip_option_prefix(option_text))
+                self.multi_cell(0, 6, para, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
                 self.ln(1)
         self.ln(6)
 
+    def add_reading_question(self, index: int, question_text: str, option_a: str = None,
+                             option_b: str = None, option_c: str = None, option_d: str = None):
+        """阅读理解题（与普通选择题同一套排版）"""
+        self.add_question(index, question_text, 'reading',
+                          options=[option_a, option_b, option_c, option_d])
+
+    # ==================== 主流程 ====================
+
     def generate(self, output_path: str):
-        """生成PDF文件"""
-        # 检查是否有阅读理解题目
+        """生成 PDF"""
         has_reading = any(q.get('is_reading_question') for q in self.questions)
 
         if has_reading:
-            # 阅读理解模式：先显示短文，再显示题目
-            first_reading_q = self.questions[0]
-            passage_title = first_reading_q.get('_passage_title', '阅读短文')
-            passage_content = first_reading_q.get('_passage_content', '')
-            self.add_reading_passage(passage_title, passage_content)
-
+            first = self.questions[0]
+            self.add_reading_passage(first.get('_passage_title', '阅读短文'),
+                                     first.get('_passage_content', ''))
             for idx, q in enumerate(self.questions, 1):
-                # 检查是否需要新页面
-                if self.get_y() > 220:
-                    self.add_page()
-                self.add_reading_question(
-                    idx,
-                    q.get('question_text', ''),
-                    q.get('option_a'),
-                    q.get('option_b'),
-                    q.get('option_c'),
-                    q.get('option_d'),
-                )
+                self.add_question(idx, q.get('question_text', ''), 'reading',
+                                  options=[q.get('option_a'), q.get('option_b'),
+                                           q.get('option_c'), q.get('option_d')])
         else:
-            # 普通练习集模式：按题型分组（试卷式排版）
+            # 普通练习集：按题型分大题（选择→填空→判断→计算→应用→操作→阅读→写作）
             self.add_page()
-            self.add_total_score(self.questions)
-
-            from collections import OrderedDict
-            groups = OrderedDict()
-            for q in self.questions:
-                t = q.get('question_type') or ''
-                groups.setdefault(t, []).append(q)
-
+            groups = {}
+            for i, q in enumerate(self.questions):
+                groups.setdefault(q.get('question_type') or '', []).append((i, q))
             ordered_groups = sorted(
                 groups.items(),
                 key=lambda kv: self.TYPE_ORDER.get(kv[0], 99) if kv[0] else 99,
             )
 
             global_idx = 1
-            for section_idx, (type_key, qs) in enumerate(ordered_groups, 1):
-                if self.get_y() > 200:
-                    self.add_page()
-                score_per = self.TYPE_SCORES.get(type_key, 3)
+            for section_idx, (type_key, pairs) in enumerate(ordered_groups, 1):
+                sec_scores = [self.question_scores[i] for i, _ in pairs]
+                uniform = len(set(sec_scores)) == 1
                 if type_key:
-                    self.add_section_header(section_idx, type_key, len(qs), score_per)
-                for q in qs:
-                    question_text = q.get('question_text', '')
-                    difficulty = q.get('difficulty', 3)
-                    question_id = q.get('id')
-                    knowledge_point = q.get('knowledge_point')
-                    error_type = q.get('error_type')
-                    review_count = q.get('review_count')
-
-                    # 检查是否需要新页面
-                    if self.get_y() > 220:
-                        self.add_page()
-
+                    self.add_section_header(
+                        section_idx, type_key, len(pairs),
+                        score_per=sec_scores[0] if uniform else None,
+                        section_total=sum(sec_scores),
+                    )
+                elif self.get_y() > self.h - self.b_margin - 40:
+                    self.add_page()
+                for (_, q), sec_score in zip(pairs, sec_scores):
                     self.add_question(
-                        global_idx, question_text, difficulty, question_id,
-                        knowledge_point, error_type, review_count,
-                        score=score_per if type_key else None,
-                        options=[q.get('option_a'), q.get('option_b'), q.get('option_c'), q.get('option_d')]
+                        global_idx,
+                        q.get('question_text', ''),
+                        type_key,
+                        score=None if uniform else sec_score,
+                        options=[q.get('option_a'), q.get('option_b'),
+                                 q.get('option_c'), q.get('option_d')]
                         if (q.get('option_a') or q.get('option_b')) else None,
                     )
                     global_idx += 1

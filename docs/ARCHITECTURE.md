@@ -106,7 +106,7 @@ class SomeRecord(Base):
 - **高频组合查询**：建复合索引，如 `Index("ix_xxx_user_time", "user_id", "created_at")`、
   `Index("ix_error_question_user_active", "user_id", "status", "deleted")`。
 - **唯一约束**：按小孩去重时用 `UniqueConstraint('user_id', 'xxx_id')`，如 `achievement_progress`。
-- **建表方式**：无迁移系统，`Base.metadata.create_all()` 自动建；改结构需删 `backend/easyfix.db` 或手工重建（MySQL）。
+- **建表方式**：无迁移系统，`Base.metadata.create_all()` 自动建；改结构需删 `backend/easyfix_main.db` 或手工重建（MySQL）。
 
 ## 5. 前端：数据隔离的正确姿势
 

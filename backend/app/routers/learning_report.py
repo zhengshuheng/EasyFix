@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timedelta
 import json
 from app.database import get_db
-from app.models import LearningReport, Subject, Question, Word
+from app.models import LearningReport, Subject, ErrorQuestion, Word
+from app.models.user import User
 from app.schemas.learning_report import (
     ReportGenerateRequest,
     ReportGenerateResponse,
@@ -13,6 +15,8 @@ from app.schemas.learning_report import (
     ReportListResponse,
 )
 from app.services.llm import llm_service
+from app.utils.auth import require_admin
+from app.utils.kid_context import get_current_kid_id
 
 router = APIRouter(prefix="/api/learning-reports", tags=["学习状态分析"])
 
@@ -44,7 +48,7 @@ def _generate_title(subject_name: Optional[str], grade: Optional[int], time_rang
     return f"{date_str}{' '.join(parts)}"
 
 
-def _build_data_summary(questions: List[Question], words: List[Word]) -> dict:
+def _build_data_summary(questions: List[ErrorQuestion], words: List[Word]) -> dict:
     """构建数据摘要供LLM分析"""
     # 错题统计
     total_questions = len(questions)
@@ -116,7 +120,7 @@ def _build_data_summary(questions: List[Question], words: List[Word]) -> dict:
     }
 
 
-def _calculate_overall_accuracy(questions: List[Question], words: List[Word]) -> float:
+def _calculate_overall_accuracy(questions: List[ErrorQuestion], words: List[Word]) -> float:
     """计算整体准确率"""
     total_count = 0
     total_correct = 0
@@ -139,7 +143,8 @@ def _calculate_overall_accuracy(questions: List[Question], words: List[Word]) ->
 @router.post("/generate", response_model=ReportGenerateResponse)
 def generate_report(
     request: ReportGenerateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
     """
     生成学习状态分析报告
@@ -160,18 +165,18 @@ def generate_report(
         subject_name = subject.name
 
     # 收集错题数据（排除 AI 出题生成的练习题）
-    question_query = db.query(Question).filter(
-        Question.deleted == False,
-        Question.exclude_ai_filter(),
+    question_query = db.query(ErrorQuestion).filter(
+        ErrorQuestion.deleted == False,
+        ErrorQuestion.source != 'ai',
     )
     if request.subject_id:
-        question_query = question_query.filter(Question.subject_id == request.subject_id)
+        question_query = question_query.filter(ErrorQuestion.subject_id == request.subject_id)
     if request.grade:
-        question_query = question_query.filter(Question.grade == request.grade)
+        question_query = question_query.filter(ErrorQuestion.grade == request.grade)
     # 时间范围过滤（按创建时间）
     if request.time_range_days:
         cutoff_date = datetime.now() - timedelta(days=request.time_range_days)
-        question_query = question_query.filter(Question.created_at >= cutoff_date)
+        question_query = question_query.filter(ErrorQuestion.created_at >= cutoff_date)
     questions = question_query.all()
 
     # 收集单词数据
@@ -183,11 +188,14 @@ def generate_report(
         word_query = word_query.filter(Word.created_at >= cutoff_date)
     words = word_query.all()
 
-    # 检查数据量
+    # 检查数据量：不足是业务状态（空间暂无学习记录/筛选条件滤光），不是请求错误——
+    # 返回 200 + generated=false + 友好提示，避免前端/用户看到 400 误以为程序 bug
     if len(questions) == 0 and len(words) == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="没有足够的数据生成报告，请调整筛选条件"
+        return ReportGenerateResponse(
+            id=None,
+            title="",
+            message="当前条件下没有足够的数据生成报告，请放宽筛选条件（如不限时间范围、选择孩子做过的学科），或先让孩子完成评测/练习再生成。",
+            generated=False,
         )
 
     # 构建数据摘要
@@ -214,6 +222,7 @@ def generate_report(
 
     report = LearningReport(
         title=title,
+        user_id=kid_id,
         subject_id=request.subject_id,
         grade=request.grade,
         time_range_days=request.time_range_days,
@@ -234,13 +243,24 @@ def list_reports(
     skip: int = 0,
     limit: int = 20,
     subject_id: Optional[int] = None,
-    db: Session = Depends(get_db)
+    grade: Optional[int] = None,
+    db: Session = Depends(get_db),
+    kid_id: Optional[int] = Depends(get_current_kid_id),
 ):
-    """获取报告列表"""
+    """获取报告列表
+
+    按小孩隔离：当前小孩（X-Kid-Id 头 / child 自身登录）只能看到自己生成的报告；
+    兼容历史 NULL 归属报告（早期版本未写入 user_id），仍可见。
+    grade 过滤：前端一直传 grade 但旧版被忽略，补上参数契约（报告按空间年级过滤）。
+    """
     query = db.query(LearningReport).filter(LearningReport.deleted == False)
 
     if subject_id:
         query = query.filter(LearningReport.subject_id == subject_id)
+    if grade:
+        query = query.filter(LearningReport.grade == grade)
+    if kid_id is not None:
+        query = query.filter(or_(LearningReport.user_id == kid_id, LearningReport.user_id.is_(None)))
 
     total = query.count()
     reports = query.order_by(LearningReport.created_at.desc()).offset(skip).limit(limit).all()
@@ -297,8 +317,14 @@ def get_report(report_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{report_id}")
-def delete_report(report_id: int, db: Session = Depends(get_db)):
-    """删除报告（软删除）"""
+def delete_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """删除报告（软删除）
+    家长认证：学生（child）不能删除报告，必须家长（admin）操作
+    """
     report = db.query(LearningReport).filter(
         LearningReport.id == report_id,
         LearningReport.deleted == False

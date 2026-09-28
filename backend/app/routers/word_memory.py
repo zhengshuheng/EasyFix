@@ -43,14 +43,41 @@ class MemoryReviewSubmitRequest(BaseModel):
 
 
 @router.get("/audio")
-def word_audio_by_english(english: str, db: Session = Depends(get_db)):
-    """按英文单词直接取发音音频（拼读规则示例词用；词库没有时现场 TTS 生成，不再 404）"""
+def word_audio_by_english(
+    english: str,
+    lang: str = Query("en-US", description="语言：en-US（默认）/ zh-CN；句子/中文走 edge-tts"),
+    db: Session = Depends(get_db),
+):
+    """按英文单词直接取发音音频（拼读规则示例词用；词库没有时现场 TTS 生成，不再 404）。
+
+    单词（无空格）→ 有道/Free Dictionary/edge 三级 fallback（generate_word_audio）。
+    句子/中文（含空格、超长或 lang=zh-CN）→ edge-tts（浏览器 speechSynthesis 降级场景）。
+    """
     import re
     from fastapi.responses import FileResponse
     from app.services.tts import tts_service
     text = english.strip()
     if not text:
         raise HTTPException(status_code=400, detail="english 不能为空")
+
+    # 中文朗读降级（speakZh 用）：直接 edge-tts
+    if lang.lower().startswith("zh"):
+        try:
+            audio_path = tts_service.generate_sentence_audio(text, lang="zh-CN")
+            media_type = "audio/mpeg" if audio_path.endswith(".mp3") else "audio/wav"
+            return FileResponse(audio_path, media_type=media_type)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"中文语音生成失败: {e}")
+
+    # 英文句子/短语（含空格或超长）→ edge-tts；有道/Free Dictionary 只支持单词
+    if " " in text or len(text) > 30:
+        try:
+            audio_path = tts_service.generate_sentence_audio(text, lang="en-US")
+            media_type = "audio/mpeg" if audio_path.endswith(".mp3") else "audio/wav"
+            return FileResponse(audio_path, media_type=media_type)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"句子语音生成失败: {e}")
+
     word = db.query(Word).filter(
         Word.deleted == False,  # noqa: E712
         func.lower(Word.english) == text.lower(),
