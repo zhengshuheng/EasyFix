@@ -336,6 +336,18 @@
     line-height: 36px;
   }
 
+  /* tab 多且容器窄时：nav 不被 flex 压缩（压缩后所有 tab 挤在一行、右侧被裁，
+     看起来"展示不全"），改为保持自然宽度 + 在 nav-wrap 内横向滚动看全。
+     min-width: max-content 兜底旧浏览器不识别 flex-shrink:0 的场景。 */
+  .el-tabs__nav {
+    flex-shrink: 0;
+    min-width: max-content;
+  }
+
+  .el-tabs__item {
+    white-space: nowrap;
+  }
+
   /* ---------- 描述列表 / 标签 / 进度 ---------- */
   .el-descriptions__body .el-descriptions__table {
     display: block;
