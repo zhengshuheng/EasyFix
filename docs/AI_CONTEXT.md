@@ -201,7 +201,7 @@
 - **删除体验账号 = `delete_space(key)`（trial.py）**：dispose 引擎 → 删 db/-wal/-shm 文件 → 删 registry 行；文件删除失败（Windows 句柄占用）会**重试一次后抛 RuntimeError**，运营接口转 500 明确告知（旧版静默 print 导致孤儿文件堆积）。孤儿文件（registry 无记录）服务不会访问，可安全删除；本次已清 20 个历史孤儿 db + 附属 wal/shm（38 文件）。
 - **运营后台登录态持久化**：`frontend/ops/src/stores/session.js` 把 username/password 存 localStorage（`ops_session_username`/`ops_session_password`），刷新不掉登录；退出清 localStorage。明文存口令仅限内部工具（双因子 X-Ops-* 头无 token）。
 - **smart-import 支持 `skip_online_textbook: bool`**（KPSmartImportRequest）：跳过④在线教材下载（PDF 大、下载慢），直接⑤AI 兜底；③本地教材不受影响。前端 AiImportDialog 知识点模式有「跳过在线教材下载」勾选。
-- **一键部署（deploy.bat → deploy.ps1 → remote_deploy.sh）已对齐 ops 与 trial_data**：①`deploy.ps1` 构建步骤含 `npm run build:ops`（dist-ops 必须构建才会进包）②`Dockerfile` COPY `frontend/ops/dist-ops`（漏了服务器 /ops 404）③tar 已 `--exclude=backend/trial_data`（本地空间库/注册表/模板**不上传**），容器挂载 `$DATA_DIR/trial_data:/app/backend/trial_data`，首启自动生成 template.db + registry.db（`ensure_template_db`/`_registry_conn` 幂等）。改 deploy.ps1 后必须重写 UTF-8 BOM + Parser 零错误（edit_file 会丢 BOM）。
+- **一键部署（deploy.bat → deploy.ps1 → remote_deploy.sh）已对齐 ops 与 trial_data**：①`deploy.ps1` 构建步骤含 `npm run build:ops`（dist-ops 必须构建才会进包）②`Dockerfile` COPY `frontend/ops/dist-ops`（漏了服务器 /ops 404）③tar 已 `--exclude=backend/trial_data`（本地空间库/注册表/模板**不上传**），容器挂载 `$DATA_DIR/trial_data:/app/backend/trial_data`，首启自动生成 template.db + registry.db（`ensure_template_db`/`_registry_conn` 幂等）。改 deploy.ps1 后必须重写 UTF-8 BOM + Parser 零错误（edit_file 会丢 BOM）。③tar 已 `--exclude=tools/tmp`（2026-09-28：本地 8014 服务锁住 `tools/tmp/srv_8014_info.log` → tar Permission denied → 部署中断；tools/tmp 是本地临时产物本就不该进包）。
 - **验证 smart-import 会触发真实任务写主库**（本地识别/AI 生成/在线下载导入）→ 验证后必须按 subject/version/grade/semester 清理 `ops_knowledge_point`（本次北师大三上由 ~152 增至 396、语文人教版1上新增 90 条，均已处理：90 条已删，北师大保留现状待用户定夺）。
 
 ## 3.6 辅助家长账号官网登录（2026-09-28 修复闭环）
@@ -216,7 +216,7 @@
   - 官网注册校验用户名=手机号/旧用户名 + 强密码（`Abc@12345` 级别）；**辅助账号用户名任意但必须全局唯一**（与官网已注册账号撞名 → 400 提示换名）。
   - 辅助账号密码规则沿用空间内（≥4 位），官网登录不校验强度（只校验存在+密码）；两边密码不同步=登录失败。
   - `remote_deploy.sh` 的 schema 漂移检查脚本用 `conn.dialect`（sqlite3.Connection 无此属性）会警告失败——**无害**（应用启动 main.py 迁移兜底），已改为 `create_engine('sqlite:///...').dialect`。
-- **坑2（9/28 同日，ParentLockDialog 原生 fetch）**：`frontend/src/components/ParentLockDialog.vue` 的家长密码锁用**原生 fetch(`/api/auth/me`)**（不走 `@/api/http`）→ **缺 X-Trial-Key** → 租户中间件不切库 → me 落**主库** → 主库 `User.id` 与租户库**错位**（同 id 可能是 child）→ `role==='admin'` 候选收集失败 → 只剩 registry 主账号名，辅助账号**输对密码也全败**（弹窗不关=「家长中心进不去」）。已修：原生 fetch 手动拼 `X-Trial-Key`（URL pathname 解析 `/{key}/`，回退 localStorage `easyfix_trial_key`）。**铁律：空间内任何原生 fetch 必须带 X-Trial-Key；一律优先走 `@/api/http` 的 `api` 实例。**
+- **坑2（9/28 同日，ParentLockDialog 原生 fetch）**：`frontend/src/components/ParentLockDialog.vue` 的家长密码锁用**原生 fetch(`/api/auth/me`)**（不走 `@/api/http`）→ **缺 X-Trial-Key** → 租户中间件不切库 → me 落**主库** → 主库 `User.id` 与租户库**错位**（同 id 可能是 child）→ `role==='admin'` 候选收集失败 → 只剩 registry 主账号名，辅助账号**输对密码也全败**（弹窗不关=「家长中心进不去」）。已修：原生 fetch 手动拼 `X-Trial-Key`（URL pathname 解析 `/{key}/`，回退 localStorage `easyfix_trial_key`）。**铁律：空间内任何原生 fetch 必须带 X-Trial-Key；一律优先走 `@/api/http` 的 `api` 实例。** **坑2b（同日再翻车）**：候选2（`/api/trial/status` 拿 registry 主账号名）只读 `localStorage.getItem('easyfix_trial_key')`——残留别的空间 key 会查错空间、缺失（官网跳转前瞬间）直接跳过 → 辅助家长**输主账号密码也进不去**。已修：trialKey 统一提前到 unlock() 顶层，**URL pathname 解析优先、localStorage 仅兜底**（与候选1 一致，commit b9577dc）。**部署后旧 JS 缓存仍会显示旧行为（「进不去」）——验证前强制刷新/无痕。**
 
 ## 4. 判分/评测相关文档索引
 
