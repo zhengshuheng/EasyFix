@@ -79,6 +79,7 @@ class OpsWord(Base):
     phonetic = Column(String(100), nullable=True)
     example_sentences = Column(Text, nullable=True)  # 例句 JSON：[{"en","zh"}]
     revision = Column(String(20), nullable=True)   # 数据修订号
+    source_type = Column(String(20), nullable=True, default="ai")  # 来源：authority(权威词表)/ai(AI生成)/pdf(教材PDF提取)/manual(人工)
     deleted = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=now_local, server_default=func.now())
     updated_at = Column(DateTime, default=now_local, onupdate=now_local)
@@ -188,6 +189,7 @@ def ensure_ops_tables() -> None:
             ("ops_knowledge_point", kp_cols, "ALTER TABLE ops_knowledge_point ADD COLUMN import_batch VARCHAR(24)"),
             ("ops_word", word_cols, "ALTER TABLE ops_word ADD COLUMN revision VARCHAR(20)"),
             ("ops_word", word_cols, "ALTER TABLE ops_word ADD COLUMN example_sentences TEXT"),
+            ("ops_word", word_cols, "ALTER TABLE ops_word ADD COLUMN source_type VARCHAR(20)"),
         ):
             name = ddl.split("ADD COLUMN ")[1].split(" ")[0]
             if name not in cols and ddl.split(" ")[2] == table:
@@ -209,6 +211,12 @@ def ensure_ops_tables() -> None:
             db.execute(sa_text(
                 "UPDATE ops_knowledge_point SET ocr_mode='llm' "
                 "WHERE ocr_mode IS NULL AND source_type IN ('ai')"
+            ))
+            db.commit()
+        # 历史数据回填 source_type（word：早期 AI/手动导入统一标 ai，幂等）
+        if "source_type" in word_cols:
+            db.execute(sa_text(
+                "UPDATE ops_word SET source_type='ai' WHERE source_type IS NULL"
             ))
             db.commit()
     finally:

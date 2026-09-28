@@ -512,7 +512,7 @@ def daily_task(
             continue
 
         due = (p.next_review_at and p.next_review_at <= now) or (
-            p.learning_phase in ("遗忘点", "在途")
+            p.learning_phase in ("遗忘点", "在途", "易错")
             and (p.correct_count or 0) < (p.review_count or 0) * 0.6
         )
         if due:
@@ -1547,7 +1547,7 @@ def submit_review(data: ReviewSessionSubmit, db: Session = Depends(get_db)):
                 progress.interval = MASTERED_RELAPSE_INTERVAL
             else:
                 progress.interval = 1  # 错误后重置为1天
-            progress.learning_phase = "在途"  # 退回在途
+            progress.learning_phase = "易错"  # 答错标记为「易错」（区别于学习中/在途）
 
         # 计算下次复习时间
         progress.last_reviewed_at = now

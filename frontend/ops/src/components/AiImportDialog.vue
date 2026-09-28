@@ -84,7 +84,7 @@
     <el-alert v-if="msg" :title="msg" :type="msgType" :closable="false" show-icon class="mb" />
 
     <template v-if="preview.length">
-      <el-table :data="preview" border max-height="380" size="small" @selection-change="onSel">
+      <el-table :data="preview" ref="tableRef" :row-key="r => r.english || r.name" border max-height="380" size="small" @selection-change="onSel">
         <el-table-column type="selection" width="42" />
         <template v-if="type === 'kp'">
           <el-table-column prop="name" label="知识点" min-width="170" show-overflow-tooltip />
@@ -98,9 +98,11 @@
           <el-table-column prop="unit" label="单元" width="64" />
           <el-table-column prop="phonetic" label="音标" width="120" show-overflow-tooltip />
         </template>
-        <el-table-column label="状态" width="110">
+        <el-table-column label="状态" width="200">
           <template #default="{ row }">
-            <el-tag v-if="row.existing" type="warning" size="small">已存在·更新</el-tag>
+            <el-tag v-if="row.existing" type="warning" size="small">
+              {{ (row.exist_grades && row.exist_grades.length ? '已存在于 ' + row.exist_grades.join('、') : '已存在·更新') }}
+            </el-tag>
           </template>
         </el-table-column>
       </el-table>
@@ -113,7 +115,7 @@
 </template>
 
 <script setup>
-import { computed, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { opsApi } from '../api/ops.js'
 
@@ -125,6 +127,7 @@ const mode = ref('textbook')
 const form = reactive({ subject: '', version: '', grade: 1, semester: 1, instruction: '' })
 const preview = ref([])
 const selected = ref([])
+const tableRef = ref()
 const generating = ref(false)
 const importing = ref(false)
 const checking = ref(false)
@@ -267,10 +270,22 @@ async function generate() {
     setMsg('AI 生成中（约 1~3 分钟），请稍候…', 'info')
     const path = props.type === 'kp' ? '/knowledge-points/ai-generate' : '/words/ai-generate'
     const r = await opsApi().post(path, body)
-    preview.value = r.items || r.words || []
+    const all = r.items || r.words || []
+    // 自动去重：已存在（跨册/同册）的词直接不进入确认界面，只展示新词；用户仍可在词管理里单独补充
+    const fresh = all.filter(x => !x.existing)
+    preview.value = fresh
     selected.value = []
-    if (preview.value.length) setMsg(`✅ 生成 ${preview.value.length} 条，请勾选后导入`, 'success')
-    else setMsg('AI 未生成内容，请调整描述重试', 'warning')
+    const skipped = all.length - fresh.length
+    if (preview.value.length) {
+      nextTick(() => {
+        preview.value.forEach(row => tableRef.value?.toggleRowSelection(row, true))
+      })
+      setMsg(`✅ 生成 ${all.length} 条，自动跳过已存在 ${skipped} 条，待导入 ${fresh.length} 条`, 'success')
+    } else if (skipped) {
+      setMsg(`⚠️ 生成 ${all.length} 条全部已存在（已自动去重），无需导入`, 'warning')
+    } else {
+      setMsg('AI 未生成内容，请调整描述重试', 'warning')
+    }
   } catch (e) {
     setMsg('AI 生成失败，请重试', 'error')
   } finally {
@@ -284,6 +299,7 @@ function onSel(rows) {
 
 async function doImport() {
   if (!selected.value.length) return
+  if (!form.grade || !form.semester) { setMsg('请选择：年级、册次', 'error'); return }
   importing.value = true
   try {
     const items = selected.value.map(({ existing, ...rest }) => rest)

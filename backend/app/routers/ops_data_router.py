@@ -452,7 +452,10 @@ def ops_word_ai_generate(req: WordAiGenerateRequest,
             raise HTTPException(status_code=400, detail="教材模式需要选择：版本、年级（册次可选）")
         grade_cn = f"{req.grade}年级"
         sem_cn = "上册" if req.semester == 1 else ("下册" if req.semester == 2 else "")
-        task = f"教材：英语《{req.version}》{grade_cn}{sem_cn or '全一册'}\n请依据这套教材的真实内容，生成该册全册的单元单词表。"
+        task = (f"教材：英语《{req.version}》{grade_cn}{sem_cn or '全一册'}\n"
+                "请依据这套教材的真实内容，生成该册全册的单元单词表。"
+                "注意：只列本册新学词汇（含该册单元复习词），不同年级/册次的词汇表必须有明显区分；"
+                "像 hello/hi/bye 等基础问候语仅在其首次出现的册次保留，不要把其他册次已学的基础词大量重复列进来。")
     else:
         if not req.instruction or not req.instruction.strip():
             raise HTTPException(status_code=400, detail="请先输入导入指令，例如：我要导入沪教版深圳英语三年级上册 全册")
@@ -499,17 +502,16 @@ def ops_word_ai_generate(req: WordAiGenerateRequest,
             )
             if req.version:
                 q = q.filter(OpsWord.version == req.version)
-            if req.grade is not None:
-                q = q.filter(OpsWord.grade == req.grade)
-            if req.semester is not None:
-                q = q.filter(OpsWord.semester == req.semester)
+            # 跨册查重：同版本任意年级/册次已存在 → 标记 existing（前端提示"已存在·更新"，用户可不勾选避免跨册重复导入）
+            existing_rows = q.all()
             out.append({
                 "english": en,
                 "chinese": cn,
                 "phonetic": (w.get("phonetic") or "").strip() or "",
                 "unit": w.get("unit"),
                 "unit_title": w.get("unit_title") or "",
-                "existing": q.first() is not None,
+                "existing": bool(existing_rows),
+                "exist_grades": sorted({f"{r.grade}年级{'上' if r.semester == 1 else '下'}" for r in existing_rows}),
             })
         db.close()
     finally:
@@ -532,18 +534,25 @@ def ops_word_import(req: WordImportRequest,
                     x_ops_username: str = Header(default=""), x_ops_password: str = Header(default="")):
     """勾选导入单词到运营主库：english+version+grade+semester 已存在则更新，否则新增（幂等 upsert）"""
     _ops_check(x_ops_username, x_ops_password)
+    if req.grade is None or req.semester is None:
+        raise HTTPException(status_code=400, detail="导入单词必须选择年级和册次（grade/semester 不能为空）")
     db = _db()
     try:
         ok = 0
         skip = 0
+        seen = set()  # 同请求去重（Session autoflush=False，重复词第二次 SELECT 看不到 pending 新词 → 同批 flush 撞 UNIQUE 500）
         for w in req.words:
             en = (w.get("english") or "").strip()
             cn = (w.get("chinese") or "").strip()
             if not en or not cn:
                 skip += 1
                 continue
+            key = (req.version, req.grade, req.semester, en.lower())
+            if key in seen:
+                skip += 1
+                continue
+            seen.add(key)
             row = db.query(OpsWord).filter(
-                OpsWord.deleted == False,
                 func.lower(OpsWord.english) == en.lower(),
                 OpsWord.version == req.version,
             )
@@ -551,8 +560,10 @@ def ops_word_import(req: WordImportRequest,
                 row = row.filter(OpsWord.grade == req.grade)
             if req.semester is not None:
                 row = row.filter(OpsWord.semester == req.semester)
-            row = row.first()
+            row = row.order_by(OpsWord.deleted.asc()).first()  # 优先 active 行；软删行命中则复活
             if row:
+                if row.deleted:
+                    row.deleted = False  # 复活软删词，避免 UNIQUE(version,grade,semester,english) 冲突 500
                 row.chinese = cn
                 if w.get("phonetic"):
                     row.phonetic = str(w["phonetic"]).strip() or None

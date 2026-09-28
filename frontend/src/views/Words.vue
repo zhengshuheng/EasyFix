@@ -64,30 +64,6 @@
             <span class="ds-go">开始 ›</span>
           </div>
         </div>
-
-        <!-- 已学会的词：让家长/孩子能看到「学过哪些词」，不再只靠今日任务列表 -->
-        <div v-if="dailyTask.loaded && dailyTask.learned_count > 0" class="dt-learned">
-          <div class="dt-learned-head" @click="learnedOpen = !learnedOpen">
-            <span class="dl-icon">✅</span>
-            <span class="dl-title">已学会的词</span>
-            <b class="dl-count">{{ dailyTask.learned_count }}</b>
-            <span class="dl-phases">
-              <span v-for="(n, ph) in dailyTask.learned_phase_counts" :key="ph"
-                    class="phase-chip" :class="phaseClass(ph)">
-                {{ ph }} {{ n }}
-              </span>
-            </span>
-            <span class="dl-toggle">{{ learnedOpen ? '收起 ▴' : '展开 ▾' }}</span>
-          </div>
-          <div v-show="learnedOpen" class="dt-learned-body">
-            <div v-for="w in dailyTask.learned_words" :key="w.word_id" class="dl-word">
-              <span class="dl-en">{{ w.english }}</span>
-              <span class="dl-cn">{{ w.chinese }}</span>
-              <span class="phase-badge" :class="phaseClass(w.learning_phase)">{{ w.learning_phase }}</span>
-              <span class="dl-stat">练 {{ w.review_count }} 次 · 正确率 {{ w.accuracy }}%</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- 筛选条件 -->
@@ -105,9 +81,6 @@
         <el-select v-model="filters.semester" placeholder="学期" clearable @change="fetchWords" style="width: 100px">
           <el-option label="上学期" :value="1" />
           <el-option label="下学期" :value="2" />
-        </el-select>
-        <el-select v-model="filters.tag_id" placeholder="标签" clearable @change="fetchWords" style="width: 150px">
-          <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
       </div>
 
@@ -243,7 +216,7 @@
               <div class="phase-track">
                 <div
                   class="phase-dot"
-                  v-for="(phase, idx) in ['新学', '在途', '遗忘点', '牢记']"
+                  v-for="(phase, idx) in ['新学', '在途', '易错', '遗忘点', '牢记']"
                   :key="phase"
                   :class="{ active: memoryCurve.learning_phase === phase }"
                   :style="{ left: phasePosition[phase] + '%', borderColor: memoryCurve.learning_phase === phase ? phaseColors[phase] : '#ddd' }"
@@ -661,12 +634,10 @@ const route = useRoute()
 const subjectStore = useSubjectStore()
 const kidStore = useKidStore()
 const words = ref({ total: 0, items: [] })
-const allTags = ref([])
 const filters = reactive({
   keyword: '',
   grade: null,
   semester: null,
-  tag_id: null,
   accuracy_level: null,
   sort_by: null,
   sort_order: 'desc',
@@ -858,17 +829,7 @@ const reviewResult = reactive({
 // ===== 今日任务（四维记忆）=====
 const DIMENSION_NAMES = { recognize: '认得', listen: '听得', speak: '说得', write: '写得' }
 const DIM_TYPE = { recognize: 2, listen: 4, speak: 1, write: 3 } // 维度 → 复习题型
-const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'], learned_count: 0, learned_words: [], learned_phase_counts: {} })
-const learnedOpen = ref(false)
-
-// 阶段徽章配色：新学/在途/遗忘点/牢记（后端 learning_phase 文案）
-function phaseClass(ph) {
-  if (ph === '牢记' || ph === 'mastered') return 'ph-mastered'
-  if (ph === '遗忘点' || ph === 'weak') return 'ph-weak'
-  if (ph === '在途' || ph === 'learning' || ph === 'good') return 'ph-learning'
-  if (ph === '已学' || ph === 'seen') return 'ph-seen'
-  return 'ph-new'
-}
+const dailyTask = reactive({ loaded: false, total: 0, wrong_count: 0, due_count: 0, new_count: 0, enabled_dimensions: ['recognize', 'listen', 'speak', 'write'] })
 
 const dimConfigVisible = ref(false)
 const dimConfigForm = reactive({ recognize: true, listen: true, speak: true, write: true, perWordDims: 1, categoryCap: 15, showPinyin: false, zhReadAloud: false, autoRead: true, autoReadTimes: 2, learnMode: 'standard', showSentenceZh: true })
@@ -1057,9 +1018,6 @@ async function loadDailyTask() {
     dailyTask.due_count = data.due_count || 0
     dailyTask.new_count = data.new_count || 0
     dailyTask.enabled_dimensions = data.enabled_dimensions || enabledDims()
-    dailyTask.learned_count = data.learned_count || 0
-    dailyTask.learned_words = data.learned_words || []
-    dailyTask.learned_phase_counts = data.learned_phase_counts || {}
   } catch (e) { /* 静默 */ }
 }
 
@@ -1160,15 +1118,12 @@ async function openDailyTask(category = 'due') {
     // 必须带 X-Trial-Key：裸 fetch 不带头会落主库，复习题/已学词会错读主库 demo 数据
     const res = await fetch(`/api/words/daily-task?${qs}`, { headers: apiHeaders() })
     const task = await res.json()
-    // 刷新顶部计数与「已学会的词」，让练完立即反映
+    // 刷新顶部计数，让练完立即反映
     dailyTask.loaded = true
     dailyTask.total = task.total || 0
     dailyTask.wrong_count = task.wrong_count || 0
     dailyTask.due_count = task.due_count || 0
     dailyTask.new_count = task.new_count || 0
-    dailyTask.learned_count = task.learned_count || 0
-    dailyTask.learned_words = task.learned_words || []
-    dailyTask.learned_phase_counts = task.learned_phase_counts || {}
     const built = buildDailyQuestions(task, category)
     if (!built.length) {
       ElMessage.info(DAILY_CATEGORY_NAMES[category] + '已清空，明天再来吧')
@@ -1377,16 +1332,18 @@ const fetchMemoryCurve = async (wordId) => {
 const phaseColors = {
   '新学': '#909399',
   '在途': '#409eff',
+  '易错': '#f56c6c',
   '遗忘点': '#e6a23c',
   '牢记': '#67c23a'
 }
 
 // 阶段对应的进度位置
 const phasePosition = {
-  '新学': 12.5,
-  '在途': 37.5,
-  '遗忘点': 62.5,
-  '牢记': 87.5
+  '新学': 10,
+  '在途': 30,
+  '易错': 50,
+  '遗忘点': 70,
+  '牢记': 90
 }
 
 // 格式化日期
@@ -1509,7 +1466,6 @@ const fetchWords = async () => {
     if (filters.keyword) params.keyword = filters.keyword
     if (filters.grade) params.grade = filters.grade
     if (filters.semester) params.semester = filters.semester
-    if (filters.tag_id) params.tag_ids = filters.tag_id
     if (filters.accuracy_level) params.accuracy_level = filters.accuracy_level
     if (filters.sort_by) {
       params.sort_by = filters.sort_by
@@ -1526,15 +1482,6 @@ const fetchWords = async () => {
     }
   } catch (error) {
     ElMessage.error('获取单词列表失败')
-  }
-}
-
-const fetchTags = async () => {
-  try {
-    const { data } = await questionApi.listTags()
-    allTags.value = data
-  } catch (error) {
-    console.error('获取标签失败:', error)
   }
 }
 
@@ -2196,7 +2143,6 @@ onMounted(async () => {
   if (importForm.grade == null) importForm.grade = subjectStore.activeGrade
   loadDimConfig()
   fetchWords()
-  fetchTags()
   loadDailyTask()
 })
 
@@ -2315,84 +2261,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
   flex-shrink: 0;
 }
-
-/* 已学会的词（今日任务卡片内折叠区） */
-.dt-learned {
-  margin-top: 12px;
-  border-top: 1px dashed #e0e8f6;
-  padding-top: 10px;
-}
-.dt-learned-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  user-select: none;
-}
-.dt-learned-head:hover .dl-title { color: #3a7afe; }
-.dl-icon { font-size: 14px; }
-.dl-title { font-weight: 600; color: #4a5a75; }
-.dl-count {
-  background: #eef6ee;
-  color: #529b2e;
-  border-radius: 10px;
-  padding: 1px 9px;
-  font-size: 12px;
-}
-.dl-phases { display: flex; gap: 6px; flex-wrap: wrap; }
-.phase-chip {
-  font-size: 11px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background: #f2f5fa;
-  color: #6b7a91;
-}
-.phase-chip.ph-mastered { background: #eef9eb; color: #529b2e; }
-.phase-chip.ph-learning { background: #eef4ff; color: #3a7afe; }
-.phase-chip.ph-weak { background: #fef0f0; color: #d85c5c; }
-.phase-chip.ph-seen { background: #fdf6ec; color: #d99a2b; }
-.phase-chip.ph-new { background: #f7f7f9; color: #909399; }
-.dl-toggle {
-  margin-left: auto;
-  font-size: 12px;
-  color: #3a7afe;
-  flex-shrink: 0;
-}
-.dt-learned-body {
-  margin-top: 8px;
-  max-height: 260px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.dl-word {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: #fafcff;
-}
-.dl-word:hover { background: #f2f7ff; }
-.dl-en { font-weight: 600; color: #303133; min-width: 92px; }
-.dl-cn { color: #6b7a91; flex: 1; }
-.dl-stat { font-size: 11px; color: #9aa7bd; }
-.phase-badge {
-  font-size: 11px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background: #f2f5fa;
-  color: #6b7a91;
-  flex-shrink: 0;
-}
-.phase-badge.ph-mastered { background: #eef9eb; color: #529b2e; }
-.phase-badge.ph-learning { background: #eef4ff; color: #3a7afe; }
-.phase-badge.ph-weak { background: #fef0f0; color: #d85c5c; }
-.phase-badge.ph-seen { background: #fdf6ec; color: #d99a2b; }
-.phase-badge.ph-new { background: #f7f7f9; color: #909399; }
 
 /* 复习弹窗：维度标签 */
 .dim-tag {
