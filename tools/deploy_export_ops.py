@@ -16,13 +16,19 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MAIN_DB = os.path.join(ROOT, "backend", "easyfix_main.db")
 OUT = os.path.join(ROOT, "deploy", "ops_data.sql")
 
-# 主库 ops 权威表（配置数据，按 id 幂等 upsert）
+# 主库 ops 权威表（配置数据，幂等 upsert）
 TABLES = [
     "grammar_lesson",      # 语法教程（Ops 权威源，44 条）
     "star_action",         # 激励动作规则（11 条 PRESET）
     "achievement",         # 成就定义（19 条）
     "achievement_config",  # 成就配置（3 条）
 ]
+
+# 需要按业务唯一键 upsert 的表（默认按主键 id）：
+# 本地库可能因历史删除 id 与云端错位（本地 star_action=11-21 vs 云端=1-11，
+# 内容相同但 id 不同）。按 id upsert 时新行会撞 code UNIQUE。
+# 业务层对 star_action 一律按 code 引用（StarRecord.action_code），按 code 覆盖安全。
+CONFLICT_BY = {"star_action": "code"}
 
 
 def esc(v):
@@ -61,9 +67,10 @@ def main() -> int:
             idv = row[0]
             vals = ", ".join(esc(v) for v in row)
             upd = ", ".join("%s=excluded.%s" % (c, c) for c in cols[1:])
+            conflict = CONFLICT_BY.get(t, "id")
             lines.append(
                 "INSERT INTO %s (%s) VALUES (%s) "
-                "ON CONFLICT(id) DO UPDATE SET %s;" % (t, ", ".join(cols), vals, upd)
+                "ON CONFLICT(%s) DO UPDATE SET %s;" % (t, ", ".join(cols), vals, conflict, upd)
             )
         total += len(rows)
         print("   %s: %d 条已导出" % (t, len(rows)))
