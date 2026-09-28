@@ -46,6 +46,17 @@
         </div>
       </div>
       <div class="kp-filter-group">
+        <span class="kp-filter-label">来源</span>
+        <div class="kp-filter-chips">
+          <el-radio-group v-model="filters.source_type" size="small" @change="load">
+            <el-radio-button :value="''">全部</el-radio-button>
+            <el-radio-button value="authority">权威</el-radio-button>
+            <el-radio-button value="ai">AI生成</el-radio-button>
+            <el-radio-button value="manual">人工</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+      <div class="kp-filter-group">
         <span class="kp-filter-label">搜索</span>
         <div class="kp-filter-chips">
           <el-input v-model="filters.q" placeholder="搜索英文/中文" clearable style="width:220px;" @keyup.enter="load" />
@@ -60,6 +71,14 @@
       <el-table-column prop="phonetic" label="音标" width="140" />
       <el-table-column prop="unit" label="单元" width="70" />
       <el-table-column prop="revision" label="修订" width="80" />
+      <el-table-column label="来源" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.source_type === 'authority'" type="success" size="small">权威</el-tag>
+          <el-tag v-else-if="row.source_type === 'ai'" type="warning" size="small">AI</el-tag>
+          <el-tag v-else-if="row.source_type === 'manual'" type="info" size="small">人工</el-tag>
+          <span v-else class="src-unknown">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="例句" width="80" align="center">
         <template #default="{ row }">
           <el-tag v-if="hasExample(row)" type="success" size="small">有</el-tag>
@@ -127,7 +146,7 @@ const loading = ref(false)
 const saving = ref(false)
 const filling = ref(false)
 const dialog = ref(false)
-const filters = reactive({ version: '', grade: null, semester: null, q: '' })
+const filters = reactive({ version: '', grade: null, semester: null, source_type: '', q: '' })
 const form = reactive({ id: null, version: '', grade: 1, semester: 1, english: '', chinese: '', phonetic: '', unit: 1, revision: 'v1' })
 
 const allVersions = computed(() => Object.keys(catalog.value.subjects['英语'] || {}))
@@ -166,6 +185,7 @@ async function load() {
     const params = { version: filters.version, page: 1, page_size: 500, q: filters.q }
     if (filters.grade !== null && filters.grade !== '') params.grade = filters.grade
     if (filters.semester !== null && filters.semester !== '') params.semester = filters.semester
+    if (filters.source_type) params.source_type = filters.source_type
     const d = await opsApi().get('/words', { params })
     items.value = d.items
     total.value = d.total

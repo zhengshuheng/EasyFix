@@ -329,6 +329,7 @@ class WordCreateRequest(BaseModel):
 
 @router.get("/words")
 def ops_word_list(version: str, grade: Optional[int] = None, semester: Optional[int] = None,
+                  source_type: Optional[str] = None,
                   q: str = "", page: int = 1, page_size: int = 200,
                   x_ops_username: str = Header(default=""), x_ops_password: str = Header(default="")):
     _ops_check(x_ops_username, x_ops_password)
@@ -342,6 +343,8 @@ def ops_word_list(version: str, grade: Optional[int] = None, semester: Optional[
             query = query.filter(OpsWord.grade == grade)
         if semester is not None:
             query = query.filter(OpsWord.semester == semester)
+        if source_type:
+            query = query.filter(OpsWord.source_type == source_type)
         if q.strip():
             like = f"%{q.strip()}%"
             query = query.filter(OpsWord.english.like(like) | OpsWord.chinese.like(like))
@@ -352,7 +355,8 @@ def ops_word_list(version: str, grade: Optional[int] = None, semester: Optional[
             {"id": r.id, "version": r.version, "grade": r.grade, "semester": r.semester,
              "english": r.english, "chinese": r.chinese, "phonetic": r.phonetic,
              "unit": r.unit, "unit_title": r.unit_title,
-             "example_sentences": r.example_sentences, "revision": r.revision} for r in rows]}
+             "example_sentences": r.example_sentences, "revision": r.revision,
+             "source_type": r.source_type or ""} for r in rows]}
     finally:
         db.close()
 
