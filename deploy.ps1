@@ -141,6 +141,17 @@ if ($opsRc -ne 0) {
     Write-Host "  ops 权威数据已导出（远端自动同步）"
 }
 
+# [1.6/5] 导出权威词表（公开牛津深圳版 12 册；远端容器启动后幂等 upsert 进云端主库）
+Push-Location $Root
+python tools/deploy_export_words.py
+$wordsRc = $LASTEXITCODE
+Pop-Location
+if ($wordsRc -ne 0) {
+    Write-Host "  [警告] 权威词表导出失败（跳过；云端不会同步权威词表。可手动运行: python tools/deploy_export_words.py）" -ForegroundColor Yellow
+} else {
+    Write-Host "  权威词表已导出（远端自动同步）"
+}
+
 # [2/5] 清理并打包本地代码
 Write-Host "[2/5] 清理并打包本地代码..."
 $pkg = Join-Path $Root "deploy_package.tar.gz"

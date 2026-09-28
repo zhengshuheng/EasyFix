@@ -156,5 +156,22 @@ else
     echo ">>> 跳过 ops 数据同步（未检测到 deploy/ops_data.sql 或云端主库）"
 fi
 
+# 权威词表同步：deploy/words_oxford.json（公开牛津深圳版 12 册）幂等 upsert 进云端主库。
+# 策略：同(版本+年级+册次+词)权威覆盖（AI 释义/单元/来源被修正，软删行复活）；
+#       AI 独有的词保留并标 ai，运营后台可筛选人工核对。失败仅警告，不阻断部署。
+if [ -f deploy/words_oxford.json ] && [ -f "$DATA_DIR/easyfix_main.db" ]; then
+    echo ">>> 同步权威词表（牛津深圳版 12 册）..."
+    cp deploy/words_oxford.json "$DATA_DIR/words_oxford.json"
+    cp deploy/words_sync.py "$DATA_DIR/words_sync.py"
+    if docker exec "$CONTAINER_NAME" python3 /data/words_sync.py; then
+        echo ">>> 权威词表同步完成"
+        rm -f "$DATA_DIR/words_oxford.json"
+    else
+        echo ">>> 警告：权威词表同步失败（不影响本次部署；可手动重试: docker exec easyfix python3 /data/words_sync.py）"
+    fi
+else
+    echo ">>> 跳过权威词表同步（未检测到 deploy/words_oxford.json 或云端主库）"
+fi
+
 echo ">>> 当前运行的容器："
 docker ps --filter name="$CONTAINER_NAME" --filter name=caddy

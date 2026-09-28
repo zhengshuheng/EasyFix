@@ -1,0 +1,9824 @@
+{
+ "source_version": "2024-v1",
+ "rows": [
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "hello",
+   "chinese": "你好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "hi",
+   "chinese": "嗨；你好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "goodbye",
+   "chinese": "再见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "morning",
+   "chinese": "早晨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "afternoon",
+   "chinese": "下午",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "evening",
+   "chinese": "傍晚",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "night",
+   "chinese": "夜晚",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "nice",
+   "chinese": "美好的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Hello",
+   "english": "you",
+   "chinese": "你；你们",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "give",
+   "chinese": "给",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "me",
+   "chinese": "我（宾格）",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "a",
+   "chinese": "一个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "please",
+   "chinese": "请",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "thank you",
+   "chinese": "谢谢你",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "ruler",
+   "chinese": "尺子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "book",
+   "chinese": "书",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "pencil",
+   "chinese": "铅笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My classmates",
+   "english": "rubber",
+   "chinese": "橡皮",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "this",
+   "chinese": "这；这个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "is",
+   "chinese": "是",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "my",
+   "chinese": "我的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "your",
+   "chinese": "你的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "touch",
+   "chinese": "触摸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "not",
+   "chinese": "不；不是",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "face",
+   "chinese": "脸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "mouth",
+   "chinese": "嘴巴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "nose",
+   "chinese": "鼻子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "eye",
+   "chinese": "眼睛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "ear",
+   "chinese": "耳朵",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My face",
+   "english": "cute",
+   "chinese": "可爱的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "I",
+   "chinese": "我",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "you",
+   "chinese": "你",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "what",
+   "chinese": "什么",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "house",
+   "chinese": "房子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "sing",
+   "chinese": "唱歌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "dance",
+   "chinese": "跳舞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "read",
+   "chinese": "阅读",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "draw",
+   "chinese": "画画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 I can sing",
+   "english": "can",
+   "chinese": "能；会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "who",
+   "chinese": "谁",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "she",
+   "chinese": "她",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "he",
+   "chinese": "他",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "grandfather",
+   "chinese": "爷爷；外公",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "grandmother",
+   "chinese": "奶奶；外婆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "father",
+   "chinese": "父亲；爸爸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "mother",
+   "chinese": "母亲；妈妈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "yes",
+   "chinese": "是；对",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "no",
+   "chinese": "不；不是",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "mummy",
+   "chinese": "妈妈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "daddy",
+   "chinese": "爸爸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 My family",
+   "english": "sister",
+   "chinese": "姐姐；妹妹",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "tall",
+   "chinese": "高的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "thin",
+   "chinese": "瘦的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "fat",
+   "chinese": "胖的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "short",
+   "chinese": "矮的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "classmate",
+   "chinese": "同班同学",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My friends",
+   "english": "brother",
+   "chinese": "哥哥；弟弟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "how many",
+   "chinese": "多少",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "one",
+   "chinese": "一",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "two",
+   "chinese": "二",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "three",
+   "chinese": "三",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "four",
+   "chinese": "四",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "five",
+   "chinese": "五",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "six",
+   "chinese": "六",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "seven",
+   "chinese": "七",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "eight",
+   "chinese": "八",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "nine",
+   "chinese": "九",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Let's count",
+   "english": "ten",
+   "chinese": "十",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "apple",
+   "chinese": "苹果",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "pear",
+   "chinese": "梨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "peach",
+   "chinese": "桃子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "orange",
+   "chinese": "橙子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "supermarket",
+   "chinese": "超市",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "please",
+   "chinese": "请",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Apples please",
+   "english": "a",
+   "chinese": "一个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "may",
+   "chinese": "可以（请求）",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "have",
+   "chinese": "有；吃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "hamburger",
+   "chinese": "汉堡包",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "pizza",
+   "chinese": "比萨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "cake",
+   "chinese": "蛋糕",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "pie",
+   "chinese": "派；馅饼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "banana",
+   "chinese": "香蕉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 May I have a pie?",
+   "english": "soup",
+   "chinese": "汤",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "farm",
+   "chinese": "农场",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "chick",
+   "chinese": "小鸡",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "duck",
+   "chinese": "鸭子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "cow",
+   "chinese": "奶牛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "pig",
+   "chinese": "猪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 On the farm",
+   "english": "this",
+   "chinese": "这；这个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "zoo",
+   "chinese": "动物园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "bear",
+   "chinese": "熊",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "tiger",
+   "chinese": "老虎",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "monkey",
+   "chinese": "猴子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "panda",
+   "chinese": "熊猫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the zoo",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "colour",
+   "chinese": "颜色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "red",
+   "chinese": "红色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "blue",
+   "chinese": "蓝色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "yellow",
+   "chinese": "黄色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "green",
+   "chinese": "绿色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "brown",
+   "chinese": "棕色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "kite",
+   "chinese": "风筝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the park",
+   "english": "sky",
+   "chinese": "天空",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "boy",
+   "chinese": "男孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "girl",
+   "chinese": "女孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "name",
+   "chinese": "名字",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "my",
+   "chinese": "我的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "your",
+   "chinese": "你的；你们的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "nice",
+   "chinese": "美好的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "meet",
+   "chinese": "遇见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "hello",
+   "chinese": "你好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "I",
+   "chinese": "我",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "am",
+   "chinese": "是",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "hair",
+   "chinese": "头发",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "eye",
+   "chinese": "眼睛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "ear",
+   "chinese": "耳朵",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "nose",
+   "chinese": "鼻子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "mouth",
+   "chinese": "嘴巴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "face",
+   "chinese": "脸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "big",
+   "chinese": "大的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "small",
+   "chinese": "小的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "long",
+   "chinese": "长的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our looks",
+   "english": "short",
+   "chinese": "短的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "toy",
+   "chinese": "玩具",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "ball",
+   "chinese": "球",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "doll",
+   "chinese": "玩具娃娃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "kite",
+   "chinese": "风筝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "bicycle",
+   "chinese": "自行车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "shop",
+   "chinese": "商店",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "super",
+   "chinese": "超级的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "my",
+   "chinese": "我的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Toys I like",
+   "english": "I",
+   "chinese": "我",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "listen",
+   "chinese": "听",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "hear",
+   "chinese": "听见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "sound",
+   "chinese": "声音",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "dog",
+   "chinese": "狗",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "cat",
+   "chinese": "猫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "sheep",
+   "chinese": "绵羊",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "hen",
+   "chinese": "母鸡",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "duck",
+   "chinese": "鸭子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "pig",
+   "chinese": "猪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Sounds",
+   "english": "what",
+   "chinese": "什么",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "table",
+   "chinese": "桌子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "chair",
+   "chinese": "椅子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "desk",
+   "chinese": "书桌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "book",
+   "chinese": "书",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "pencil",
+   "chinese": "铅笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "window",
+   "chinese": "窗户",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "door",
+   "chinese": "门",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Things around us",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "rabbit",
+   "chinese": "兔子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "clever",
+   "chinese": "聪明的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "hop",
+   "chinese": "跳跃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "run",
+   "chinese": "跑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "carrot",
+   "chinese": "胡萝卜",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "garden",
+   "chinese": "花园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "fast",
+   "chinese": "快的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "little",
+   "chinese": "小的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "cute",
+   "chinese": "可爱的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 1,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Clever rabbits",
+   "english": "eat",
+   "chinese": "吃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "good",
+   "chinese": "好的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "morning",
+   "chinese": "早晨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "evening",
+   "chinese": "傍晚",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "night",
+   "chinese": "夜晚",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "day",
+   "chinese": "天；日",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "mum",
+   "chinese": "妈妈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "today",
+   "chinese": "今天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "very well",
+   "chinese": "很好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "ant",
+   "chinese": "蚂蚁",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Good morning",
+   "english": "bear",
+   "chinese": "熊",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "tall",
+   "chinese": "高的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "short",
+   "chinese": "矮的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "boy",
+   "chinese": "男孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "girl",
+   "chinese": "女孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "name",
+   "chinese": "名字",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "fast",
+   "chinese": "快的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "yes",
+   "chinese": "是；对",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 I'm Danny",
+   "english": "no",
+   "chinese": "不；不是",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "one",
+   "chinese": "一",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "two",
+   "chinese": "二",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "three",
+   "chinese": "三",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "four",
+   "chinese": "四",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "five",
+   "chinese": "五",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "six",
+   "chinese": "六",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "seven",
+   "chinese": "七",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "eight",
+   "chinese": "八",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "nine",
+   "chinese": "九",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "ten",
+   "chinese": "十",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Are you Alice?",
+   "english": "new",
+   "chinese": "新的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "run",
+   "chinese": "跑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "write",
+   "chinese": "写字",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "swim",
+   "chinese": "游泳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "fly",
+   "chinese": "飞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "can",
+   "chinese": "能；会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "family",
+   "chinese": "家庭",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "bicycle",
+   "chinese": "自行车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Can you swim?",
+   "english": "skip",
+   "chinese": "跳绳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "young",
+   "chinese": "年轻的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "old",
+   "chinese": "年老的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "sister",
+   "chinese": "姐姐；妹妹",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "brother",
+   "chinese": "哥哥；弟弟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "mummy",
+   "chinese": "妈妈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "daddy",
+   "chinese": "爸爸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "grandmother",
+   "chinese": "奶奶；外婆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 That's my family",
+   "english": "grandfather",
+   "chinese": "爷爷；外公",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "hair",
+   "chinese": "头发",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "head",
+   "chinese": "头",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "face",
+   "chinese": "脸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "long",
+   "chinese": "长的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "short",
+   "chinese": "短的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "eye",
+   "chinese": "眼睛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "ear",
+   "chinese": "耳朵",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "nose",
+   "chinese": "鼻子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 My hair is short",
+   "english": "mouth",
+   "chinese": "嘴巴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "playground",
+   "chinese": "操场",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "slide",
+   "chinese": "滑梯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "swing",
+   "chinese": "秋千",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "seesaw",
+   "chinese": "跷跷板",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "play",
+   "chinese": "玩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "fun",
+   "chinese": "有趣的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 In the playground",
+   "english": "go",
+   "chinese": "去",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "room",
+   "chinese": "房间",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "desk",
+   "chinese": "书桌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "chair",
+   "chinese": "椅子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "put",
+   "chinese": "放",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "in",
+   "chinese": "在……里面",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "on",
+   "chinese": "在……上面",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "box",
+   "chinese": "盒子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 In my room",
+   "english": "bed",
+   "chinese": "床",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "dinner",
+   "chinese": "晚餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "ready",
+   "chinese": "准备好了",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "plate",
+   "chinese": "盘子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "chopsticks",
+   "chinese": "筷子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "bowl",
+   "chinese": "碗",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "spoon",
+   "chinese": "勺子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "eat",
+   "chinese": "吃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Dinner is ready",
+   "english": "hungry",
+   "chinese": "饥饿的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "bird",
+   "chinese": "鸟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "sun",
+   "chinese": "太阳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "cloud",
+   "chinese": "云",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "fly",
+   "chinese": "飞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "sky",
+   "chinese": "天空",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 In the sky",
+   "english": "bright",
+   "chinese": "明亮的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "animal",
+   "chinese": "动物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "forest",
+   "chinese": "森林",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "fox",
+   "chinese": "狐狸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "hippo",
+   "chinese": "河马",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "swan",
+   "chinese": "天鹅",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "white",
+   "chinese": "白色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 In the forest",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "bus",
+   "chinese": "公共汽车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "car",
+   "chinese": "小汽车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "van",
+   "chinese": "面包车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "taxi",
+   "chinese": "出租车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "street",
+   "chinese": "街道",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "light",
+   "chinese": "灯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "stop",
+   "chinese": "停",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 In the street",
+   "english": "go",
+   "chinese": "走；去",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "see",
+   "chinese": "看见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "what",
+   "chinese": "什么",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "star",
+   "chinese": "星星",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "moon",
+   "chinese": "月亮",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "house",
+   "chinese": "房子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "tree",
+   "chinese": "树",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What can you see?",
+   "english": "can",
+   "chinese": "能；会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "touch",
+   "chinese": "触摸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "feel",
+   "chinese": "感觉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "hard",
+   "chinese": "硬的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "soft",
+   "chinese": "软的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "rough",
+   "chinese": "粗糙的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "smooth",
+   "chinese": "光滑的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "bag",
+   "chinese": "包",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Touch and feel",
+   "english": "pencil",
+   "chinese": "铅笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "hear",
+   "chinese": "听见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "train",
+   "chinese": "火车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "ship",
+   "chinese": "船",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "car",
+   "chinese": "小汽车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "plane",
+   "chinese": "飞机",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "bus",
+   "chinese": "公共汽车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "can",
+   "chinese": "能；会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Can you hear a train?",
+   "english": "listen",
+   "chinese": "听",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "doing",
+   "chinese": "做",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "reading",
+   "chinese": "阅读",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "drawing",
+   "chinese": "画画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "singing",
+   "chinese": "唱歌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "dancing",
+   "chinese": "跳舞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "running",
+   "chinese": "跑步",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Things I like doing",
+   "english": "swimming",
+   "chinese": "游泳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "food",
+   "chinese": "食物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "salad",
+   "chinese": "沙拉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "sandwich",
+   "chinese": "三明治",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "bread",
+   "chinese": "面包",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "egg",
+   "chinese": "鸡蛋",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "yummy",
+   "chinese": "好吃的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Food I like",
+   "english": "don't",
+   "chinese": "不",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "animal",
+   "chinese": "动物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "rabbit",
+   "chinese": "兔子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "cat",
+   "chinese": "猫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "dog",
+   "chinese": "狗",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "hamster",
+   "chinese": "仓鼠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "cute",
+   "chinese": "可爱的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Animals I like",
+   "english": "pet",
+   "chinese": "宠物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "spring",
+   "chinese": "春天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "summer",
+   "chinese": "夏天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "autumn",
+   "chinese": "秋天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "winter",
+   "chinese": "冬天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "warm",
+   "chinese": "温暖的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "hot",
+   "chinese": "炎热的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "cool",
+   "chinese": "凉爽的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 The four seasons",
+   "english": "cold",
+   "chinese": "寒冷的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "traffic",
+   "chinese": "交通",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "rule",
+   "chinese": "规则",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "light",
+   "chinese": "灯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "stop",
+   "chinese": "停",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "go",
+   "chinese": "走",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "red",
+   "chinese": "红色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "green",
+   "chinese": "绿色的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Traffic rules",
+   "english": "wait",
+   "chinese": "等待",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "clothes",
+   "chinese": "衣服",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "coat",
+   "chinese": "外套",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "sweater",
+   "chinese": "毛衣",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "trousers",
+   "chinese": "裤子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "socks",
+   "chinese": "袜子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "shoes",
+   "chinese": "鞋子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "wear",
+   "chinese": "穿",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 My clothes",
+   "english": "need",
+   "chinese": "需要",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "activity",
+   "chinese": "活动",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "picnic",
+   "chinese": "野餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "park",
+   "chinese": "公园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "play",
+   "chinese": "玩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "run",
+   "chinese": "跑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "jump",
+   "chinese": "跳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "fun",
+   "chinese": "有趣的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Activities",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "Teachers' Day",
+   "chinese": "教师节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "teacher",
+   "chinese": "老师",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "card",
+   "chinese": "卡片",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "thank",
+   "chinese": "谢谢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "love",
+   "chinese": "爱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "happy",
+   "chinese": "快乐的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Teachers' Day",
+   "english": "give",
+   "chinese": "给",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "girl",
+   "chinese": "女孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "bear",
+   "chinese": "熊",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "house",
+   "chinese": "房子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "bed",
+   "chinese": "床",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "bowl",
+   "chinese": "碗",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "chair",
+   "chinese": "椅子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "story",
+   "chinese": "故事",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 2,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 A girl and three bears",
+   "english": "afraid",
+   "chinese": "害怕的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "happy",
+   "chinese": "开心的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "sad",
+   "chinese": "伤心的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "angry",
+   "chinese": "生气的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "tired",
+   "chinese": "疲倦的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "cold",
+   "chinese": "冷的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "boy",
+   "chinese": "男孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "girl",
+   "chinese": "女孩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "find",
+   "chinese": "找到",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "pencil",
+   "chinese": "铅笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we feel?",
+   "english": "well",
+   "chinese": "好；好啦",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "family",
+   "chinese": "家庭",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "father",
+   "chinese": "爸爸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "mother",
+   "chinese": "妈妈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "brother",
+   "chinese": "哥哥；弟弟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "sister",
+   "chinese": "姐姐；妹妹",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "grandfather",
+   "chinese": "爷爷；外公",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "grandmother",
+   "chinese": "奶奶；外婆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "who",
+   "chinese": "谁",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "twin",
+   "chinese": "双胞胎之一",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 What's interesting about families?",
+   "english": "big",
+   "chinese": "大的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "head",
+   "chinese": "头",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "eye",
+   "chinese": "眼睛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "ear",
+   "chinese": "耳朵",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "mouth",
+   "chinese": "嘴巴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "nose",
+   "chinese": "鼻子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "hair",
+   "chinese": "头发",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "face",
+   "chinese": "脸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "long",
+   "chinese": "长的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "short",
+   "chinese": "短的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we look like?",
+   "english": "haircut",
+   "chinese": "理发；发型",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "skip",
+   "chinese": "跳绳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "run",
+   "chinese": "跑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "jump",
+   "chinese": "跳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "park",
+   "chinese": "公园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "ride a bike",
+   "chinese": "骑自行车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "fly a kite",
+   "chinese": "放风筝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "fun",
+   "chinese": "乐趣",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "can",
+   "chinese": "能够",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 How do we have fun?",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "food",
+   "chinese": "食物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "fruit",
+   "chinese": "水果",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "vegetable",
+   "chinese": "蔬菜",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "apple",
+   "chinese": "苹果",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "banana",
+   "chinese": "香蕉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "tomato",
+   "chinese": "西红柿",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "carrot",
+   "chinese": "胡萝卜",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "meat",
+   "chinese": "肉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "fish",
+   "chinese": "鱼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 What do we eat?",
+   "english": "soup",
+   "chinese": "汤",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "animal",
+   "chinese": "动物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "rabbit",
+   "chinese": "兔子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "cat",
+   "chinese": "猫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "dog",
+   "chinese": "狗",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "mouse",
+   "chinese": "老鼠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "frog",
+   "chinese": "青蛙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "tail",
+   "chinese": "尾巴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "cute",
+   "chinese": "可爱的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "small",
+   "chinese": "小的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What do we like about small animals?",
+   "english": "squirrel",
+   "chinese": "松鼠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "weather",
+   "chinese": "天气",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "sunny",
+   "chinese": "晴朗的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "rainy",
+   "chinese": "下雨的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "windy",
+   "chinese": "刮风的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "cloudy",
+   "chinese": "多云的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "hot",
+   "chinese": "热的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "today",
+   "chinese": "今天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "sun",
+   "chinese": "太阳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "rain",
+   "chinese": "雨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we know about weather?",
+   "english": "wind",
+   "chinese": "风",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "birthday",
+   "chinese": "生日",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "cake",
+   "chinese": "蛋糕",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "candle",
+   "chinese": "蜡烛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "gift",
+   "chinese": "礼物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "card",
+   "chinese": "卡片",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "love",
+   "chinese": "爱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "share",
+   "chinese": "分享",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "doll",
+   "chinese": "洋娃娃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "noodles",
+   "chinese": "面条",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Why do we like birthdays?",
+   "english": "afternoon",
+   "chinese": "下午",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "read",
+   "chinese": "阅读",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "sing",
+   "chinese": "唱歌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "dance",
+   "chinese": "跳舞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "swim",
+   "chinese": "游泳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "paint",
+   "chinese": "用颜料画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "hobby",
+   "chinese": "业余爱好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "free",
+   "chinese": "空闲的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "sport",
+   "chinese": "体育运动",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "favourite",
+   "chinese": "最喜欢的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 How do we spend our free time?",
+   "english": "talk",
+   "chinese": "谈论",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "make",
+   "chinese": "做；结交",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "meet",
+   "chinese": "遇见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "smile",
+   "chinese": "微笑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "share",
+   "chinese": "分享",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "kind",
+   "chinese": "友善的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "nice",
+   "chinese": "美好的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "talk",
+   "chinese": "交谈",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 How do we make friends?",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "wear",
+   "chinese": "穿；戴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "coat",
+   "chinese": "外套",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "shirt",
+   "chinese": "衬衫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "sweater",
+   "chinese": "毛衣",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "dress",
+   "chinese": "连衣裙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "skirt",
+   "chinese": "短裙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "trousers",
+   "chinese": "裤子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "shoes",
+   "chinese": "鞋子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "clothes",
+   "chinese": "衣服",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What do we wear?",
+   "english": "uniform",
+   "chinese": "制服",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "hear",
+   "chinese": "听见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "sound",
+   "chinese": "声音",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "bird",
+   "chinese": "鸟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "duck",
+   "chinese": "鸭子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "bee",
+   "chinese": "蜜蜂",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "river",
+   "chinese": "河",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "lake",
+   "chinese": "湖",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "grass",
+   "chinese": "草",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "walk",
+   "chinese": "走",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 What sounds can we hear?",
+   "english": "blow",
+   "chinese": "刮；吹",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "colour",
+   "chinese": "颜色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "red",
+   "chinese": "红色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "blue",
+   "chinese": "蓝色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "green",
+   "chinese": "绿色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "yellow",
+   "chinese": "黄色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "purple",
+   "chinese": "紫色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "garden",
+   "chinese": "花园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "butterfly",
+   "chinese": "蝴蝶",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "sky",
+   "chinese": "天空",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Where can we see colours?",
+   "english": "where",
+   "chinese": "哪里",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "kitchen",
+   "chinese": "厨房",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "bedroom",
+   "chinese": "卧室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "bathroom",
+   "chinese": "浴室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "living room",
+   "chinese": "客厅",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "study",
+   "chinese": "书房",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "sofa",
+   "chinese": "沙发",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "window",
+   "chinese": "窗户",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "room",
+   "chinese": "房间",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "new",
+   "chinese": "新的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 What are our homes like?",
+   "english": "show",
+   "chinese": "展示",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "school",
+   "chinese": "学校",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "classroom",
+   "chinese": "教室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "library",
+   "chinese": "图书馆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "sports ground",
+   "chinese": "操场",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "computer room",
+   "chinese": "电脑室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "art room",
+   "chinese": "美术教室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "welcome",
+   "chinese": "欢迎",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "picture",
+   "chinese": "图画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "schoolbag",
+   "chinese": "书包",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 What do we do at school?",
+   "english": "pencil",
+   "chinese": "铅笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "Children's Day",
+   "chinese": "儿童节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "go to the park",
+   "chinese": "去公园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "go to the zoo",
+   "chinese": "去动物园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "go to the cinema",
+   "chinese": "去电影院",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "museum",
+   "chinese": "博物馆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "elephant",
+   "chinese": "大象",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "film",
+   "chinese": "电影",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "classmate",
+   "chinese": "同班同学",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "shop",
+   "chinese": "商店",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 3,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 What do you do on Children's Day?",
+   "english": "eat",
+   "chinese": "吃",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "city",
+   "chinese": "城市",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "country",
+   "chinese": "乡村",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "building",
+   "chinese": "建筑物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "flat",
+   "chinese": "公寓",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "house",
+   "chinese": "房屋",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "farm",
+   "chinese": "农场",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "street",
+   "chinese": "街道",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "live",
+   "chinese": "居住",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "home",
+   "chinese": "家",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Where do people live?",
+   "english": "people",
+   "chinese": "人们",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "nest",
+   "chinese": "鸟巢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "hive",
+   "chinese": "蜂巢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "tree hole",
+   "chinese": "树洞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "eagle",
+   "chinese": "鹰",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "owl",
+   "chinese": "猫头鹰",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "honeybee",
+   "chinese": "蜜蜂",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "safe",
+   "chinese": "安全的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "live",
+   "chinese": "居住",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "night",
+   "chinese": "夜晚",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Where do animals live?",
+   "english": "honey",
+   "chinese": "蜂蜜",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "number",
+   "chinese": "数字",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "count",
+   "chinese": "数数",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "how many",
+   "chinese": "多少",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "eleven",
+   "chinese": "十一",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "twelve",
+   "chinese": "十二",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "kilo",
+   "chinese": "公斤",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "metre",
+   "chinese": "米",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "weigh",
+   "chinese": "称重",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "heavy",
+   "chinese": "重的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 How do we use numbers?",
+   "english": "light",
+   "chinese": "轻的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "buy",
+   "chinese": "买",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "sell",
+   "chinese": "卖",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "supermarket",
+   "chinese": "超市",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "candy",
+   "chinese": "糖果",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "bread",
+   "chinese": "面包",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "chocolate",
+   "chinese": "巧克力",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "shopping list",
+   "chinese": "购物清单",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "how much",
+   "chinese": "多少钱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "need",
+   "chinese": "需要",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 What do we buy?",
+   "english": "share",
+   "chinese": "分享",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "season",
+   "chinese": "季节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "spring",
+   "chinese": "春天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "summer",
+   "chinese": "夏天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "autumn",
+   "chinese": "秋天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "winter",
+   "chinese": "冬天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "warm",
+   "chinese": "温暖的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "hot",
+   "chinese": "炎热的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "cool",
+   "chinese": "凉爽的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "cold",
+   "chinese": "寒冷的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 How are the seasons different?",
+   "english": "different",
+   "chinese": "不同的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "plant",
+   "chinese": "植物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "leaf",
+   "chinese": "叶子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "root",
+   "chinese": "根",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "seed",
+   "chinese": "种子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "sunflower",
+   "chinese": "向日葵",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "soil",
+   "chinese": "土壤",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "grow",
+   "chinese": "生长",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "fruit",
+   "chinese": "果实；水果",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 What's amazing about plants?",
+   "english": "amazing",
+   "chinese": "令人惊叹的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "road",
+   "chinese": "马路",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "safe",
+   "chinese": "安全的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "traffic light",
+   "chinese": "交通信号灯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "green light",
+   "chinese": "绿灯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "red light",
+   "chinese": "红灯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "wait",
+   "chinese": "等待",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "cross",
+   "chinese": "穿越；过马路",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "left",
+   "chinese": "左边",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "right",
+   "chinese": "右边",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 How do we keep safe on the road?",
+   "english": "look",
+   "chinese": "看",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "grandfather",
+   "chinese": "爷爷；外公",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "grandmother",
+   "chinese": "奶奶；外婆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "grandparent",
+   "chinese": "祖父母；外祖父母",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "visit",
+   "chinese": "拜访",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "cook",
+   "chinese": "烹饪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "tell stories",
+   "chinese": "讲故事",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "work",
+   "chinese": "工作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "garden",
+   "chinese": "花园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "walk",
+   "chinese": "散步",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 What do our grandparents do?",
+   "english": "love",
+   "chinese": "爱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "get up",
+   "chinese": "起床",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "breakfast",
+   "chinese": "早餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "lunch",
+   "chinese": "午餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "dinner",
+   "chinese": "晚餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "go to school",
+   "chinese": "去上学",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "go to bed",
+   "chinese": "上床睡觉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "brush teeth",
+   "chinese": "刷牙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "wash face",
+   "chinese": "洗脸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "schedule",
+   "chinese": "作息安排",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 What is your daily schedule?",
+   "english": "usually",
+   "chinese": "通常",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "school",
+   "chinese": "学校",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "classroom",
+   "chinese": "教室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "library",
+   "chinese": "图书馆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "playground",
+   "chinese": "操场",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "subject",
+   "chinese": "学科",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "lesson",
+   "chinese": "课",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "learn",
+   "chinese": "学习",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "fun",
+   "chinese": "乐趣",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 What do we like about school?",
+   "english": "like",
+   "chinese": "喜欢",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "job",
+   "chinese": "工作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "doctor",
+   "chinese": "医生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "nurse",
+   "chinese": "护士",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "teacher",
+   "chinese": "老师",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "farmer",
+   "chinese": "农民",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "driver",
+   "chinese": "司机",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "worker",
+   "chinese": "工人",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "great",
+   "chinese": "很棒的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 What's great about jobs?",
+   "english": "work",
+   "chinese": "工作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "music",
+   "chinese": "音乐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "sing",
+   "chinese": "唱歌",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "dance",
+   "chinese": "跳舞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "play",
+   "chinese": "演奏；玩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "drum",
+   "chinese": "鼓",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "violin",
+   "chinese": "小提琴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "piano",
+   "chinese": "钢琴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "make",
+   "chinese": "制作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "sound",
+   "chinese": "声音",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 How can we make music?",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "art",
+   "chinese": "艺术；美术",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "draw",
+   "chinese": "画画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "paint",
+   "chinese": "用颜料画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "colour",
+   "chinese": "颜色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "picture",
+   "chinese": "图画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "paper",
+   "chinese": "纸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "scissors",
+   "chinese": "剪刀",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "glue",
+   "chinese": "胶水",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "make",
+   "chinese": "制作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 How do we make art?",
+   "english": "beautiful",
+   "chinese": "美丽的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "clock",
+   "chinese": "钟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "hour",
+   "chinese": "小时",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "minute",
+   "chinese": "分钟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "o'clock",
+   "chinese": "……点钟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "half past",
+   "chinese": "半点",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "quarter",
+   "chinese": "一刻钟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "watch",
+   "chinese": "手表",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "early",
+   "chinese": "早的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "late",
+   "chinese": "迟的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 How do we measure time?",
+   "english": "time",
+   "chinese": "时间",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "change",
+   "chinese": "变化",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "melt",
+   "chinese": "融化",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "freeze",
+   "chinese": "结冰",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "grow",
+   "chinese": "生长",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "seed",
+   "chinese": "种子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "water",
+   "chinese": "水",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "sun",
+   "chinese": "太阳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "ice",
+   "chinese": "冰",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "butterfly",
+   "chinese": "蝴蝶",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 How do things change?",
+   "english": "egg",
+   "chinese": "蛋",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "share",
+   "chinese": "分享",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "kind",
+   "chinese": "友善的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "polite",
+   "chinese": "有礼貌的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "sorry",
+   "chinese": "对不起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "thank you",
+   "chinese": "谢谢你",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "listen",
+   "chinese": "倾听",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 4,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 How do people get along with each other?",
+   "english": "smile",
+   "chinese": "微笑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "want",
+   "chinese": "想要",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "future",
+   "chinese": "未来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "cook",
+   "chinese": "厨师；烹饪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "doctor",
+   "chinese": "医生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "teacher",
+   "chinese": "老师",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "pilot",
+   "chinese": "飞行员",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "be good at",
+   "chinese": "擅长",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 My future",
+   "english": "afraid",
+   "chinese": "害怕的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "come",
+   "chinese": "来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "school",
+   "chinese": "学校",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "by bus",
+   "chinese": "乘公共汽车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "on foot",
+   "chinese": "步行",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "subway",
+   "chinese": "地铁",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "cross",
+   "chinese": "穿过",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "straight",
+   "chinese": "笔直地",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 Going to school",
+   "english": "right",
+   "chinese": "右边的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "first",
+   "chinese": "第一",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "second",
+   "chinese": "第二",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "third",
+   "chinese": "第三",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "party",
+   "chinese": "派对；聚会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "bring",
+   "chinese": "带来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "wear",
+   "chinese": "穿着",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "favourite",
+   "chinese": "最喜欢的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 My birthday",
+   "english": "present",
+   "chinese": "礼物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "grandparent",
+   "chinese": "祖父母",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "grandfather",
+   "chinese": "爷爷；外公",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "grandmother",
+   "chinese": "奶奶；外婆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "visit",
+   "chinese": "拜访",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "old",
+   "chinese": "年老的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "kind",
+   "chinese": "友善的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "love",
+   "chinese": "爱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Grandparents",
+   "english": "often",
+   "chinese": "经常",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "friend",
+   "chinese": "朋友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "share",
+   "chinese": "分享",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "trust",
+   "chinese": "信任",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "honest",
+   "chinese": "诚实的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "loyal",
+   "chinese": "忠诚的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Friends",
+   "english": "forever",
+   "chinese": "永远",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "family",
+   "chinese": "家庭",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "life",
+   "chinese": "生活",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "together",
+   "chinese": "一起",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "dinner",
+   "chinese": "晚餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "weekend",
+   "chinese": "周末",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "watch TV",
+   "chinese": "看电视",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "talk",
+   "chinese": "谈话",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 Family life",
+   "english": "happy",
+   "chinese": "快乐的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "beach",
+   "chinese": "海滩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "sea",
+   "chinese": "大海",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "sand",
+   "chinese": "沙子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "swim",
+   "chinese": "游泳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "sunbathe",
+   "chinese": "晒太阳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "shell",
+   "chinese": "贝壳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "wave",
+   "chinese": "波浪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 At the beach",
+   "english": "enjoy",
+   "chinese": "享受",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "outing",
+   "chinese": "远足",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "picnic",
+   "chinese": "野餐",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "mountain",
+   "chinese": "山",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "forest",
+   "chinese": "森林",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "bring",
+   "chinese": "带来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "food",
+   "chinese": "食物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "map",
+   "chinese": "地图",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 An outing",
+   "english": "excited",
+   "chinese": "兴奋的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "city",
+   "chinese": "城市",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "street",
+   "chinese": "街道",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "building",
+   "chinese": "建筑物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "museum",
+   "chinese": "博物馆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "park",
+   "chinese": "公园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "turn left",
+   "chinese": "左转",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "turn right",
+   "chinese": "右转",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Around the city",
+   "english": "straight",
+   "chinese": "笔直地",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "wind",
+   "chinese": "风",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "blow",
+   "chinese": "吹",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "strong",
+   "chinese": "强的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "gentle",
+   "chinese": "轻柔的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "kite",
+   "chinese": "风筝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "fly",
+   "chinese": "飞；放",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "feel",
+   "chinese": "感觉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Wind",
+   "english": "weather",
+   "chinese": "天气",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "water",
+   "chinese": "水",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "drink",
+   "chinese": "喝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "save",
+   "chinese": "节约",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "important",
+   "chinese": "重要的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "river",
+   "chinese": "河流",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "lake",
+   "chinese": "湖",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "ocean",
+   "chinese": "海洋",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Water",
+   "english": "precious",
+   "chinese": "珍贵的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "fire",
+   "chinese": "火",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "hot",
+   "chinese": "热的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "dangerous",
+   "chinese": "危险的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "safe",
+   "chinese": "安全的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "match",
+   "chinese": "火柴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "careful",
+   "chinese": "小心的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "escape",
+   "chinese": "逃生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 Fire",
+   "english": "call",
+   "chinese": "打电话",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "tidy",
+   "chinese": "整洁的；整理",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "mess",
+   "chinese": "混乱",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "let",
+   "chinese": "让",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "sock",
+   "chinese": "袜子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "cap",
+   "chinese": "帽子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "crayon",
+   "chinese": "蜡笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "umbrella",
+   "chinese": "雨伞",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "yours",
+   "chinese": "你的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "mine",
+   "chinese": "我的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 Tidy up!",
+   "english": "hers",
+   "chinese": "她的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "why",
+   "chinese": "为什么",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "because",
+   "chinese": "因为",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "study",
+   "chinese": "书房；学习",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "dining room",
+   "chinese": "餐厅",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "change",
+   "chinese": "改变",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "place",
+   "chinese": "地方",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "every",
+   "chinese": "每个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "north",
+   "chinese": "北方",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Our new home",
+   "english": "south",
+   "chinese": "南方",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "future",
+   "chinese": "未来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "stand",
+   "chinese": "站",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "machine",
+   "chinese": "机器",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "will",
+   "chinese": "将；会",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "exercise",
+   "chinese": "锻炼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "early",
+   "chinese": "早的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "hard",
+   "chinese": "努力地；硬的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "easily",
+   "chinese": "容易地",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 In the future",
+   "english": "more",
+   "chinese": "更多",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "storybook",
+   "chinese": "故事书",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "buy",
+   "chinese": "买",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "story",
+   "chinese": "故事",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "dictionary",
+   "chinese": "字典",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "magazine",
+   "chinese": "杂志",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "newspaper",
+   "chinese": "报纸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "week",
+   "chinese": "星期；周",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "student",
+   "chinese": "学生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Reading is fun",
+   "english": "poster",
+   "chinese": "海报",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "weekend",
+   "chinese": "周末",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "stay",
+   "chinese": "停留；待",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "film",
+   "chinese": "电影",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "boat",
+   "chinese": "船",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "plan",
+   "chinese": "计划",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "tomorrow",
+   "chinese": "明天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "build",
+   "chinese": "建造",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "next",
+   "chinese": "下一个",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 At the weekend",
+   "english": "swing",
+   "chinese": "秋千；摇摆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "holiday",
+   "chinese": "假日",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "clear",
+   "chinese": "晴朗的；清楚的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "seafood",
+   "chinese": "海鲜",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "hotel",
+   "chinese": "酒店",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "island",
+   "chinese": "岛屿",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "butterfly",
+   "chinese": "蝴蝶",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "enjoy",
+   "chinese": "享受",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 Holiday",
+   "english": "travel",
+   "chinese": "旅行",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "meet",
+   "chinese": "见面；遇见",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "school gate",
+   "chinese": "校门",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "art room",
+   "chinese": "美术室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "hall",
+   "chinese": "大厅",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "finally",
+   "chinese": "最后",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "meeting room",
+   "chinese": "会议室",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "show",
+   "chinese": "展示",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Open Day",
+   "english": "project",
+   "chinese": "项目",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "buying",
+   "chinese": "购买",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "clothes",
+   "chinese": "衣服",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "shirt",
+   "chinese": "衬衫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "blouse",
+   "chinese": "女式衬衫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "skirt",
+   "chinese": "短裙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "T-shirt",
+   "chinese": "T恤衫",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "too",
+   "chinese": "太；也",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "dollar",
+   "chinese": "美元",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Buying clothes",
+   "english": "try",
+   "chinese": "试穿；尝试",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "seeing",
+   "chinese": "看（医生）",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "doctor",
+   "chinese": "医生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "fever",
+   "chinese": "发烧",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "cough",
+   "chinese": "咳嗽",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "headache",
+   "chinese": "头痛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "toothache",
+   "chinese": "牙痛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "medicine",
+   "chinese": "药",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Seeing the doctor",
+   "english": "rest",
+   "chinese": "休息",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "great",
+   "chinese": "伟大的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "inventions",
+   "chinese": "发明",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "telephone",
+   "chinese": "电话",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "television",
+   "chinese": "电视",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "computer",
+   "chinese": "电脑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "Internet",
+   "chinese": "互联网",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "paper",
+   "chinese": "纸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great inventions",
+   "english": "printing",
+   "chinese": "印刷",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "festival",
+   "chinese": "节日",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "Chinese",
+   "chinese": "中国的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "Spring Festival",
+   "chinese": "春节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "Mid-Autumn",
+   "chinese": "中秋节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "Dragon Boat",
+   "chinese": "端午节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "dumpling",
+   "chinese": "饺子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "mooncake",
+   "chinese": "月饼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Chinese festivals",
+   "english": "celebrate",
+   "chinese": "庆祝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "giant",
+   "chinese": "巨人",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "garden",
+   "chinese": "花园",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "wall",
+   "chinese": "墙",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "lonely",
+   "chinese": "孤独的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "children",
+   "chinese": "孩子们",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "spring",
+   "chinese": "春天",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "play",
+   "chinese": "玩",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "happy",
+   "chinese": "快乐的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 5,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The giant's garden",
+   "english": "sad",
+   "chinese": "难过的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "month",
+   "chinese": "月份",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "son",
+   "chinese": "儿子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "daughter",
+   "chinese": "女儿",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "cute",
+   "chinese": "可爱的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "noisy",
+   "chinese": "吵闹的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "pretty",
+   "chinese": "漂亮的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "handsome",
+   "chinese": "英俊的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "grow up",
+   "chinese": "长大",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 1,
+   "unit_title": "Unit 1 Growing up",
+   "english": "born",
+   "chinese": "出生",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "famous",
+   "chinese": "著名的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "during",
+   "chinese": "在……期间",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "spend",
+   "chinese": "度过",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "everyone",
+   "chinese": "每个人",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "countryside",
+   "chinese": "乡村",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "pick",
+   "chinese": "采摘",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "summer holiday",
+   "chinese": "暑假",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 2,
+   "unit_title": "Unit 2 My summer holiday",
+   "english": "travel",
+   "chinese": "旅行",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "healthy",
+   "chinese": "健康的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "unhealthy",
+   "chinese": "不健康的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "sometimes",
+   "chinese": "有时",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "diet",
+   "chinese": "饮食",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "exercise",
+   "chinese": "锻炼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "sleep",
+   "chinese": "睡眠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "keep fit",
+   "chinese": "保持健康",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 3,
+   "unit_title": "Unit 3 Healthy or unhealthy",
+   "english": "habit",
+   "chinese": "习惯",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "neighbour",
+   "chinese": "邻居",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "helpful",
+   "chinese": "乐于助人的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "water",
+   "chinese": "浇水",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "plant",
+   "chinese": "植物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "fix",
+   "chinese": "修理",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "noisy",
+   "chinese": "吵闹的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "quiet",
+   "chinese": "安静的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 4,
+   "unit_title": "Unit 4 Our neighbour",
+   "english": "polite",
+   "chinese": "有礼貌的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "thousand",
+   "chinese": "千",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "hundred",
+   "chinese": "百",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "wild",
+   "chinese": "野生的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "South China tiger",
+   "chinese": "华南虎",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "blue whale",
+   "chinese": "蓝鲸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "rhino",
+   "chinese": "犀牛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "die",
+   "chinese": "死亡",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 5,
+   "unit_title": "Unit 5 Animals in danger",
+   "english": "danger",
+   "chinese": "危险",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "e-friend",
+   "chinese": "网友",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "country",
+   "chinese": "国家",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "hobby",
+   "chinese": "爱好",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "age",
+   "chinese": "年龄",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "address",
+   "chinese": "地址",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "reply",
+   "chinese": "回复",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "letter",
+   "chinese": "信",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 6,
+   "unit_title": "Unit 6 E-friends",
+   "english": "online",
+   "chinese": "在线的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "cinema",
+   "chinese": "电影院",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "film",
+   "chinese": "电影",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "funny",
+   "chinese": "有趣的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "exciting",
+   "chinese": "令人兴奋的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "boring",
+   "chinese": "无聊的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "scary",
+   "chinese": "吓人的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "wonderful",
+   "chinese": "精彩的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 7,
+   "unit_title": "Unit 7 Seeing a film",
+   "english": "start",
+   "chinese": "开始",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "museum",
+   "chinese": "博物馆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "art",
+   "chinese": "艺术",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "history",
+   "chinese": "历史",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "science",
+   "chinese": "科学",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "space",
+   "chinese": "太空",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "nature",
+   "chinese": "自然",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "exhibit",
+   "chinese": "展品",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 8,
+   "unit_title": "Unit 8 Visiting museums",
+   "english": "ancient",
+   "chinese": "古代的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "city",
+   "chinese": "城市",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "capital",
+   "chinese": "首都",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "building",
+   "chinese": "建筑物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "tower",
+   "chinese": "塔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "palace",
+   "chinese": "宫殿",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "bridge",
+   "chinese": "桥",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "tourist",
+   "chinese": "游客",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 9,
+   "unit_title": "Unit 9 Great cities of the world",
+   "english": "million",
+   "chinese": "百万",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "air",
+   "chinese": "空气",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "breathe",
+   "chinese": "呼吸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "fresh",
+   "chinese": "新鲜的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "smoke",
+   "chinese": "烟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "dirty",
+   "chinese": "脏的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "clean",
+   "chinese": "干净的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "protect",
+   "chinese": "保护",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 10,
+   "unit_title": "Unit 10 Air",
+   "english": "pollution",
+   "chinese": "污染",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "tree",
+   "chinese": "树",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "leaf",
+   "chinese": "叶子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "root",
+   "chinese": "根",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "wood",
+   "chinese": "木头",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "shade",
+   "chinese": "阴凉",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "plant",
+   "chinese": "种植",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "grow",
+   "chinese": "生长",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "furniture",
+   "chinese": "家具",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 11,
+   "unit_title": "Unit 11 Trees",
+   "english": "oxygen",
+   "chinese": "氧气",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "earth",
+   "chinese": "地球",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "land",
+   "chinese": "陆地",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "water",
+   "chinese": "水",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "mountain",
+   "chinese": "山",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "ocean",
+   "chinese": "海洋",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "forest",
+   "chinese": "森林",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "desert",
+   "chinese": "沙漠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "save",
+   "chinese": "拯救；节约",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 1,
+   "unit": 12,
+   "unit_title": "Unit 12 The earth",
+   "english": "recycle",
+   "chinese": "回收",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "Asia",
+   "chinese": "亚洲",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "country",
+   "chinese": "国家",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "capital",
+   "chinese": "首都",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "famous",
+   "chinese": "著名的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "beautiful",
+   "chinese": "美丽的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "huge",
+   "chinese": "巨大的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "building",
+   "chinese": "建筑物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "tourist",
+   "chinese": "游客",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 1,
+   "unit_title": "Unit 1 You and me",
+   "english": "million",
+   "chinese": "百万",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "change",
+   "chinese": "改变",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "before",
+   "chinese": "以前",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "ago",
+   "chinese": "……以前",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "life",
+   "chinese": "生活",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "now",
+   "chinese": "现在",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "different",
+   "chinese": "不同的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "same",
+   "chinese": "相同的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "past",
+   "chinese": "过去",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 2,
+   "unit_title": "Unit 2 Changes in our lives",
+   "english": "present",
+   "chinese": "现在",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "future",
+   "chinese": "未来",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "school",
+   "chinese": "学校",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "robot",
+   "chinese": "机器人",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "screen",
+   "chinese": "屏幕",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "computer",
+   "chinese": "电脑",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "subject",
+   "chinese": "学科",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "online",
+   "chinese": "在线的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 3,
+   "unit_title": "Unit 3 Our school in the future",
+   "english": "virtual",
+   "chinese": "虚拟的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "art",
+   "chinese": "艺术",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "paint",
+   "chinese": "绘画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "draw",
+   "chinese": "画画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "picture",
+   "chinese": "图画",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "brush",
+   "chinese": "画笔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "colour",
+   "chinese": "颜色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "artist",
+   "chinese": "艺术家",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 4,
+   "unit_title": "Unit 4 Art",
+   "english": "exhibition",
+   "chinese": "展览",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "craft",
+   "chinese": "手工",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "make",
+   "chinese": "制作",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "cut",
+   "chinese": "剪",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "glue",
+   "chinese": "胶水；粘贴",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "stick",
+   "chinese": "粘",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "scissors",
+   "chinese": "剪刀",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "paper",
+   "chinese": "纸",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "fold",
+   "chinese": "折叠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 5,
+   "unit_title": "Unit 5 Crafts",
+   "english": "card",
+   "chinese": "卡片",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "PE",
+   "chinese": "体育",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "lesson",
+   "chinese": "课",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "exercise",
+   "chinese": "锻炼",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "jump",
+   "chinese": "跳",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "throw",
+   "chinese": "扔",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "catch",
+   "chinese": "接",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "race",
+   "chinese": "比赛",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "team",
+   "chinese": "队伍",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 6,
+   "unit_title": "Unit 6 PE lessons",
+   "english": "score",
+   "chinese": "得分",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "help",
+   "chinese": "帮助",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "volunteer",
+   "chinese": "志愿者",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "charity",
+   "chinese": "慈善",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "donate",
+   "chinese": "捐赠",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "community",
+   "chinese": "社区",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "elderly",
+   "chinese": "老年人",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "disabled",
+   "chinese": "残疾的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 7,
+   "unit_title": "Unit 7 Helping others",
+   "english": "kind",
+   "chinese": "友善的",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "sign",
+   "chinese": "标志",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "danger",
+   "chinese": "危险",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "warning",
+   "chinese": "警告",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "entrance",
+   "chinese": "入口",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "exit",
+   "chinese": "出口",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "no parking",
+   "chinese": "禁止停车",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "no smoking",
+   "chinese": "禁止吸烟",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 8,
+   "unit_title": "Unit 8 Reading signs",
+   "english": "follow",
+   "chinese": "遵守",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "reuse",
+   "chinese": "再利用",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "recycle",
+   "chinese": "回收",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "reduce",
+   "chinese": "减少",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "waste",
+   "chinese": "浪费；废物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "plastic",
+   "chinese": "塑料",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "bottle",
+   "chinese": "瓶子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "bag",
+   "chinese": "袋子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 9,
+   "unit_title": "Unit 9 Reusing things",
+   "english": "environment",
+   "chinese": "环境",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "storybook",
+   "chinese": "故事书",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "character",
+   "chinese": "角色",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "hero",
+   "chinese": "英雄",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "adventure",
+   "chinese": "冒险",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "author",
+   "chinese": "作者",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "fairy tale",
+   "chinese": "童话",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "prince",
+   "chinese": "王子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 10,
+   "unit_title": "Unit 10 Great storybooks",
+   "english": "chapter",
+   "chinese": "章节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "festival",
+   "chinese": "节日",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "Christmas",
+   "chinese": "圣诞节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "Easter",
+   "chinese": "复活节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "Halloween",
+   "chinese": "万圣节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "Thanksgiving",
+   "chinese": "感恩节",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "celebrate",
+   "chinese": "庆祝",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "tradition",
+   "chinese": "传统",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 11,
+   "unit_title": "Unit 11 Western festivals",
+   "english": "gift",
+   "chinese": "礼物",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "pea",
+   "chinese": "豌豆",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "seed",
+   "chinese": "种子",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "grow",
+   "chinese": "生长",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "sunshine",
+   "chinese": "阳光",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "rain",
+   "chinese": "雨",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "soil",
+   "chinese": "土壤",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "window",
+   "chinese": "窗户",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "flower",
+   "chinese": "花",
+   "version": "牛津深圳版"
+  },
+  {
+   "grade": 6,
+   "semester": 2,
+   "unit": 12,
+   "unit_title": "Unit 12 The five peas",
+   "english": "proud",
+   "chinese": "骄傲的",
+   "version": "牛津深圳版"
+  }
+ ]
+}
