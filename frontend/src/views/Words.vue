@@ -700,6 +700,7 @@ const toggleAccuracyLevel = (level) => {
 // 复习相关
 const reviewVisible = ref(false)
 const reviewStarting = ref(false) // 防止重复点击开始复习
+const reviewFinishing = ref(false) // 防止结算重入（关闭弹窗自动结算 vs 完成按钮/自动结算并发）
 const reviewStep = ref('config')
 // 学习模式（先学后练）：学词卡流
 const learnWords = ref([])
@@ -761,10 +762,14 @@ const startLearnPractice = () => {
   }
   startDailyQuestion()
 }
-// 关闭学习/复习弹窗时停止带读
+// 关闭学习/复习弹窗时停止带读；答题中途直接关闭弹窗 → 自动结算（未答标错），
+// 防止孩子答错后关掉弹窗导致错题/易错记录丢失（此前只有完成/终止/最后一题才提交）
 watch(reviewVisible, (v) => {
   if (!v) {
     stopTeaching()
+    if (reviewStep.value === 'question' && !reviewFinishing.value) {
+      finishReview()
+    }
   }
 })
 // 学习卡自动带读：切卡时自动朗读新词（英语→中文→词根词源）
@@ -1777,6 +1782,8 @@ const terminateReview = async () => {
 }
 
 const finishReview = async () => {
+  if (reviewFinishing.value) return // 防重入
+  reviewFinishing.value = true
   stopTeaching() // 完成/结算即停：带读与重播全部中断（原仅 ++autoPlayToken 停重播，漏了 autoTeach 循环）
   // 停止计时器
   if (reviewTimer.value) {
@@ -1832,6 +1839,8 @@ const finishReview = async () => {
       msg = `提交结果失败：${detail}`
     }
     ElMessage.error(msg)
+  } finally {
+    reviewFinishing.value = false
   }
 }
 
