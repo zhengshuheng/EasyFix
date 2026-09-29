@@ -17,10 +17,7 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
-    UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
-    UV_DEFAULT_INDEX=https://mirrors.aliyun.com/pypi/simple \
-    UV_NO_CACHE=1 \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
     EASYFIX_FONT=/app/backend/fonts/simhei.ttf
 
 WORKDIR /app
