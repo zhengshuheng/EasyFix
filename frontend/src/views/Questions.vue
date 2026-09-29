@@ -156,7 +156,7 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="340" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 210 : 340" :fixed="isMobile ? false : 'right'">
           <template #default="{ row }">
             <el-button type="primary" size="default" @click="viewDetail(row)">查看</el-button>
             <el-button type="primary" size="default" @click="editQuestion(row)">编辑</el-button>
@@ -508,7 +508,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { questionApi, uploadApi } from '@/api/question'
@@ -522,6 +522,14 @@ import axios from 'axios'
 const route = useRoute()
 const appConfigStore = useAppConfigStore()
 const subjectStore = useSubjectStore()
+
+// 移动端断点（≤768px）：操作列取消 fixed 并缩窄——fixed right 340px 在竖屏会占满
+// 视口，内容区无空间且表格无法滚动
+const isMobile = ref(window.matchMedia('(max-width: 768px)').matches)
+const mobileMq = window.matchMedia('(max-width: 768px)')
+const syncMobile = (e) => { isMobile.value = e.matches }
+onMounted(() => mobileMq.addEventListener('change', syncMobile))
+onUnmounted(() => mobileMq.removeEventListener('change', syncMobile))
 
 // 年级选项：一年级到六年级，初一/初二/初三，高一/高二/高三
 const gradeOptions = [
@@ -1652,6 +1660,53 @@ onMounted(async () => {
   .filters .el-select,
   .filters .el-input {
     flex: 0 0 auto;
+  }
+
+  /* 批量操作栏：桌面版 fixed 底部栏在窄屏会从底部盖住大半屏（4 个按钮换行堆叠），
+   * 且遮挡表格导致无法滚动查看；移动端改回文档流放在表格下方，按钮横滑一行 */
+  .batch-actions {
+    position: static;
+    box-shadow: none;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 12px 4px;
+    align-items: center;
+  }
+
+  .batch-info {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .batch-buttons {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .batch-buttons :deep(.el-button) {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-left: 0;
+  }
+
+  /* 表格操作列：340px 固定 + fixed="right" 在窄屏接近整屏宽，挤压内容区；
+   * 解除 sticky 让它跟随表格横向滚动，按钮改紧凑 */
+  .questions :deep(.el-table-fixed-column--right) {
+    position: static !important;
+  }
+
+  .questions :deep(.el-table-fixed-column--right .el-button) {
+    padding: 6px 9px;
+    font-size: 12px;
+    margin: 2px 4px 2px 0;
+  }
+
+  /* 顶部「新增错题」按钮缩小 */
+  .header-actions :deep(.el-button) {
+    padding: 8px 12px;
+    font-size: 13px;
   }
 }
 </style>
