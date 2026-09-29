@@ -1,10 +1,12 @@
 # ==========================================
 # EasyFix — Dockerfile（单阶段构建）
-#   前端在 Windows 本地构建（frontend/dist 随包上传，见 deploy.ps1），
-#   服务器只做后端运行环境：python:3.12-slim + uv 装依赖 + 拷贝代码与 dist
+#   前端在 Windows 本地构建（frontend/dist-trial + dist-ops + site 随包上传，见 deploy.ps1），
+#   服务器只做后端运行环境：python:3.12-slim + uv 装依赖 + 拷贝代码与前端产物
 #
 # 构建：docker build -t easyfix .
-# 一键部署：deploy.bat（本地 npm run build 前端 → 打包上传 → 服务器构建并启动）
+# 一键部署：deploy.bat（本地 npm run build:trial + build:ops 前端 → 打包上传 → 服务器构建并启动）
+# 架构原则（2026-09-29）：正式版/试用版共用 dist-trial 一套空间前端（/{key}/），
+#   正式/试用只是后端账号属性（spaces.trial_end_at=NULL=正式版）；dist 正式版已废弃不打包。
 # ==========================================
 
 # ---------- 后端运行时 ----------
@@ -27,18 +29,16 @@ WORKDIR /app
 # 不装 fonts-noto-cjk —— 省掉 apt-get update + 56MB 下载，构建快、镜像小
 
 # Python 依赖（独立层，代码改动时可命中缓存）
-# uv = Rust 写的包管理器，比 pip 快 10-100 倍；--system 装进镜像系统环境
+# 2026-09-29 改：弃用 uv —— ECS 上 uv 二进制(20.4MB)从 aliyun 镜像下载时无重试、易长时间卡死；
+# pip 自带 --timeout/--retries，网络抖动自动重试，构建更稳（代价：串行下载稍慢，一次性成本，RUN 层会缓存）
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir uv \
-    && uv pip install --system -r /app/backend/requirements.txt
+RUN pip install --no-cache-dir --timeout 60 --retries 5 -r /app/backend/requirements.txt
 
 # 后端代码（含 backend/.env 配置与 easyfix_main.db 种子库）
 COPY backend/ /app/backend/
 
-# 前端构建产物（本地 npm run build 生成，随包上传；FastAPI 同源托管）
-COPY frontend/dist /app/frontend/dist
-
-# 试用版前端构建产物（本地 npm run build:trial 生成；FastAPI 同源托管于 /{trial_key}/）
+# 试用版/正式版共用空间前端构建产物（本地 npm run build:trial 生成；FastAPI 同源托管于 /{trial_key}/）
+# 正式版 = spaces.trial_end_at NULL（账号属性），前端同一套，不再构建 dist
 COPY frontend/dist-trial /app/frontend/dist-trial
 
 # 运营后台 Vue 构建产物（本地 npm run build:ops 生成；vite outDir ../dist-ops 输出到 frontend/dist-ops；/ops 直达，见 main.py OPS_DIST mount）
