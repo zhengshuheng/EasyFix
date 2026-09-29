@@ -287,9 +287,17 @@
 
   **铁律（三件套升级版）**：改模型加表/加列后，**主库迁移（create_all/_ensure_column）≠ 空间库迁移**。空间库是独立文件，必须走 db_migrate 的"**补表 + 补列**"双保险（`ensure_tenant_schema`），只补列不建表会漏掉整表缺失场景（`_add_column_if_missing` 表不存在直接跳过）。**验证必须用"旧 schema 模拟库"**（rename 列 / DROP 表）跑迁移后查接口，不能只看新库。排查"本地正常、云端不行"先怀疑**云端持久化数据（模板/空间库/主库）与本地版本差异**——Dockerfile 缺 COPY、数据卷旧 schema 都是高嫌疑。
 
+## 3.12 错题列表操作列移动端占屏 = fixed 列双份渲染（2026-09-29 修复闭环）
+
+  **现象**：错题列表（Questions.vue）操作列 `width=340 fixed="right"`（查看/编辑/相似题/删除），手机竖屏下"操作项占了一屏"，内容区没空间、表格无法滚动。
+
+  **已排除**：CSS 解除 fixed（`.el-table-fixed-column--right { position: static !important }`）**无效且有害**——el-table 的 fixed 层是独立表格容器，position:static 后**回到文档流与正常列双份渲染**，操作列出现两遍，更占屏。筛选条移动端横滑单行（.filters nowrap + overflow-x）已解决，不是本问题。
+
+  **正解（模板层取消 fixed 属性）**：`<el-table-column label="操作" :width="isMobile ? 210 : 340" :fixed="isMobile ? false : 'right'">`；断点用 `window.matchMedia('(max-width: 768px)')`（onMounted addEventListener + onUnmounted removeEventListener）。移动端操作列跟随表格横向滚动，不再悬浮。
+
+  **铁律**：**el-table 列级 fixed 是结构属性（渲染独立 fixed 层）——移动端要取消 fixed 只能在模板/JS 层改 `:fixed`，禁止用 CSS position:static 打补丁**（fixed 层 + 正常列 = 双份 DOM）。`position: static !important` 的旧补丁在 `:fixed=false` 后不再匹配、无害，但别依赖它。列宽同理用 `:width` JS 切换，别只靠 CSS 压按钮。表格移动端横滑 = mobile.css 全局规则（el-table__inner-wrapper max-width 100% + body-wrapper overflow-x auto）已生效。
+
 ## 4. 判分/评测相关文档索引
-
-
 
 | 想看什么 | 去哪里 |
 |---|---|
